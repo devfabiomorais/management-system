@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #ffffff;
+  --font-inter: 'Inter', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #ededed;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px; 
+  height: 8px; 
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px; 
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #1B405D; 
+  border-radius: 7px; 
+  border: 2px solid #f0f0f03a;
+}
+
+.p-column-header-content{
+  align-content: center !important;
+  display: block !important;
+}
+
+input, select, .p-dropdown {
+  background-color: white !important;
+  color: black; 
+  border: 1px solid #D9D9D9; 
+  padding: 1px; 
+  border-radius: 4px; 
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter-regular), var(--font-inter-bold), sans-serif;
+}
