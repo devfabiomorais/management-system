@@ -344,7 +344,7 @@ const EstablishmentsPage: React.FC = () => {
 
     return (
         <><SidebarLayout>
-            <div className="flex justify-center h-screen">
+            <div className="flex justify-center">
 
                 {loading && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
