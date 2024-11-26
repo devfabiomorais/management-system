@@ -5,6 +5,7 @@ import { FaCubes, FaLock, FaStore } from "react-icons/fa";
 import { FaFolderPlus } from "react-icons/fa6";
 import { TbUserScan } from "react-icons/tb";
 import { redirect } from "next/navigation";
+import Footer from "@/app/components/Footer";
 export default function CommercialPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
   const checkOpen = () => {
@@ -58,6 +59,7 @@ export default function CommercialPage() {
           </div>{" "}
         </div>{" "}
       </SidebarLayout>{" "}
+      <Footer/>
     </div>
   );
 }

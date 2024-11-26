@@ -19,6 +19,7 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { MultiSelect } from "primereact/multiselect";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface User {
     cod_usuario: number;
@@ -125,11 +126,11 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`http://localhost:5000/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -156,21 +157,21 @@ const UsersPage: React.FC = () => {
         console.log(users);
 
         try {
-            const groups = await axios.get("http://localhost:5000/api/groupPermission/groups/", {
+            const groups = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
 
             const selectedGroup = groups.data.groups.find(
                 (group: Group) => group.cod_grupo === users.cod_grupo
             );
 
-            const estabilishmentResponse = await axios.get("http://localhost:5000/api/estabilishment/", {
+            const estabilishmentResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setEstablishments(estabilishmentResponse.data.estabelecimentos);
 
             // Encontrar o estabelecimento correspondente pelo ID
@@ -238,7 +239,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("http://localhost:5000/api/users/register", payload, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -304,7 +305,7 @@ const UsersPage: React.FC = () => {
                 });
                 return;
             }
-    
+
             const payload = {
                 nome: formValues.nome,
                 email: formValues.email,
@@ -315,7 +316,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("http://localhost:5000/api/users/register", payload, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -358,11 +359,11 @@ const UsersPage: React.FC = () => {
     const fetchUsers = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:5000/api/users/", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/users/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.users)
             setUsers(response.data.users);
             setLoading(false)
@@ -375,11 +376,11 @@ const UsersPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/estabilishment", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.estabelecimentos)
             setEstablishments(response.data.estabelecimentos);
             setLoading(false);
@@ -392,11 +393,11 @@ const UsersPage: React.FC = () => {
     const fetchGroupPermissions = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/groupPermission/groups", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.groups)
             setGroupPermissions(response.data.groups);
             setLoading(false);
@@ -420,11 +421,11 @@ const UsersPage: React.FC = () => {
 
         setLoading(true)
         try {
-            const response = await axios.put(`http://localhost:5000/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -449,7 +450,7 @@ const UsersPage: React.FC = () => {
         /*if (clientIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:5000/api/users/${clientIdToDelete}`);
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/users/${clientIdToDelete}`);
             toast.success("Usuario removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -478,7 +479,7 @@ const UsersPage: React.FC = () => {
     }
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -488,8 +489,7 @@ const UsersPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -500,22 +500,18 @@ const UsersPage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja desativar este usuário?</p>
                 </Dialog>
@@ -545,8 +541,7 @@ const UsersPage: React.FC = () => {
                                 value={formValues.nome}
                                 onChange={handleInputChange}
                                 className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder=""
-                            />
+                                placeholder="" />
                         </div>
 
                         <div className="">
@@ -560,8 +555,7 @@ const UsersPage: React.FC = () => {
                                 value={formValues.email}
                                 onChange={handleInputChange}
                                 className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder=""
-                            />
+                                placeholder="" />
                         </div>
 
                         <div className="">
@@ -575,8 +569,7 @@ const UsersPage: React.FC = () => {
                                 optionLabel="nome"
                                 filter
                                 placeholder="Selecione um Estabelecimento"
-                                className="w-full border text-black"
-                            />
+                                className="w-full border text-black" />
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -591,8 +584,7 @@ const UsersPage: React.FC = () => {
                                     value={formValues.usuario}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
                             <div className="">
                                 <label htmlFor="grupo" className="block text-blue  font-medium">
@@ -605,8 +597,7 @@ const UsersPage: React.FC = () => {
                                     optionLabel="nome"
                                     filter
                                     placeholder="Selecione os Estabelecimentos"
-                                    className="w-full border text-black"
-                                />
+                                    className="w-full border text-black" />
                             </div>
 
                             <div className="">
@@ -624,8 +615,7 @@ const UsersPage: React.FC = () => {
                                     ]}
                                     placeholder="Selecione"
                                     className="w-full md:w-14rem"
-                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }}
-                                />
+                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
                         </div>
                     </div>
@@ -647,8 +637,7 @@ const UsersPage: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                 }}
-                                onClick={() => closeModal()}
-                            />
+                                onClick={() => closeModal()} />
                             {!isEditing && (
                                 <><Button
                                     label="Salvar e Voltar à Listagem"
@@ -693,8 +682,7 @@ const UsersPage: React.FC = () => {
                                         fontWeight: 'bold',
                                         display: 'flex',
                                         alignItems: 'center',
-                                    }}
-                                />
+                                    }} />
                             )}
                         </div>
                     </div>
@@ -724,8 +712,7 @@ const UsersPage: React.FC = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder=""
                                 className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                style={{ border: "1px solid #1B405D80", }}
-                            />
+                                style={{ border: "1px solid #1B405D80", }} />
                         </div>
 
                         <DataTable
@@ -762,8 +749,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="nome"
                                 header="Nome Completo"
@@ -782,8 +768,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="usuario"
                                 header="Login"
@@ -802,8 +787,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="email"
                                 header="E-mail"
@@ -822,8 +806,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="situacao"
                                 header="Situação"
@@ -842,8 +825,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="cod_grupo"
                                 header="Grupo"
@@ -862,8 +844,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -888,8 +869,7 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -914,24 +894,23 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                         </DataTable>
 
 
                         {/*<Paginator
-                            first={first}
-                            rows={rows}
-                            totalRecords={filteredUsers.length}
-                            onPageChange={(e) => {
-                                setFirst(e.first);
-                                setRows(e.rows);
-                            }}
-                        />*/}
+        first={first}
+        rows={rows}
+        totalRecords={filteredUsers.length}
+        onPageChange={(e) => {
+            setFirst(e.first);
+            setRows(e.rows);
+        }}
+    />*/}
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

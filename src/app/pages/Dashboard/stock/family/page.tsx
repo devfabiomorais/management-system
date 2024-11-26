@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 interface Item {
     cod_familia: number;
     descricao: string;
@@ -37,7 +38,7 @@ const FamilyPage: React.FC = () => {
     const [search, setSearch] = useState("");
     const [first, setFirst] = useState(0);
     const [rows, setRows] = useState(10);
-  
+
 
 
     const filteredItens = itens.filter(
@@ -57,13 +58,13 @@ const FamilyPage: React.FC = () => {
 
     const fetchFamilias = async () => {
         setLoading(true)
-    
+
         try {
-            const response = await axios.get("http://localhost:5000/api/familia/itens/", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.families)
             setItens(response.data.families);
             setLoading(false)
@@ -88,12 +89,12 @@ const FamilyPage: React.FC = () => {
                 description: descricao,
                 name: nome
             }
-         
-            const response = await axios.post("http://localhost:5000/api/familia/itens/register", bodyForm, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/register", bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -130,12 +131,12 @@ const FamilyPage: React.FC = () => {
                 description: descricao,
                 name: nome
             }
-           
-            const response = await axios.put(`http://localhost:5000/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
+
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -172,13 +173,13 @@ const FamilyPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (familiaIdToDelete === null) return;
-       
+
         try {
-            await axios.delete(`http://localhost:5000/api/familia/itens/${familiaIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/familia/itens/${familiaIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Item removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -202,41 +203,36 @@ const FamilyPage: React.FC = () => {
     };
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
-            {loading && (
+                {loading && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                         <BeatLoader
                             color={color}
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
-<Dialog
+                <Dialog
                     header="Confirmar Exclusão"
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir este item?</p>
                 </Dialog>
@@ -261,8 +257,7 @@ const FamilyPage: React.FC = () => {
                                         onChange={(e) => setSearch(e.target.value)}
                                         placeholder=""
                                         className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                        style={{ border: "1px solid #1B405D80", }}
-                                    />
+                                        style={{ border: "1px solid #1B405D80", }} />
                                 </div>
 
                                 <DataTable
@@ -299,8 +294,7 @@ const FamilyPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         field="nome"
                                         header="Nome"
@@ -319,8 +313,7 @@ const FamilyPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         field="descricao"
                                         header="Descrição"
@@ -339,8 +332,7 @@ const FamilyPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -366,8 +358,7 @@ const FamilyPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -392,8 +383,7 @@ const FamilyPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                 </DataTable>
                             </div>
 
@@ -408,10 +398,9 @@ const FamilyPage: React.FC = () => {
                                             type="text"
                                             id="nome"
                                             value={nome}
-                                            onChange={(e=> setNome(e.currentTarget.value))}
+                                            onChange={(e => setNome(e.currentTarget.value))}
                                             className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                            placeholder=""
-                                        />
+                                            placeholder="" />
                                     </div>
 
                                     <div className="mt-5">
@@ -422,14 +411,13 @@ const FamilyPage: React.FC = () => {
                                             type="text"
                                             id="description"
                                             value={descricao}
-                                            onChange={(e=> setDescricao(e.currentTarget.value))}
+                                            onChange={(e => setDescricao(e.currentTarget.value))}
                                             className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                            placeholder=""
-                                        />
+                                            placeholder="" />
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                    {!isEditing &&(<Button
+                                        {!isEditing && (<Button
                                             label="Salvar Família"
                                             className="text-white"
                                             icon="pi pi-check"
@@ -442,9 +430,8 @@ const FamilyPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
-                                        {isEditing &&(<Button
+                                            }} />)}
+                                        {isEditing && (<Button
                                             label="Salvar Família"
                                             className="text-white"
                                             icon="pi pi-check"
@@ -457,9 +444,8 @@ const FamilyPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
-                                       
+                                            }} />)}
+
                                     </div>
                                 </div>
 
@@ -468,7 +454,7 @@ const FamilyPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

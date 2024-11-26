@@ -16,6 +16,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface Client {
     cod_cliente: number;
@@ -68,7 +69,7 @@ const ClientsPage: React.FC = () => {
         situacao: "",
         tipo: "",
     });
-    
+
 
     const clearInputs = () => {
         setFormValues({
@@ -119,12 +120,12 @@ const ClientsPage: React.FC = () => {
                 });
                 return;
             }
-        
-            const response = await axios.put(`http://localhost:5000/api/clients/edit/${selectedClient?.cod_cliente}`, formValues, {
+
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/clients/edit/${selectedClient?.cod_cliente}`, formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -177,12 +178,12 @@ const ClientsPage: React.FC = () => {
                 });
                 return;
             }
-           
-            const response = await axios.post("http://localhost:5000/api/clients/register", formValues, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/clients/register", formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -234,12 +235,12 @@ const ClientsPage: React.FC = () => {
                 });
                 return;
             }
-          
-            const response = await axios.post("http://localhost:5000/api/clients/register", formValues, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/clients/register", formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -278,12 +279,12 @@ const ClientsPage: React.FC = () => {
     const fetchClients = async () => {
         setLoading(true)
         try {
-           
-            const response = await axios.get("http://localhost:5000/api/clients", {
+
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/clients", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.clients)
             setClients(response.data.clients);
             setLoading(false)
@@ -305,13 +306,13 @@ const ClientsPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (clientIdToDelete === null) return;
-   
+
         try {
-            await axios.delete(`http://localhost:5000/api/clients/${clientIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/clients/${clientIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Cliente removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -340,7 +341,7 @@ const ClientsPage: React.FC = () => {
     }
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -350,8 +351,7 @@ const ClientsPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -362,22 +362,18 @@ const ClientsPage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir este cliente?</p>
                 </Dialog>
@@ -408,8 +404,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.nome}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o nome completo"
-                                />
+                                    placeholder="Digite o nome completo" />
                             </div>
                             <div>
                                 <label htmlFor="tipo" className="block text-blue font-medium">
@@ -441,8 +436,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.email}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o e-mail"
-                                />
+                                    placeholder="Digite o e-mail" />
                             </div>
                             <div>
                                 <label htmlFor="telefone" className="block text-blue font-medium">
@@ -455,8 +449,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.telefone}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o telefone"
-                                />
+                                    placeholder="Digite o telefone" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -471,8 +464,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.celular}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o celular"
-                                />
+                                    placeholder="Digite o celular" />
                             </div>
                             <div>
                                 <label htmlFor="situacao" className="block text-blue font-medium">
@@ -503,8 +495,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.cep}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o CEP"
-                                />
+                                    placeholder="Digite o CEP" />
                             </div>
                             <div>
                                 <label htmlFor="logradouro" className="block text-blue font-medium">
@@ -517,8 +508,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.logradouro}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o logradouro"
-                                />
+                                    placeholder="Digite o logradouro" />
                             </div>
                         </div>
                         <div className="grid grid-cols-4 gap-2">
@@ -533,8 +523,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.numero}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Número"
-                                />
+                                    placeholder="Número" />
                             </div>
                             <div>
                                 <label htmlFor="estado" className="block text-blue font-medium">
@@ -547,8 +536,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.estado}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Estado"
-                                />
+                                    placeholder="Estado" />
                             </div>
                             <div>
                                 <label htmlFor="bairro" className="block text-blue font-medium">
@@ -561,8 +549,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.bairro}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite o bairro"
-                                />
+                                    placeholder="Digite o bairro" />
                             </div>
                             <div>
                                 <label htmlFor="cidade" className="block text-blue font-medium">
@@ -575,8 +562,7 @@ const ClientsPage: React.FC = () => {
                                     value={formValues.cidade}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="Digite a cidade"
-                                />
+                                    placeholder="Digite a cidade" />
                             </div>
                         </div>
                     </div>
@@ -596,8 +582,7 @@ const ClientsPage: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                 }}
-                                onClick={() => closeModal()}
-                            />
+                                onClick={() => closeModal()} />
                             {!isEditing && (
                                 <><Button
                                     label="Salvar e Voltar à Listagem"
@@ -642,8 +627,7 @@ const ClientsPage: React.FC = () => {
                                         fontWeight: 'bold',
                                         display: 'flex',
                                         alignItems: 'center',
-                                    }}
-                                />
+                                    }} />
                             )}
                         </div>
                     </div>
@@ -660,8 +644,7 @@ const ClientsPage: React.FC = () => {
                             <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
                                 <IoAddCircleOutline
                                     style={{ fontSize: "2.5rem" }}
-                                    className="text-white text-center"
-                                />
+                                    className="text-white text-center" />
                             </button>
                         </div>
                     </div>
@@ -675,8 +658,7 @@ const ClientsPage: React.FC = () => {
                                 className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
                                 style={{
                                     border: "1px solid #1B405D80",
-                                }}
-                            />
+                                }} />
                         </div>
                         <DataTable
                             value={filteredClients.slice(first, first + rows)}
@@ -739,7 +721,7 @@ const ClientsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }}
-                                body={(rowData: { tipo: 'Pessoa_Jur_dica' | 'Pessoa_F_sica' | 'Estrangeiro' }) => {
+                                body={(rowData: { tipo: 'Pessoa_Jur_dica' | 'Pessoa_F_sica' | 'Estrangeiro'; }) => {
                                     // Mapeia os valores do tipo para os valores legíveis
                                     const tipoMap: Record<'Pessoa_Jur_dica' | 'Pessoa_F_sica' | 'Estrangeiro', string> = {
                                         "Pessoa_Jur_dica": "Pessoa Jurídica",
@@ -865,8 +847,7 @@ const ClientsPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -891,13 +872,12 @@ const ClientsPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                         </DataTable>
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

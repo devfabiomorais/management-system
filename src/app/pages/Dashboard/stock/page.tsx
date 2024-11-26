@@ -8,6 +8,7 @@ import { AiFillGold } from "react-icons/ai";
 import { GoSync } from "react-icons/go";
 import { FaChartBar } from "react-icons/fa";
 import { redirect } from "next/navigation";
+import Footer from "@/app/components/Footer";
 
 export default function StockPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -83,6 +84,7 @@ export default function StockPage() {
           </div>
         </div>
       </SidebarLayout>
+      <Footer/>
     </div>
   );
 }

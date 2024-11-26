@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portal Birigui - FrontEnd
 
-## Getting Started
+FrontEnd do Portal Birigui em **Next.js**, **TypeScript**, **TailwindCss** e **PrimeReact**, com deploy configurado para a **Vercel**.
 
-First, run the development server:
+---
 
+## 📋 Requisitos
+
+- **Node.js** (versão 14 ou superior)
+- **yarn** como gerenciador de pacotes
+
+---
+
+## 📦 Scripts Disponíveis
+
+1. **Iniciar o servidor em desenvolvimento:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+   yarn run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Compilar o TypeScript:**
+```bash
+   yarn run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Executar o código compilado:**
+```bash
+   yarn start
+```
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📚 Padrão de Commits
 
-## Learn More
+**Estrutura do Commit**
+```bash
+   <tipo>(escopo opcional): descrição breve
+    Corpo opcional (detalhes adicionais, se necessário)
+```
+---
 
-To learn more about Next.js, take a look at the following resources:
+**Tipos de Commits**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| **Tipo**   | **Descrição**                                                                 |
+|------------|-------------------------------------------------------------------------------|
+| `feat`     | Adição de novas funcionalidades                                               |
+| `fix`      | Correção de bugs                                                              |
+| `refactor` | Refatoração de código sem alteração na funcionalidade                         |
+| `chore`    | Atualizações de configurações, dependências ou tarefas administrativas        |
+| `docs`     | Alterações na documentação                                                    |
+| `style`    | Ajustes de formatação ou estilo (sem mudanças funcionais)                     |
+| `test`     | Criação ou modificação de testes                                              |
+| `build`    | Alterações relacionadas ao processo de build                                  |
+| `perf`     | Melhorias de performance                                                      |
+| `ci`       | Alterações nos arquivos ou configurações de integração contínua               |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---

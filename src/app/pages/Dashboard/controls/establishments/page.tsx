@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface Establishment {
     cod_estabelecimento: number;
@@ -128,12 +129,12 @@ const EstablishmentsPage: React.FC = () => {
                 });
                 return;
             }
-          
-            const response = await axios.put(`http://localhost:5000/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
+
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -182,12 +183,12 @@ const EstablishmentsPage: React.FC = () => {
                 });
                 return;
             }
-          
-            const response = await axios.post("http://localhost:5000/api/estabilishment/register", formValues, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/estabilishment/register", formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -235,12 +236,12 @@ const EstablishmentsPage: React.FC = () => {
                 });
                 return;
             }
-         
-            const response = await axios.post("http://localhost:5000/api/estabilishment/register", formValues, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/estabilishment/register", formValues, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -278,12 +279,12 @@ const EstablishmentsPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true)
         try {
-          
-            const response = await axios.get("http://localhost:5000/api/estabilishment", {
+
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.estabelecimentos)
             setEstablishments(response.data.estabelecimentos);
             setLoading(false)
@@ -305,13 +306,13 @@ const EstablishmentsPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (estabilishmentIdToDelete === null) return;
-   
+
         try {
-            await axios.delete(`http://localhost:5000/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Estabelecimento removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -342,7 +343,7 @@ const EstablishmentsPage: React.FC = () => {
 
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -352,8 +353,7 @@ const EstablishmentsPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -363,22 +363,18 @@ const EstablishmentsPage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir este estabelecimento?</p>
                 </Dialog>
@@ -398,16 +394,16 @@ const EstablishmentsPage: React.FC = () => {
                     <div className="p-fluid grid gap-2 mt-2">
                         <div className="grid grid-cols-2 gap-2">
                             {/*<div>
-                                <label htmlFor="code" className="block text-blue font-medium">
-                                    Código:
-                                </label>
-                                <input
-                                    type="text"
-                                    id="code"
-                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
-                            </div>*/}
+        <label htmlFor="code" className="block text-blue font-medium">
+            Código:
+        </label>
+        <input
+            type="text"
+            id="code"
+            className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+            placeholder=""
+        />
+    </div>*/}
 
                             <div>
                                 <label htmlFor="name" className="block text-blue font-medium">
@@ -420,8 +416,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.nome}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
                         </div>
 
@@ -436,8 +431,7 @@ const EstablishmentsPage: React.FC = () => {
                                 value={formValues.logradouro}
                                 onChange={handleInputChange}
                                 className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder=""
-                            />
+                                placeholder="" />
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -452,8 +446,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.numero}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
 
                             <div>
@@ -467,8 +460,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.cep}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
 
                             <div>
@@ -482,8 +474,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.complemento}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
                         </div>
 
@@ -499,14 +490,14 @@ const EstablishmentsPage: React.FC = () => {
                                     onChange={(e) => setFormValues({ ...formValues, estado: e.target.value })}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                 >
-                                     <option  value="">
-                Selecione
-            </option>
-                                      {estados.map((estado) => (
-            <option key={estado.sigla} value={estado.sigla}>
-                {estado.nome}
-            </option>
-        ))}
+                                    <option value="">
+                                        Selecione
+                                    </option>
+                                    {estados.map((estado) => (
+                                        <option key={estado.sigla} value={estado.sigla}>
+                                            {estado.nome}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -521,8 +512,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.cidade}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
 
                             <div>
@@ -536,8 +526,7 @@ const EstablishmentsPage: React.FC = () => {
                                     value={formValues.bairro}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
                         </div>
                     </div>
@@ -563,8 +552,7 @@ const EstablishmentsPage: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                 }}
-                                onClick={() => closeModal()}
-                            />
+                                onClick={() => closeModal()} />
                             {!isEditing && (
                                 <><Button
                                     label="Salvar e Voltar à Listagem"
@@ -610,8 +598,7 @@ const EstablishmentsPage: React.FC = () => {
                                         fontWeight: 'bold',
                                         display: 'flex',
                                         alignItems: 'center',
-                                    }}
-                                />
+                                    }} />
                             )}
                         </div>
 
@@ -647,8 +634,7 @@ const EstablishmentsPage: React.FC = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder=""
                                 className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                style={{ border: "1px solid #1B405D80", }}
-                            />
+                                style={{ border: "1px solid #1B405D80", }} />
                         </div>
                         <DataTable
                             value={filteredEstablishments.slice(first, first + rows)}
@@ -814,8 +800,7 @@ const EstablishmentsPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -840,23 +825,22 @@ const EstablishmentsPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                         </DataTable>
 
                         {/*<Paginator
-                            first={first}
-                            rows={rows}
-                            totalRecords={establishments.length}
-                            onPageChange={(e) => {
-                                setFirst(e.first);
-                                setRows(e.rows);
-                            }}
-                        />*/}
+        first={first}
+        rows={rows}
+        totalRecords={establishments.length}
+        onPageChange={(e) => {
+            setFirst(e.first);
+            setRows(e.rows);
+        }}
+    />*/}
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

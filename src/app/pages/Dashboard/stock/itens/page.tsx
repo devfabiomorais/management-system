@@ -19,6 +19,7 @@ import BeatLoader from "react-spinners/BeatLoader";
 import { MultiSelect } from "primereact/multiselect";
 import { Dropdown } from "primereact/dropdown";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface Item {
     cod_item: string;
@@ -29,8 +30,8 @@ interface Item {
         cod_un: number;
     };
     dbs_familias?: {
-        cod_familia: number; 
-        nome: string; 
+        cod_familia: number;
+        nome: string;
         descricao: string
     };
     dbs_estabelecimentos_item?: Array<{
@@ -139,11 +140,11 @@ const ItensPage: React.FC = () => {
         clearInputs()
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:5000/api/itens", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/itens", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.items)
             setItens(response.data.items);
             setFormValues({ ...formValues, cod_item: (response.data.items.length + 1) })
@@ -167,11 +168,11 @@ const ItensPage: React.FC = () => {
     const handleDelete = async () => {
         if (itensIdToDelete === null) return;
         try {
-            await axios.put(`http://localhost:5000/api/itens/edit/${itensIdToDelete}`,  { situacao: "DESATIVADO" },{
+            await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Cliente removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -187,7 +188,7 @@ const ItensPage: React.FC = () => {
         }
     };
 
-    
+
 
     const closeModal = () => {
         clearInputs()
@@ -206,12 +207,12 @@ const ItensPage: React.FC = () => {
                 "situacao",
                 "cod_familia",
             ];
-    
+
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
                 return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
             });
-    
+
             if (selectedEstablishments.length === 0) {
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
@@ -220,7 +221,7 @@ const ItensPage: React.FC = () => {
                 });
                 return;
             }
-    
+
             if (isEmptyField) {
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
@@ -229,12 +230,12 @@ const ItensPage: React.FC = () => {
                 });
                 return;
             }
-    
+
             const formData = new FormData();
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
             formData.append("cod_item", formValues.cod_item);
-    
+
             // Passar cod_un e cod_familia corretamente
             if (formValues.cod_un?.cod_un) {
                 formData.append("cod_un", formValues.cod_un.cod_un.toString());
@@ -242,23 +243,23 @@ const ItensPage: React.FC = () => {
             if (formValues.cod_familia?.cod_familia) {
                 formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
             }
-    
+
             formData.append("situacao", formValues.situacao);
-    
+
             // Adicionar os estabelecimentos
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
                     formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
                 }
             });
-    
+
             // Enviar arquivo de anexo, se presente
             if (formValues.anexo) {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
             const response = await axios.put(
-                `http://localhost:5000/api/itens/edit/${selectedItem?.cod_item}`,
+                `https://back-end-birigui-w3dn.vercel.app/api/itens/edit/${selectedItem?.cod_item}`,
                 formData,
                 {
                     headers: {
@@ -267,11 +268,11 @@ const ItensPage: React.FC = () => {
                     },
                 }
             );
-    
+
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false);
                 clearInputs();
-                fetchItens(); 
+                fetchItens();
                 toast.success("Item atualizado com sucesso!", {
                     position: "top-right",
                     autoClose: 3000,
@@ -330,15 +331,15 @@ const ItensPage: React.FC = () => {
             formData.append("narrativa", formValues.narrativa);
             formData.append("cod_item", formValues.cod_item);
             if (formValues.cod_un && formValues.cod_un.cod_un !== undefined) {
-                formData.append("cod_un", formValues.cod_un.cod_un.toString());  
+                formData.append("cod_un", formValues.cod_un.cod_un.toString());
             }
-    
+
             formData.append("situacao", formValues.situacao);
-    
+
             if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
-                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString()); 
+                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
             }
-    
+
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
                     console.log(establishment.cod_estabelecimento)
@@ -352,7 +353,7 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("http://localhost:5000/api/itens/register", formData, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -392,12 +393,12 @@ const ItensPage: React.FC = () => {
                 "cod_familia",
                 "anexo",
             ];
-    
+
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
                 return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
             });
-    
+
             if (selectedEstablishments.length === 0) {
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
@@ -406,7 +407,7 @@ const ItensPage: React.FC = () => {
                 });
                 return;
             }
-    
+
             if (isEmptyField) {
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
@@ -415,21 +416,21 @@ const ItensPage: React.FC = () => {
                 });
                 return;
             }
-    
+
             const formData = new FormData();
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
             formData.append("cod_item", formValues.cod_item);
             if (formValues.cod_un && formValues.cod_un.cod_un !== undefined) {
-                formData.append("cod_un", formValues.cod_un.cod_un.toString());  
+                formData.append("cod_un", formValues.cod_un.cod_un.toString());
             }
-    
+
             formData.append("situacao", formValues.situacao);
-    
+
             if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
-                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString()); 
+                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
             }
-    
+
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
                     console.log(establishment.cod_estabelecimento)
@@ -438,20 +439,20 @@ const ItensPage: React.FC = () => {
                     console.error("Valor inválido para cod_estabelecimento:", establishment);
                 }
             });
-    
 
-    
+
+
             if (formValues.anexo) {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("http://localhost:5000/api/itens/register", formData, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false);
                 clearInputs();
@@ -479,33 +480,33 @@ const ItensPage: React.FC = () => {
         console.log(itens);
         try {
             // Requisição para obter as unidades de medida
-            const unitResponse = await axios.get("http://localhost:5000/api/unMedida", {
+            const unitResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/unMedida", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setUnits(unitResponse.data.units);
-    
+
             // Requisição para obter as famílias de itens
-            const familyResponse = await axios.get("http://localhost:5000/api/familia/itens/", {
+            const familyResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setFamilies(familyResponse.data.families);
 
-            const estabilishmentResponse = await axios.get("http://localhost:5000/api/estabilishment", {
+            const estabilishmentResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setEstablishments(estabilishmentResponse.data.estabelecimentos);
-    
+
             // Encontrar a unidade correspondente pelo ID
             const selectedUnit = unitResponse.data.units.find(
                 (unit: ItemMedida) => unit.cod_un === itens.dbs_unidades_medida?.cod_un
             );
-    
+
             // Encontrar a família correspondente pelo ID
             const selectedFamily = familyResponse.data.families.find(
                 (family: ItemFamilia) => family.cod_familia === itens.dbs_familias?.cod_familia
@@ -513,8 +514,8 @@ const ItensPage: React.FC = () => {
 
             // Encontrar o estabelecimento correspondente pelo ID
             const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
-                (es: Establishment) => 
-                    Array.isArray(itens.dbs_estabelecimentos_item) && 
+                (es: Establishment) =>
+                    Array.isArray(itens.dbs_estabelecimentos_item) &&
                     itens.dbs_estabelecimentos_item.some(
                         (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
                     )
@@ -528,14 +529,14 @@ const ItensPage: React.FC = () => {
                 dbs_unidades_medida: itens.dbs_unidades_medida,
                 cod_estabelecimento: itens.cod_estabelecimento || [],
                 situacao: itens.situacao || "",
-                cod_un: selectedUnit ? selectedUnit.cod_un : null, 
+                cod_un: selectedUnit ? selectedUnit.cod_un : null,
                 cod_familia: selectedFamily ? selectedFamily.cod_familia : null
             });
 
             setSelectedEstablishments(selectedEstabilishment ? [selectedEstabilishment] : []);
             setSelectedFamily(selectedFamily || null);
             setSelectedUnit(selectedUnit || null);
-    
+
             setSelectedItem(itens);
             setIsEditing(true);
             setVisible(true);
@@ -560,11 +561,11 @@ const ItensPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/estabilishment", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.estabelecimentos)
             setEstablishments(response.data.estabelecimentos);
             setLoading(false);
@@ -577,11 +578,11 @@ const ItensPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/unMedida", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/unMedida", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setUnits(response.data.units);
             setLoading(false);
         } catch (error) {
@@ -593,11 +594,11 @@ const ItensPage: React.FC = () => {
     const fetchFamilias = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/familia/itens/", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             setFamilies(response.data.families);
             setLoading(false);
         } catch (error) {
@@ -610,7 +611,7 @@ const ItensPage: React.FC = () => {
 
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -620,8 +621,7 @@ const ItensPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -632,22 +632,18 @@ const ItensPage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja desativar este item?</p>
                 </Dialog>
@@ -680,8 +676,7 @@ const ItensPage: React.FC = () => {
                                     value={formValues.cod_item}
                                     onChange={(e) => setFormValues({ ...formValues, cod_item: e.target.value })}
                                     className="w-full bg-slate-600 border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
 
                             <div className="">
@@ -695,8 +690,7 @@ const ItensPage: React.FC = () => {
                                     value={formValues.descricao}
                                     onChange={(e) => setFormValues({ ...formValues, descricao: e.target.value })}
                                     className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder=""
-                                />
+                                    placeholder="" />
                             </div>
                         </div>
 
@@ -711,8 +705,7 @@ const ItensPage: React.FC = () => {
                                 value={formValues.narrativa}
                                 onChange={(e) => setFormValues({ ...formValues, narrativa: e.target.value })}
                                 className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder=""
-                            />
+                                placeholder="" />
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -733,28 +726,26 @@ const ItensPage: React.FC = () => {
                                     placeholder="Selecione"
                                     filter
 
-                                    className="w-full"
-                                />
+                                    className="w-full" />
                             </div>
                             <div className="">
                                 <label htmlFor="family" className="block text-blue  font-medium">
                                     Família:
                                 </label>
                                 <Dropdown
-    id="family"
-    name="cod_familia"
-    value={selectedFamily}
-    onChange={(e) => {
-        console.log(e.value)
-        setSelectedFamily(e.value);
-        setFormValues({ ...formValues, cod_familia: e.value });
-    }}
-    options={families}  
-    optionLabel="nome"
-    placeholder="Selecione a Família"
-    filter
-    className="w-full md:w-14rem"
-/>
+                                    id="family"
+                                    name="cod_familia"
+                                    value={selectedFamily}
+                                    onChange={(e) => {
+                                        console.log(e.value);
+                                        setSelectedFamily(e.value);
+                                        setFormValues({ ...formValues, cod_familia: e.value });
+                                    }}
+                                    options={families}
+                                    optionLabel="nome"
+                                    placeholder="Selecione a Família"
+                                    filter
+                                    className="w-full md:w-14rem" />
                             </div>
 
                             <div className="">
@@ -772,8 +763,7 @@ const ItensPage: React.FC = () => {
                                     ]}
                                     placeholder="Selecione"
                                     className="w-full md:w-14rem"
-                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }}
-                                />
+                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
                         </div>
 
@@ -787,8 +777,7 @@ const ItensPage: React.FC = () => {
                                     id="photo"
                                     name="foto"
                                     onChange={handleFileChange}
-                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-12"
-                                />
+                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-12" />
                             </div>
                             <div className="">
                                 <label htmlFor="estabilishments" className="block text-blue  font-medium">
@@ -803,8 +792,7 @@ const ItensPage: React.FC = () => {
                                     filter
                                     placeholder="Selecione os Estabelecimentos"
                                     maxSelectedLabels={3}
-                                    className="w-full border text-black"
-                                />
+                                    className="w-full border text-black" />
                             </div>
 
 
@@ -831,8 +819,7 @@ const ItensPage: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                 }}
-                                onClick={() => closeModal()}
-                            />
+                                onClick={() => closeModal()} />
                             {!isEditing && (
                                 <><Button
                                     label="Salvar e Voltar à Listagem"
@@ -877,8 +864,7 @@ const ItensPage: React.FC = () => {
                                         fontWeight: 'bold',
                                         display: 'flex',
                                         alignItems: 'center',
-                                    }}
-                                />
+                                    }} />
                             )}
                         </div>
 
@@ -909,8 +895,7 @@ const ItensPage: React.FC = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder=""
                                 className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                style={{ border: "1px solid #1B405D80", }}
-                            />
+                                style={{ border: "1px solid #1B405D80", }} />
                         </div>
 
                         <DataTable
@@ -947,8 +932,7 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="descricao"
                                 header="Descrição"
@@ -967,8 +951,7 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="narrativa"
                                 header="Narrativa"
@@ -987,8 +970,7 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="dbs_unidades_medida.un"
                                 header="UN"
@@ -1007,8 +989,7 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 field="dt_hr_criacao"
                                 header="DT Cadastro"
@@ -1041,8 +1022,7 @@ const ItensPage: React.FC = () => {
                                     }).format(date);
 
                                     return <span>{formattedDate}</span>;
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -1068,8 +1048,7 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -1094,13 +1073,12 @@ const ItensPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }}
-                            />
+                                }} />
                         </DataTable>
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

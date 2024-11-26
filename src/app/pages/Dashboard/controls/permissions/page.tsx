@@ -18,6 +18,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface PermissionType {
     cod_permissao_grupo: number;
@@ -73,12 +74,12 @@ const PermissionsPage: React.FC = () => {
 
     const fetchModules = async () => {
         try {
-         
-            const response = await axios.get("http://localhost:5000/api/module", {
+
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/module", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             const modules = response.data.modules;
 
             const formattedData = modules.map((module: any) => [
@@ -100,28 +101,28 @@ const PermissionsPage: React.FC = () => {
 
     const fetchPermission = async () => {
         try {
-       
-            const response = await axios.get("http://localhost:5000/api/groupPermission", {
+
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.permissions);
-    
+
             const uniqueGroups: PermissionType[] = [];
             const seenGroupNames = new Set();
-    
+
             response.data.permissions.forEach((permission: PermissionType) => {
                 // Verifica o nome do grupo no campo `dbs_grupos`
                 const groupName = permission.dbs_grupos?.nome;
-    
+
                 // Adiciona ao conjunto apenas se o nome do grupo for único
                 if (groupName && !seenGroupNames.has(groupName)) {
                     seenGroupNames.add(groupName);
                     uniqueGroups.push(permission);
                 }
             });
-    
+
             setPermissions(uniqueGroups);
         } catch (error) {
             console.error("Erro ao carregar módulos:", error);
@@ -157,12 +158,12 @@ const PermissionsPage: React.FC = () => {
                 nome: nomeGroup,
                 permissoes: permissionsToSend
             })
-         
-            const response = await axios.post("http://localhost:5000/api/groupPermission/register", bodyForm, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/register", bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -211,17 +212,17 @@ const PermissionsPage: React.FC = () => {
                 nome: nomeGroup,
                 permissoes: permissionsToSend
             }
-       
-            const response = await axios.put(`http://localhost:5000/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
+
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
                 fetchPermission();
-        fetchModules();
+                fetchModules();
                 setIsEditing(false);
                 toast.success("Grupo de Permissão editado com sucesso!", {
                     position: "top-right",
@@ -303,13 +304,13 @@ const PermissionsPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (permissionIdToDelete === null) return;
-     
+
         try {
-            await axios.delete(`http://localhost:5000/api/groupPermission/${permissionIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/groupPermission/${permissionIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Grupo e permissões removidas com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -327,32 +328,32 @@ const PermissionsPage: React.FC = () => {
     };
 
     const handleEdit = async (perm: PermissionType) => {
-        const nomeGrupo = perm.dbs_grupos?.nome || ""; 
+        const nomeGrupo = perm.dbs_grupos?.nome || "";
         setNomeGroup(nomeGrupo);
-       
-        try { 
-            const responsePermissions = await axios.get("http://localhost:5000/api/groupPermission", {
+
+        try {
+            const responsePermissions = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
-            const responseModules = await axios.get("http://localhost:5000/api/module", {
+            });
+            const responseModules = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/module", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
-    
+            });
+
             const permissions = responsePermissions.data.permissions;
             const modules = responseModules.data.modules;
-    
+
             // Filtrar as permissões com base no cod_grupo
             const filteredPermissions = permissions.filter((permission: any) => permission.cod_grupo === perm.cod_grupo);
-    
+
             // Atualizar a descrição (nome do módulo) nas permissões filtradas
             const formattedData = filteredPermissions.map((permission: any) => {
                 const matchingModule = modules.find((module: any) => module.cod_modulo === permission.cod_modulo);
                 return [
-                    matchingModule ? matchingModule.descricao : permission.descricao, 
+                    matchingModule ? matchingModule.descricao : permission.descricao,
                     permission.cod_modulo,
                     permission.insercao === "SIM",
                     permission.edicao === "SIM",
@@ -360,9 +361,9 @@ const PermissionsPage: React.FC = () => {
                     permission.visualizacao === "SIM",
                 ];
             });
-    
-            console.log(formattedData); 
-    
+
+            console.log(formattedData);
+
             // Atualizar estados
             setLinhas(formattedData);
             setSelectedPermission(perm.cod_permissao_grupo);
@@ -373,7 +374,7 @@ const PermissionsPage: React.FC = () => {
     };
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -383,8 +384,7 @@ const PermissionsPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -393,22 +393,18 @@ const PermissionsPage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir este grupo?</p>
                 </Dialog>
@@ -433,12 +429,11 @@ const PermissionsPage: React.FC = () => {
                                         onChange={(e) => setSearch(e.target.value)}
                                         placeholder=""
                                         className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                        style={{ border: "1px solid #1B405D80", }}
-                                    />
+                                        style={{ border: "1px solid #1B405D80", }} />
                                 </div>
 
                                 <DataTable
-         value={filteredItens.slice(first, first + rows)}
+                                    value={filteredItens.slice(first, first + rows)}
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
@@ -471,8 +466,7 @@ const PermissionsPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         field="dbs_grupos.nome"
                                         header="Grupo de Permissões"
@@ -491,8 +485,7 @@ const PermissionsPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -518,13 +511,12 @@ const PermissionsPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
                                             <div className="flex gap-2 justify-center">
-                                                <button  onClick={() => openDialog(rowData.cod_permissao_grupo)}className="bg-red text-black p-1 rounded">
+                                                <button onClick={() => openDialog(rowData.cod_permissao_grupo)} className="bg-red text-black p-1 rounded">
                                                     <FaTrash className="text-white text-2xl" />
                                                 </button>
                                             </div>
@@ -544,8 +536,7 @@ const PermissionsPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                 </DataTable>
                             </div>
 
@@ -562,53 +553,51 @@ const PermissionsPage: React.FC = () => {
                                             value={nomeGroup}
                                             onChange={(e) => setNomeGroup(e.target.value)}
                                             className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                            placeholder=""
-                                        />
+                                            placeholder="" />
                                     </div>
 
 
                                     <div className="overflow-x-auto mt-5">
-    <table className="table-auto border-collapse border border-gray-300 w-full">
-        <thead className="bg-gray-100">
-            <tr>
-                <th className="border text-blue border-gray-300 px-4 py-2 text-left">Módulo</th>
-                <th className="border text-blue border-gray-300 px-4 py-2 text-center">Inserção</th>
-                <th className="border text-blue border-gray-300 px-4 py-2 text-center">Edição</th>
-                <th className="border text-blue border-gray-300 px-4 py-2 text-center">Deleção</th>
-                <th className="border text-blue border-gray-300 px-4 py-2 text-center">Visualização</th>
-            </tr>
-        </thead>
-        <tbody>
-            {linhas.map((linha, index) => (
-                <tr key={index}>
-                    <td className="border text-black border-gray-300 px-4 py-2 text-left">
-                        {linha[0]}
-                    </td>
-                    {linha.slice(2).map((coluna:any, colIndex:any) => (
-                        <td
-                            key={colIndex}
-                            className="border text-black border-gray-300 px-4 py-2 text-center"
-                        >
-                            {typeof coluna === "boolean" ? (
-                                <input
-                                    type="checkbox"
-                                    checked={coluna}
-                                    onChange={(e) => {
-                                        const updatedLinhas = [...linhas];
-                                        updatedLinhas[index][colIndex + 2] = e.target.checked;
-                                        setLinhas(updatedLinhas);
-                                    }}
-                                />
-                            ) : (
-                                coluna
-                            )}
-                        </td>
-                    ))}
-                </tr>
-            ))}
-        </tbody>
-    </table>
-</div>
+                                        <table className="table-auto border-collapse border border-gray-300 w-full">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    <th className="border text-blue border-gray-300 px-4 py-2 text-left">Módulo</th>
+                                                    <th className="border text-blue border-gray-300 px-4 py-2 text-center">Inserção</th>
+                                                    <th className="border text-blue border-gray-300 px-4 py-2 text-center">Edição</th>
+                                                    <th className="border text-blue border-gray-300 px-4 py-2 text-center">Deleção</th>
+                                                    <th className="border text-blue border-gray-300 px-4 py-2 text-center">Visualização</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {linhas.map((linha, index) => (
+                                                    <tr key={index}>
+                                                        <td className="border text-black border-gray-300 px-4 py-2 text-left">
+                                                            {linha[0]}
+                                                        </td>
+                                                        {linha.slice(2).map((coluna: any, colIndex: any) => (
+                                                            <td
+                                                                key={colIndex}
+                                                                className="border text-black border-gray-300 px-4 py-2 text-center"
+                                                            >
+                                                                {typeof coluna === "boolean" ? (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={coluna}
+                                                                        onChange={(e) => {
+                                                                            const updatedLinhas = [...linhas];
+                                                                            updatedLinhas[index][colIndex + 2] = e.target.checked;
+                                                                            setLinhas(updatedLinhas);
+                                                                        }} />
+                                                                ) : (
+                                                                    coluna
+                                                                )}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
 
 
 
@@ -626,8 +615,7 @@ const PermissionsPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
+                                            }} />)}
                                         {isEditing && (<Button
                                             label="Salvar Permissão"
                                             className="text-white"
@@ -641,8 +629,7 @@ const PermissionsPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
+                                            }} />)}
                                     </div>
                                 </div>
                             </div>
@@ -651,7 +638,7 @@ const PermissionsPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface Item {
     cod_un: number;
@@ -39,7 +40,7 @@ const UnMedidaPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnidade, setSelectedUnidade] = useState(0);
 
-   
+
 
     const filteredItens = itens.filter(
         (item) =>
@@ -59,11 +60,11 @@ const UnMedidaPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:5000/api/unMedida", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/unMedida", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             console.log(response.data.units)
             setItens(response.data.units);
             setLoading(false)
@@ -82,17 +83,17 @@ const UnMedidaPage: React.FC = () => {
             });
             return;
         }
-  
+
         try {
             const bodyForm = {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.post("http://localhost:5000/api/unMedida/register", bodyForm, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/unMedida/register", bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -123,17 +124,17 @@ const UnMedidaPage: React.FC = () => {
             });
             return;
         }
-      
+
         try {
             const bodyForm = {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`http://localhost:5000/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -170,13 +171,13 @@ const UnMedidaPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (unidadeIdToDelete === null) return;
-      
+
         try {
-            await axios.delete(`http://localhost:5000/api/unMedida/${unidadeIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/unMedida/${unidadeIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Unidade removida com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -200,7 +201,7 @@ const UnMedidaPage: React.FC = () => {
     };
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
                 {loading && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -209,32 +210,27 @@ const UnMedidaPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
-<Dialog
+                <Dialog
                     header="Confirmar Exclusão"
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir esta unidade de médida?</p>
                 </Dialog>
@@ -259,8 +255,7 @@ const UnMedidaPage: React.FC = () => {
                                         onChange={(e) => setSearch(e.target.value)}
                                         placeholder=""
                                         className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                        style={{ border: "1px solid #1B405D80", }}
-                                    />
+                                        style={{ border: "1px solid #1B405D80", }} />
                                 </div>
 
                                 <DataTable
@@ -297,8 +292,7 @@ const UnMedidaPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         field="un"
                                         header="UN"
@@ -317,8 +311,7 @@ const UnMedidaPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         field="descricao"
                                         header="Descrição"
@@ -337,8 +330,7 @@ const UnMedidaPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -364,8 +356,7 @@ const UnMedidaPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -390,8 +381,7 @@ const UnMedidaPage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                 </DataTable>
                             </div>
 
@@ -406,10 +396,9 @@ const UnMedidaPage: React.FC = () => {
                                             type="text"
                                             id="un"
                                             value={medida}
-                                            onChange={(e=> setMedida(e.currentTarget.value))}
+                                            onChange={(e => setMedida(e.currentTarget.value))}
                                             className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                            placeholder=""
-                                        />
+                                            placeholder="" />
                                     </div>
 
                                     <div className="mt-5">
@@ -420,14 +409,13 @@ const UnMedidaPage: React.FC = () => {
                                             type="text"
                                             id="description"
                                             value={descricao}
-                                            onChange={(e=> setDescricao(e.currentTarget.value))}
+                                            onChange={(e => setDescricao(e.currentTarget.value))}
                                             className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                            placeholder=""
-                                        />
+                                            placeholder="" />
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                        {!isEditing &&(<Button
+                                        {!isEditing && (<Button
                                             label="Salvar Unidade"
                                             className="text-white"
                                             icon="pi pi-check"
@@ -440,9 +428,8 @@ const UnMedidaPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
-                                        {isEditing &&(<Button
+                                            }} />)}
+                                        {isEditing && (<Button
                                             label="Salvar Unidade"
                                             className="text-white"
                                             icon="pi pi-check"
@@ -455,8 +442,7 @@ const UnMedidaPage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
+                                            }} />)}
                                     </div>
                                 </div>
 
@@ -465,7 +451,7 @@ const UnMedidaPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 

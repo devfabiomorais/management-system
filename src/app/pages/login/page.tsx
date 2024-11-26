@@ -34,10 +34,11 @@ export default function Login() {
     };
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", payload);
+      const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/auth/login", payload);
 
       if (response.status === 200) {
         setToken(response.data.token)
+        localStorage.setItem("@Birigui:token", response.data.token);
         localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo)
         toast.success("Login realizado com sucesso!", {
           position: "top-right",

@@ -4,6 +4,8 @@ import SidebarLayout from "@/app/components/Sidebar";
 import { FaCubes, FaLock, FaStore } from "react-icons/fa";
 import { FaUsers, FaFolderPlus } from "react-icons/fa6";
 import { redirect } from "next/navigation";
+import { TokenProvider } from "@/app/hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 export default function ControlsPage() {
     const [openedCategory, setOpenedCategory] = useState(false);
@@ -53,6 +55,8 @@ export default function ControlsPage() {
                     </div>
                 </div>
             </SidebarLayout>
+            <Footer/>
         </div>
+
     );
 }

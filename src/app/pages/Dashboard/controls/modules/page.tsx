@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { Dialog } from "primereact/dialog";
 import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
 
 interface ModuleType {
     cod_modulo: number;
@@ -49,21 +50,21 @@ const ModulePage: React.FC = () => {
         setDescricao("")
         setCodModuloPai("")
     }
-   
+
 
 
     const fetchModules = async () => {
         try {
-        
-            const response = await axios.get("http://localhost:5000/api/module", {
+
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/module", {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             const modules = response.data.modules;
             const modulesWithParentName = modules.map((e: ModuleType) => {
                 const parentModule = modules.find((m: ModuleType) => JSON.stringify(m.cod_modulo) === JSON.stringify(e.cod_modulo_pai));
-  
+
                 if (parentModule) {
                     e.modulo_pai_nome = parentModule.descricao;
                 }
@@ -94,12 +95,12 @@ const ModulePage: React.FC = () => {
                 descricao: descricao,
                 cod_modulo_pai: codModuloPai
             }
-        
-            const response = await axios.post("http://localhost:5000/api/module/register", bodyForm, {
+
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/module/register", bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -136,12 +137,12 @@ const ModulePage: React.FC = () => {
                 descricao: descricao,
                 cod_modulo_pai: codModuloPai
             }
-         
-            const response = await axios.put(`http://localhost:5000/api/module/edit/${selectedModule}`, bodyForm, {
+
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/module/edit/${selectedModule}`, bodyForm, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false)
                 clearInputs();
@@ -178,13 +179,13 @@ const ModulePage: React.FC = () => {
 
     const handleDelete = async () => {
         if (moduleIdToDelete === null) return;
-      
+
         try {
-            await axios.delete(`http://localhost:5000/api/module/${moduleIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/module/${moduleIdToDelete}`, {
                 headers: {
-                  Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
-              });
+            });
             toast.success("Módulo removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -213,7 +214,7 @@ const ModulePage: React.FC = () => {
     );
 
     return (
-        <SidebarLayout>
+        <><SidebarLayout>
             <div className="flex justify-center h-screen">
 
                 {loading && (
@@ -223,8 +224,7 @@ const ModulePage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                            data-testid="loader" />
                     </div>
                 )}
 
@@ -233,22 +233,18 @@ const ModulePage: React.FC = () => {
                     visible={modalDeleteVisible}
                     style={{ width: "auto" }}
                     onHide={closeDialog}
-                    footer={
-                        <div>
-                            <Button
-                                label="Não"
-                                icon="pi pi-times"
-                                onClick={closeDialog}
-                                className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
-                            />
-                            <Button
-                                label="Sim"
-                                icon="pi pi-check"
-                                onClick={handleDelete}
-                                className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
-                            />
-                        </div>
-                    }
+                    footer={<div>
+                        <Button
+                            label="Não"
+                            icon="pi pi-times"
+                            onClick={closeDialog}
+                            className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all" />
+                        <Button
+                            label="Sim"
+                            icon="pi pi-check"
+                            onClick={handleDelete}
+                            className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
+                    </div>}
                 >
                     <p>Tem certeza que deseja excluir esta módulo?</p>
                 </Dialog>
@@ -266,8 +262,7 @@ const ModulePage: React.FC = () => {
                                     <InputText
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                                    />
+                                        className="p-inputtext-sm border rounded-md ml-1 text-black pl-1" />
                                 </div>
                                 <DataTable
                                     value={filteredItens.slice(first, first + rows)}
@@ -332,8 +327,7 @@ const ModulePage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -359,8 +353,7 @@ const ModulePage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -385,8 +378,7 @@ const ModulePage: React.FC = () => {
                                             backgroundColor: "#D9D9D980",
                                             verticalAlign: "middle",
                                             padding: "10px",
-                                        }}
-                                    />
+                                        }} />
                                 </DataTable>
                             </div>
 
@@ -401,8 +393,7 @@ const ModulePage: React.FC = () => {
                                         id="descricao"
                                         value={descricao}
                                         onChange={(e) => setDescricao(e.target.value)}
-                                        className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    />
+                                        className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8" />
 
                                     <label htmlFor="codModuloPai" className="block text-blue font-bold mt-4">
                                         Módulo Pai:
@@ -439,8 +430,7 @@ const ModulePage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
+                                            }} />)}
                                         {isEditing && (<Button
                                             label="Salvar Módulo"
                                             className="text-white"
@@ -454,8 +444,7 @@ const ModulePage: React.FC = () => {
                                                 fontWeight: 'bold',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                            }}
-                                        />)}
+                                            }} />)}
                                     </div>
 
                                 </div>
@@ -464,7 +453,7 @@ const ModulePage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout>
+        </SidebarLayout><Footer /></>
     );
 };
 
