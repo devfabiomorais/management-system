@@ -17,6 +17,8 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 
 interface Client {
     cod_cliente: number;
@@ -38,7 +40,11 @@ interface Client {
 }
 
 const ClientsPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Comercial");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [visible, setVisible] = useState(false);
@@ -640,6 +646,7 @@ const ClientsPage: React.FC = () => {
                                 Clientes
                             </h2>
                         </div>
+                        {permissions?.insercao === "SIM" && (
                         <div>
                             <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
                                 <IoAddCircleOutline
@@ -647,6 +654,7 @@ const ClientsPage: React.FC = () => {
                                     className="text-white text-center" />
                             </button>
                         </div>
+                        )}
                     </div>
                     <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
                         <div className="mb-4 flex justify-end">
@@ -822,6 +830,7 @@ const ClientsPage: React.FC = () => {
 
                                     return <span>{formattedDate}</span>;
                                 }} />
+                                  {permissions?.edicao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -848,6 +857,8 @@ const ClientsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
+                                  {permissions?.delecao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -873,6 +884,7 @@ const ClientsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
                         </DataTable>
                     </div>
                 </div>

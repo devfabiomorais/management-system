@@ -19,6 +19,8 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 
 interface PermissionType {
     cod_permissao_grupo: number;
@@ -42,10 +44,13 @@ interface PermissionType {
 }
 
 const PermissionsPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Controles");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
-
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedPermission, setSelectedPermission] = useState(0);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
@@ -53,7 +58,7 @@ const PermissionsPage: React.FC = () => {
     const [permissionIdToDelete, setPermissionIdToDelete] = useState<number | null>(null);
 
     const [visible, setVisible] = useState(false);
-    const [permissions, setPermissions] = useState<PermissionType[]>([]);
+    const [permissionsType, setPermissionsType] = useState<PermissionType[]>([]);
     const colunas = ["Módulo", <IoAddCircleOutline className="text-3xl " />, <MdOutlineModeEditOutline className="text-2xl " />, <FaTrash className="text-2xl" />, <RiListView className="text-2xl" />];
     const [linhas, setLinhas] = useState<any[]>([]);
 
@@ -123,7 +128,7 @@ const PermissionsPage: React.FC = () => {
                 }
             });
 
-            setPermissions(uniqueGroups);
+            setPermissionsType(uniqueGroups);
         } catch (error) {
             console.error("Erro ao carregar módulos:", error);
         }
@@ -254,7 +259,7 @@ const PermissionsPage: React.FC = () => {
     };
 
 
-    const filteredItens = permissions.filter(
+    const filteredItens = permissionsType.filter(
         (perm) =>
             perm.cod_grupo.toLocaleString().includes(search) ||
             perm.nome.toLocaleString().includes(search.toLowerCase())
@@ -486,6 +491,7 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                            {permissions?.edicao === "SIM" && (
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -512,6 +518,8 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    )}
+                                            {permissions?.delecao === "SIM" && (
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -537,6 +545,7 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    )}
                                 </DataTable>
                             </div>
 
@@ -602,7 +611,9 @@ const PermissionsPage: React.FC = () => {
 
 
                                     <div className="flex justify-end mt-5">
-                                        {!isEditing && (<Button
+                                    {(permissions?.insercao)?.toString() === "SIM" && (
+                                        <>
+                                         {!isEditing && (<Button
                                             label="Salvar Permissão"
                                             className="text-white"
                                             icon="pi pi-check"
@@ -630,6 +641,8 @@ const PermissionsPage: React.FC = () => {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                             }} />)}
+                                        </>)}
+                                       
                                     </div>
                                 </div>
                             </div>

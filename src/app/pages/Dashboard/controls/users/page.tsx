@@ -20,6 +20,8 @@ import BeatLoader from "react-spinners/BeatLoader";
 import { MultiSelect } from "primereact/multiselect";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 
 interface User {
     cod_usuario: number;
@@ -57,7 +59,11 @@ interface Group {
 }
 
 const UsersPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Controles");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
@@ -104,14 +110,24 @@ const UsersPage: React.FC = () => {
     const handleSaveEdit = async () => {
         setLoading(true)
         try {
-            const requiredFields = [
-                "nome",
-                "email",
-                "usuario",
-                "cod_grupo",
-                "situacao",
-            ];
-
+            let requiredFields: any[] = []
+            if(isEditing){
+                requiredFields = [
+                    "nome",
+                    "email",
+                    "usuario",
+                    "situacao",
+                ];
+            }else {
+                requiredFields = [
+                    "nome",
+                    "email",
+                    "usuario",
+                    "cod_grupo",
+                    "situacao",
+                ];
+            }
+           
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
                 return value === "" || value === null || value === undefined;
@@ -157,37 +173,40 @@ const UsersPage: React.FC = () => {
         console.log(users);
 
         try {
-            const groups = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups/", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            //if(users.cod_grupo !== null){
+                const groups = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                const selectedGroup = groups.data.groups.find(
+                    (group: Group) => group.cod_grupo === users.cod_grupo
+                );
+    
+                const estabilishmentResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                // Encontrar o estabelecimento correspondente pelo ID
+                const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
+                    (es: Establishment) =>
+                        Array.isArray(users.dbs_estabelecimentos_usuario) &&
+                        users.dbs_estabelecimentos_usuario.some(
+                            (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
+                        )
+                );
+                setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
+                setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
+                setEstablishments(estabilishmentResponse.data.estabelecimentos);
+           // }
+            
 
-            const selectedGroup = groups.data.groups.find(
-                (group: Group) => group.cod_grupo === users.cod_grupo
-            );
-
-            const estabilishmentResponse = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/estabilishment/", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            setEstablishments(estabilishmentResponse.data.estabelecimentos);
-
-            // Encontrar o estabelecimento correspondente pelo ID
-            const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
-                (es: Establishment) =>
-                    Array.isArray(users.dbs_estabelecimentos_usuario) &&
-                    users.dbs_estabelecimentos_usuario.some(
-                        (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
-                    )
-            );
-
+            
+        
             setFormValues(users);
             setSelectedUser(users);
-            setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
-            setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
-
+           
             setIsEditing(true);
             setVisible(true);
         } catch (error) {
@@ -357,19 +376,37 @@ const UsersPage: React.FC = () => {
     }, []);
 
     const fetchUsers = async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/users/", {
+            const responseUsers = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/users/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.users)
-            setUsers(response.data.users);
-            setLoading(false)
+    
+            const responseGroup = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+    
+            const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
+                const matchingGroup = responseGroup.data.groups.find(
+                    (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
+                );
+            
+                return {
+                    ...user,
+                    nomeGrupo: matchingGroup ? matchingGroup.nome : "",
+                };
+            });
+    
+            //console.log("useerr", usersWithGroupName); 
+            setUsers(usersWithGroupName);
+            setLoading(false);
         } catch (error) {
-            setLoading(false)
-            console.error("Erro ao carregar usuarios:", error);
+            setLoading(false);
+            console.error("Erro ao carregar usuários:", error);
         }
     };
 
@@ -596,7 +633,7 @@ const UsersPage: React.FC = () => {
                                     options={groupPermissions}
                                     optionLabel="nome"
                                     filter
-                                    placeholder="Selecione os Estabelecimentos"
+                                    placeholder="Selecione um grupo"
                                     className="w-full border text-black" />
                             </div>
 
@@ -695,12 +732,13 @@ const UsersPage: React.FC = () => {
                         <div>
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Usuários</h2>
                         </div>
-
+                        {permissions?.insercao === "SIM" && (
                         <div>
                             <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
                                 <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                             </button>
                         </div>
+                        )}
                     </div>
 
 
@@ -827,7 +865,7 @@ const UsersPage: React.FC = () => {
                                     padding: "10px",
                                 }} />
                             <Column
-                                field="cod_grupo"
+                                field="nomeGrupo"
                                 header="Grupo"
                                 className="text-black"
                                 style={{
@@ -845,6 +883,7 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                                    {permissions?.edicao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -870,6 +909,8 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
+                                {permissions?.delecao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -895,6 +936,7 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
                         </DataTable>
 
 

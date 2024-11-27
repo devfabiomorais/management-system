@@ -4,6 +4,7 @@ import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import { TokenProvider } from "../app/hook/accessToken";
+import { GroupProvider } from "./hook/acessGroup";
 const InterRegular = localFont({
   src: "./assets/fonts/Inter_18pt-Regular.ttf",
   variable: "--font-inter-regular",
@@ -32,10 +33,13 @@ export default function RootLayout({
         className={`${InterRegular.variable} ${InterBold.variable} antialiased`}
       >
         {
-           <TokenProvider>
-            <ToastContainer />
-            {children}
-           </TokenProvider>
+          <GroupProvider>
+            <TokenProvider>
+              <ToastContainer />
+              {children}
+            </TokenProvider>
+          </GroupProvider>
+
         }
       </body>
     </html>

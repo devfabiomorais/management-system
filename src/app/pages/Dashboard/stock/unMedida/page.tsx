@@ -12,12 +12,13 @@ import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
 import { FaTrash } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
-import { IoAddCircleOutline } from "react-icons/io5";
 import axios from "axios";
 import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 
 interface Item {
     cod_un: number;
@@ -26,7 +27,11 @@ interface Item {
 }
 
 const UnMedidaPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Estoque");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [itens, setItens] = useState<Item[]>([]);
@@ -39,8 +44,6 @@ const UnMedidaPage: React.FC = () => {
     const [rows, setRows] = useState(10);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnidade, setSelectedUnidade] = useState(0);
-
-
 
     const filteredItens = itens.filter(
         (item) =>
@@ -331,32 +334,36 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                    <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                                </button>
+                                         {permissions?.edicao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                    </button>
 
-                                            </div>
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                         )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                    
+                                    {permissions?.delecao === "SIM" && (
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -382,6 +389,7 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    )}
                                 </DataTable>
                             </div>
 
@@ -415,34 +423,45 @@ const UnMedidaPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                        {!isEditing && (<Button
-                                            label="Salvar Unidade"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => createUnMedida()}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        {isEditing && (<Button
-                                            label="Salvar Unidade"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => editUnMedida()}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
+                                    {permissions?.insercao === "SIM" && (
+                                            <>
+                                                {!isEditing && (
+                                                    <Button
+                                                        label="Salvar Unidade"
+                                                        className="text-white"
+                                                        icon="pi pi-check"
+                                                        onClick={() => createUnMedida()}
+                                                        style={{
+                                                            backgroundColor: '#28a745',
+                                                            border: '1px solid #28a745',
+                                                            padding: '0.5rem 1.5rem',
+                                                            fontSize: '14px',
+                                                            fontWeight: 'bold',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                        }}
+                                                    />
+                                                )}
+
+                                                {isEditing && (
+                                                    <Button
+                                                        label="Salvar Unidade"
+                                                        className="text-white"
+                                                        icon="pi pi-check"
+                                                        onClick={() => editUnMedida()}
+                                                        style={{
+                                                            backgroundColor: '#28a745',
+                                                            border: '1px solid #28a745',
+                                                            padding: '0.5rem 1.5rem',
+                                                            fontSize: '14px',
+                                                            fontWeight: 'bold',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                        }}
+                                                    />
+                                                )}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 

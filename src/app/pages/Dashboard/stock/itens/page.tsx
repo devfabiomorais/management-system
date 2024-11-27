@@ -20,6 +20,8 @@ import { MultiSelect } from "primereact/multiselect";
 import { Dropdown } from "primereact/dropdown";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import { useGroup } from "@/app/hook/acessGroup";
+import useUserPermissions from "@/app/hook/useUserPermissions";
 
 interface Item {
     cod_item: string;
@@ -72,7 +74,11 @@ interface Establishment {
 }
 
 const ItensPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Estoque");
     const [visible, setVisible] = useState(false);
     const [itens, setItens] = useState<Item[]>([]);
     let [loading, setLoading] = useState(false);
@@ -879,12 +885,13 @@ const ItensPage: React.FC = () => {
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Itens</h2>
                         </div>
 
-
+                        {permissions?.insercao === "SIM" && (
                         <div>
                             <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
                                 <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                             </button>
                         </div>
+                        )}
                     </div>
 
                     <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
@@ -1023,6 +1030,7 @@ const ItensPage: React.FC = () => {
 
                                     return <span>{formattedDate}</span>;
                                 }} />
+                                {permissions?.edicao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -1049,6 +1057,8 @@ const ItensPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
+                                {permissions?.delecao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -1074,6 +1084,7 @@ const ItensPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
                         </DataTable>
                     </div>
                 </div>

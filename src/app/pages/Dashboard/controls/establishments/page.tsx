@@ -18,6 +18,8 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 
 interface Establishment {
     cod_estabelecimento: number;
@@ -32,7 +34,11 @@ interface Establishment {
 }
 
 const EstablishmentsPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Controles");
     const [visible, setVisible] = useState(false);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [formValues, setFormValues] = useState<Establishment>({
@@ -619,12 +625,13 @@ const EstablishmentsPage: React.FC = () => {
                         <div>
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Estabelecimentos</h2>
                         </div>
-
+                        {permissions?.insercao === "SIM" && (
                         <div>
                             <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
                                 <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                             </button>
                         </div>
+                        )}
                     </div>
                     <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
                         <div className="mb-4 flex justify-end">
@@ -774,7 +781,7 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
-
+   {permissions?.edicao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -801,6 +808,8 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
+                               {permissions?.delecao === "SIM" && (
                             <Column
                                 header=""
                                 body={(rowData) => (
@@ -826,6 +835,7 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            )}
                         </DataTable>
 
                         {/*<Paginator

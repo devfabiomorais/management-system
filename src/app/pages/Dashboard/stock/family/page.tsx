@@ -18,6 +18,8 @@ import { toast } from "react-toastify";
 import BeatLoader from "react-spinners/BeatLoader";
 import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
 interface Item {
     cod_familia: number;
     descricao: string;
@@ -25,7 +27,11 @@ interface Item {
 }
 
 const FamilyPage: React.FC = () => {
+    const { groupCode } = useGroup();
     const { token } = useToken();
+    const {
+        permissions,
+    } = useUserPermissions(groupCode ?? 0, "Estoque");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [itens, setItens] = useState<Item[]>([]);
@@ -333,6 +339,7 @@ const FamilyPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                                {permissions?.edicao === "SIM" && (
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -359,6 +366,8 @@ const FamilyPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    )}
+                                                {permissions?.delecao === "SIM" && (
                                     <Column
                                         header=""
                                         body={(rowData) => (
@@ -384,6 +393,7 @@ const FamilyPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    )}
                                 </DataTable>
                             </div>
 
@@ -417,6 +427,8 @@ const FamilyPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
+                                    {permissions?.insercao === "SIM" && (
+                                            <>
                                         {!isEditing && (<Button
                                             label="Salvar Família"
                                             className="text-white"
@@ -445,7 +457,8 @@ const FamilyPage: React.FC = () => {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                             }} />)}
-
+ </>
+                                        )}
                                     </div>
                                 </div>
 
