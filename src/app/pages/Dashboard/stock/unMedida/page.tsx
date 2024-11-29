@@ -35,6 +35,8 @@ const UnMedidaPage: React.FC = () => {
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [itens, setItens] = useState<Item[]>([]);
+    const [isUnMedidaCreateDisabled, setIsUnMedidaCreateDisabled] = useState(false);
+    const [isUnMedidaEditDisabled, setIsUnMedidaEditDisabled] = useState(false);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [unidadeIdToDelete, setUnidadeIdToDelete] = useState<number | null>(null);
     const [search, setSearch] = useState("");
@@ -78,7 +80,9 @@ const UnMedidaPage: React.FC = () => {
     };
 
     const createUnMedida = async () => {
+        setIsUnMedidaCreateDisabled(true)
         if (descricao === "" || medida === "") {
+            setIsUnMedidaCreateDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -98,6 +102,7 @@ const UnMedidaPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setIsUnMedidaCreateDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchUnits();
@@ -106,6 +111,7 @@ const UnMedidaPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setIsUnMedidaCreateDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar a unidade.", {
                     position: "top-right",
@@ -113,13 +119,16 @@ const UnMedidaPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setIsUnMedidaCreateDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar unidades de medidas:", error);
         }
     }
 
     const editUnMedida = async () => {
+        setIsUnMedidaEditDisabled(true)
         if (descricao === "" || medida === "") {
+            setIsUnMedidaEditDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -139,6 +148,7 @@ const UnMedidaPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setIsUnMedidaEditDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchUnits();
@@ -148,6 +158,7 @@ const UnMedidaPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setIsUnMedidaEditDisabled(false)
                 setLoading(false)
                 setIsEditing(false);
                 toast.error("Erro ao editar a unidade.", {
@@ -156,6 +167,7 @@ const UnMedidaPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setIsUnMedidaEditDisabled(false)
             setLoading(false)
             setIsEditing(false);
             console.error("Erro ao editar a unidade de médida:", error);
@@ -440,6 +452,7 @@ const UnMedidaPage: React.FC = () => {
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                         }}
+                                                        disabled={isUnMedidaCreateDisabled}
                                                     />
                                                 )}
 
@@ -449,6 +462,7 @@ const UnMedidaPage: React.FC = () => {
                                                         className="text-white"
                                                         icon="pi pi-check"
                                                         onClick={() => editUnMedida()}
+                                                        disabled={isUnMedidaEditDisabled}
                                                         style={{
                                                             backgroundColor: '#28a745',
                                                             border: '1px solid #28a745',

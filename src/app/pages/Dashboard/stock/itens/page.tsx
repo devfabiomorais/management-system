@@ -79,6 +79,9 @@ const ItensPage: React.FC = () => {
     const {
         permissions,
     } = useUserPermissions(groupCode ?? 0, "Estoque");
+    const [isItemCreateDisabled, setItemCreateDisabled] = useState(false);
+    const [isItemCreateDisabledReturn, setItemCreateDisabledReturn] = useState(false);
+    const [isItemEditDisabled, setIsItemEditDisabled] = useState(false);
     const [visible, setVisible] = useState(false);
     const [itens, setItens] = useState<Item[]>([]);
     let [loading, setLoading] = useState(false);
@@ -203,6 +206,7 @@ const ItensPage: React.FC = () => {
     }
 
     const handleSaveEdit = async () => {
+        setIsItemEditDisabled(true)
         setLoading(true);
         try {
             // Verificar campos obrigatórios
@@ -220,6 +224,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (selectedEstablishments.length === 0) {
+                setIsItemEditDisabled(false)
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -229,6 +234,7 @@ const ItensPage: React.FC = () => {
             }
 
             if (isEmptyField) {
+                setIsItemEditDisabled(false)
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -276,6 +282,7 @@ const ItensPage: React.FC = () => {
             );
 
             if (response.status >= 200 && response.status < 300) {
+                setIsItemEditDisabled(false)
                 setLoading(false);
                 clearInputs();
                 fetchItens();
@@ -285,6 +292,7 @@ const ItensPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setIsItemEditDisabled(false)
                 setLoading(false);
                 toast.error("Erro ao atualizar item.", {
                     position: "top-right",
@@ -292,12 +300,14 @@ const ItensPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setIsItemEditDisabled(false)
             setLoading(false);
             console.error("Erro ao atualizar item:", error);
         }
     };
 
     const handleSave = async () => {
+        setItemCreateDisabled(true)
         setLoading(true);
         try {
             const requiredFields = [
@@ -315,6 +325,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (selectedEstablishments.length === 0) {
+                setItemCreateDisabled(false)
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -324,6 +335,7 @@ const ItensPage: React.FC = () => {
             }
 
             if (isEmptyField) {
+                setItemCreateDisabled(false)
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -368,6 +380,7 @@ const ItensPage: React.FC = () => {
 
 
             if (response.status >= 200 && response.status < 300) {
+                setItemCreateDisabled(false)
                 setLoading(false);
                 clearInputs();
                 fetchItens();
@@ -376,6 +389,7 @@ const ItensPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setItemCreateDisabled(false)
                 setLoading(false);
                 toast.error("Erro ao salvar item.", {
                     position: "top-right",
@@ -383,12 +397,14 @@ const ItensPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setItemCreateDisabled(false)
             setLoading(false);
             console.error("Erro ao salvar item:", error);
         }
     };
 
     const handleSaveReturn = async () => {
+        setItemCreateDisabledReturn(true)
         setLoading(true);
         try {
             const requiredFields = [
@@ -406,6 +422,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (selectedEstablishments.length === 0) {
+                setItemCreateDisabledReturn(false)
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -415,6 +432,7 @@ const ItensPage: React.FC = () => {
             }
 
             if (isEmptyField) {
+                setItemCreateDisabledReturn(false)
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -460,6 +478,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
+                setItemCreateDisabledReturn(false)
                 setLoading(false);
                 clearInputs();
                 fetchItens();
@@ -469,6 +488,7 @@ const ItensPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setItemCreateDisabledReturn(false)
                 setLoading(false);
                 toast.error("Erro ao salvar item.", {
                     position: "top-right",
@@ -476,6 +496,7 @@ const ItensPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setItemCreateDisabledReturn(false)
             setLoading(false);
             console.error("Erro ao salvar item:", error);
         }
@@ -832,6 +853,7 @@ const ItensPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-refresh"
                                     onClick={handleSaveReturn}
+                                    disabled={isItemCreateDisabledReturn}
                                     style={{
                                         backgroundColor: '#007bff',
                                         border: '1px solid #007bff',
@@ -844,6 +866,7 @@ const ItensPage: React.FC = () => {
                                         label="Salvar e Adicionar Outro"
                                         className="text-white"
                                         icon="pi pi-check"
+                                        disabled={isItemCreateDisabled}
                                         onClick={handleSave}
                                         style={{
                                             backgroundColor: '#28a745',
@@ -862,6 +885,7 @@ const ItensPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-check"
                                     onClick={handleSaveEdit}
+                                    disabled={isItemEditDisabled}
                                     style={{
                                         backgroundColor: '#28a745',
                                         border: '1px solid #28a745',

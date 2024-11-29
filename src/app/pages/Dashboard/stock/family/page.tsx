@@ -28,6 +28,8 @@ interface Item {
 
 const FamilyPage: React.FC = () => {
     const { groupCode } = useGroup();
+    const [familyCreateDisabled, setFamilyCreateDisabled] = useState(false);
+    const [familyEditDisabled, setFamilyEditDisabled] = useState(false);
     const { token } = useToken();
     const {
         permissions,
@@ -81,7 +83,9 @@ const FamilyPage: React.FC = () => {
     };
 
     const createItem = async () => {
+        setFamilyCreateDisabled(true)
         if (descricao === "" || nome === "") {
+            setFamilyCreateDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -102,6 +106,7 @@ const FamilyPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setFamilyCreateDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchFamilias();
@@ -110,6 +115,7 @@ const FamilyPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setFamilyCreateDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar o item.", {
                     position: "top-right",
@@ -117,13 +123,16 @@ const FamilyPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setFamilyCreateDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar os items:", error);
         }
     }
 
     const editItem = async () => {
+        setFamilyEditDisabled(true)
         if (descricao === "" || nome === "") {
+            setFamilyEditDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -144,6 +153,7 @@ const FamilyPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setFamilyEditDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchFamilias();
@@ -153,6 +163,7 @@ const FamilyPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setFamilyEditDisabled(false)
                 setLoading(false)
                 setIsEditing(false);
                 toast.error("Erro ao editar o item.", {
@@ -161,6 +172,7 @@ const FamilyPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setFamilyEditDisabled(false)
             setLoading(false)
             setIsEditing(false);
             console.error("Erro ao editar o item:", error);
@@ -434,6 +446,7 @@ const FamilyPage: React.FC = () => {
                                             className="text-white"
                                             icon="pi pi-check"
                                             onClick={() => createItem()}
+                                            disabled={familyCreateDisabled}
                                             style={{
                                                 backgroundColor: '#28a745',
                                                 border: '1px solid #28a745',
@@ -448,6 +461,7 @@ const FamilyPage: React.FC = () => {
                                             className="text-white"
                                             icon="pi pi-check"
                                             onClick={() => editItem()}
+                                            disabled={familyEditDisabled}
                                             style={{
                                                 backgroundColor: '#28a745',
                                                 border: '1px solid #28a745',

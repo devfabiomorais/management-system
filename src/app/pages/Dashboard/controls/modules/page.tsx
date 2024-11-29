@@ -34,6 +34,9 @@ const ModulePage: React.FC = () => {
     } = useUserPermissions(groupCode ?? 0, "Controles");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
+    const [moduleCreateDisabled, setModuleCreateDisabled] =
+    useState(false);
+  const [moduleEditDisabled, setModuleEditDisabled] = useState(false);
     const [modules, setModules] = useState<ModuleType[]>([]);
     const [search, setSearch] = useState("");
     const [first, setFirst] = useState(0);
@@ -84,7 +87,9 @@ const ModulePage: React.FC = () => {
     };
 
     const createModulo = async () => {
+        setModuleCreateDisabled(true)
         if (descricao === "") {
+            setModuleCreateDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -108,6 +113,7 @@ const ModulePage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setModuleCreateDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchModules();
@@ -116,6 +122,7 @@ const ModulePage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setModuleCreateDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar o módulo.", {
                     position: "top-right",
@@ -123,13 +130,16 @@ const ModulePage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setModuleCreateDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar os módulos:", error);
         }
     }
 
     const editModulo = async () => {
+        setModuleEditDisabled(true)
         if (descricao === "") {
+            setModuleEditDisabled(false)
             setLoading(false)
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
@@ -150,6 +160,7 @@ const ModulePage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setModuleEditDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchModules();
@@ -159,6 +170,7 @@ const ModulePage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setModuleEditDisabled(false)
                 setLoading(false)
                 setIsEditing(false);
                 toast.error("Erro ao editar o módulo.", {
@@ -167,6 +179,7 @@ const ModulePage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setModuleEditDisabled(false)
             setLoading(false)
             setIsEditing(false);
             console.error("Erro ao editar os módulos:", error);
@@ -434,6 +447,7 @@ const ModulePage: React.FC = () => {
                                             className="text-white"
                                             icon="pi pi-check"
                                             onClick={() => createModulo()}
+                                            disabled={moduleCreateDisabled}
                                             style={{
                                                 backgroundColor: '#28a745',
                                                 border: '1px solid #28a745',
@@ -448,6 +462,7 @@ const ModulePage: React.FC = () => {
                                             className="text-white"
                                             icon="pi pi-check"
                                             onClick={() => editModulo()}
+                                            disabled={moduleEditDisabled}
                                             style={{
                                                 backgroundColor: '#28a745',
                                                 border: '1px solid #28a745',

@@ -66,6 +66,11 @@ const UsersPage: React.FC = () => {
     } = useUserPermissions(groupCode ?? 0, "Controles");
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
+    const [userCreateDisabled, setUserCreateDisabled] =
+    useState(false);
+    const [userCreateReturnDisabled, setUserCreateReturnDisabled] =
+    useState(false);
+  const [userEditDisabled, setUserEditDisabled] = useState(false);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -108,6 +113,7 @@ const UsersPage: React.FC = () => {
     );
 
     const handleSaveEdit = async () => {
+        setUserEditDisabled(true)
         setLoading(true)
         try {
             let requiredFields: any[] = []
@@ -134,6 +140,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (isEmptyField) {
+                setUserEditDisabled(false)
                 setLoading(false)
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -148,6 +155,7 @@ const UsersPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setUserEditDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchUsers();
@@ -157,6 +165,7 @@ const UsersPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setUserEditDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar usuario.", {
                     position: "top-right",
@@ -164,6 +173,7 @@ const UsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setUserEditDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar usuario:", error);
         }
@@ -215,6 +225,7 @@ const UsersPage: React.FC = () => {
     };
 
     const handleSaveReturn = async () => {
+        setUserCreateReturnDisabled(true)
         setLoading(true);
         try {
             const requiredFields = [
@@ -231,6 +242,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (selectedEstablishments?.cod_estabelecimento === null) {
+                setUserCreateReturnDisabled(false)
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -240,6 +252,7 @@ const UsersPage: React.FC = () => {
             }
 
             if (isEmptyField) {
+                setUserCreateReturnDisabled(false)
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -266,6 +279,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
+                setUserCreateReturnDisabled(false)
                 setLoading(false);
                 clearInputs();
                 fetchUsers();
@@ -275,6 +289,7 @@ const UsersPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setUserCreateReturnDisabled(false)
                 setLoading(false);
                 toast.error("Erro ao salvar o usuário:" + response.data.msg, {
                     position: "top-right",
@@ -282,6 +297,7 @@ const UsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setUserCreateReturnDisabled(false)
             setLoading(false);
             console.error("Erro ao salvar usuário:", error);
             toast.error("Erro ao salvar o usuário", {
@@ -292,6 +308,7 @@ const UsersPage: React.FC = () => {
     };
 
     const handleSave = async () => {
+        setUserCreateDisabled(true)
         setLoading(true);
         try {
             const requiredFields = [
@@ -308,6 +325,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (selectedEstablishments?.cod_estabelecimento === null) {
+                setUserCreateDisabled(false)
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -317,6 +335,7 @@ const UsersPage: React.FC = () => {
             }
 
             if (isEmptyField) {
+                setUserCreateDisabled(false)
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -343,6 +362,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
+                setUserCreateDisabled(false)
                 setLoading(false);
                 clearInputs();
                 fetchUsers();
@@ -352,6 +372,7 @@ const UsersPage: React.FC = () => {
                 });
 
             } else {
+                setUserCreateDisabled(false)
                 setLoading(false);
                 toast.error("Erro ao salvar o usuário:" + response.data.msg, {
                     position: "top-right",
@@ -359,6 +380,7 @@ const UsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setUserCreateDisabled(false)
             setLoading(false);
             console.error("Erro ao salvar usuário:", error);
             toast.error("Erro ao salvar o usuário", {
@@ -681,6 +703,7 @@ const UsersPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-refresh"
                                     onClick={handleSaveReturn}
+                                    disabled={userCreateReturnDisabled}
                                     style={{
                                         backgroundColor: '#007bff',
                                         border: '1px solid #007bff',
@@ -694,6 +717,7 @@ const UsersPage: React.FC = () => {
                                         className="text-white"
                                         icon="pi pi-check"
                                         onClick={handleSave}
+                                        disabled={userCreateDisabled}
                                         style={{
                                             backgroundColor: '#28a745',
                                             border: '1px solid #28a745',
@@ -711,6 +735,7 @@ const UsersPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-check"
                                     onClick={handleSaveEdit}
+                                    disabled={userEditDisabled}
                                     style={{
                                         backgroundColor: '#28a745',
                                         border: '1px solid #28a745',

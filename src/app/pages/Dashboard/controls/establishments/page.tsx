@@ -40,6 +40,11 @@ const EstablishmentsPage: React.FC = () => {
         permissions,
     } = useUserPermissions(groupCode ?? 0, "Controles");
     const [visible, setVisible] = useState(false);
+    const [estabilishmentCreateDisabled, setEstabilishmentCreateDisabled] =
+    useState(false);
+    const [estabilishmentCreateReturnDisabled, setEstabilishmentCreateReturnDisabled] =
+    useState(false);
+  const [estabilishmentEditDisabled, setEstabilishmentEditDisabled] = useState(false);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [formValues, setFormValues] = useState<Establishment>({
         cod_estabelecimento: 0,
@@ -128,6 +133,7 @@ const EstablishmentsPage: React.FC = () => {
             });
 
             if (isEmptyField) {
+                setEstabilishmentEditDisabled(true)
                 setLoading(false)
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -142,6 +148,7 @@ const EstablishmentsPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setEstabilishmentEditDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchEstabilishments();
@@ -151,6 +158,7 @@ const EstablishmentsPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setEstabilishmentEditDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar estabelecimento.", {
                     position: "top-right",
@@ -158,12 +166,14 @@ const EstablishmentsPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setEstabilishmentEditDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar estabelecimento:", error);
         }
     };
 
     const handleSaveReturn = async () => {
+        setEstabilishmentCreateReturnDisabled(true)
         setLoading(true)
         try {
             const requiredFields = [
@@ -182,6 +192,7 @@ const EstablishmentsPage: React.FC = () => {
             });
 
             if (isEmptyField) {
+                setEstabilishmentCreateReturnDisabled(false)
                 setLoading(false)
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -196,6 +207,7 @@ const EstablishmentsPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setEstabilishmentCreateReturnDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchEstabilishments();
@@ -205,6 +217,7 @@ const EstablishmentsPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
+                setEstabilishmentCreateReturnDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar estabelecimento.", {
                     position: "top-right",
@@ -212,12 +225,14 @@ const EstablishmentsPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setEstabilishmentCreateReturnDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar o estabelecimento:", error);
         }
     };
 
     const handleSave = async () => {
+        setEstabilishmentCreateDisabled(true)
         setLoading(true)
         try {
             const requiredFields = [
@@ -235,6 +250,7 @@ const EstablishmentsPage: React.FC = () => {
             });
 
             if (isEmptyField) {
+                setEstabilishmentCreateDisabled(false)
                 setLoading(false)
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -249,6 +265,7 @@ const EstablishmentsPage: React.FC = () => {
                 },
             });
             if (response.status >= 200 && response.status < 300) {
+                setEstabilishmentCreateDisabled(false)
                 setLoading(false)
                 clearInputs();
                 fetchEstabilishments();
@@ -257,6 +274,7 @@ const EstablishmentsPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
+                setEstabilishmentCreateDisabled(false)
                 setLoading(false)
                 toast.error("Erro ao salvar estabelecimento.", {
                     position: "top-right",
@@ -264,6 +282,7 @@ const EstablishmentsPage: React.FC = () => {
                 });
             }
         } catch (error) {
+            setEstabilishmentCreateDisabled(false)
             setLoading(false)
             console.error("Erro ao salvar o estabelecimento:", error);
         }
@@ -565,6 +584,7 @@ const EstablishmentsPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-refresh"
                                     onClick={handleSaveReturn}
+                                    disabled={estabilishmentCreateReturnDisabled}
                                     style={{
                                         backgroundColor: '#007bff',
                                         border: '1px solid #007bff',
@@ -577,6 +597,7 @@ const EstablishmentsPage: React.FC = () => {
                                     <Button
                                         label="Salvar e Adicionar Outro"
                                         className="text-white"
+                                        disabled={estabilishmentCreateDisabled}
                                         icon="pi pi-check"
                                         onClick={handleSave}
                                         style={{
@@ -596,6 +617,7 @@ const EstablishmentsPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-check"
                                     onClick={handleSaveEdit}
+                                    disabled={estabilishmentEditDisabled}
                                     style={{
                                         backgroundColor: '#28a745',
                                         border: '1px solid #28a745',

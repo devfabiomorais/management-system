@@ -42,11 +42,11 @@ export default function Login() {
         localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo)
         toast.success("Login realizado com sucesso!", {
           position: "top-right",
-          autoClose: 3000,
+          autoClose: 2000,
         });
         setTimeout(() => {
           redirect("/pages/Dashboard/home")
-        }, 3000);
+        }, 2000);
       }
     } catch (err: any) {
       if (err.response) {
