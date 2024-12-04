@@ -124,7 +124,6 @@ const EstablishmentsPage: React.FC = () => {
                 "bairro",
                 "estado",
                 "cep",
-                "complemento",
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -183,7 +182,6 @@ const EstablishmentsPage: React.FC = () => {
                 "bairro",
                 "estado",
                 "cep",
-                "complemento",
             ];
 
             const isEmptyField = requiredFields.some((field) => {

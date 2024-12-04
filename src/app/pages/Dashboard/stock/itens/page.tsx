@@ -316,7 +316,6 @@ const ItensPage: React.FC = () => {
                 "cod_un",
                 "situacao",
                 "cod_familia",
-                "anexo",
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -413,7 +412,6 @@ const ItensPage: React.FC = () => {
                 "cod_un",
                 "situacao",
                 "cod_familia",
-                "anexo",
             ];
 
             const isEmptyField = requiredFields.some((field) => {

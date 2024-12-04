@@ -211,12 +211,19 @@ const ModulePage: React.FC = () => {
             });
             fetchModules();
             setModalDeleteVisible(false)
-        } catch (error) {
-            console.log("Erro ao excluir módulo:", error);
-            toast.error("Erro ao excluir módulo. Tente novamente.", {
-                position: "top-right",
-                autoClose: 3000,
-            });
+        } catch (error: any) {
+            console.log("Erro ao excluir módulo:", error.response.data.error);
+            if (error.response?.data?.error?.includes("Foreign key constraint failed")) {
+                toast.error("O módulo pai deve ser excluído primeiro.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao excluir módulo. Tente novamente.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
         }
     };
 
