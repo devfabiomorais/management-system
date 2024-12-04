@@ -41,7 +41,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("https://back-end-birigui.vercel.app/api/users/sendCode", payload);
+      const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/users/sendCode", payload);
       
       if (response.status === 200) {
         setLoading(false)
@@ -118,7 +118,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("https://back-end-birigui.vercel.app/api/users/checkCode", payload);
+      const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/users/checkCode", payload);
       
       if (response.status === 200) {
         setLoading(false)
@@ -177,7 +177,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.put(`https://back-end-birigui.vercel.app/api/users/changePassword/${idUser}`, payload);
+      const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/users/changePassword/${idUser}`, payload);
       if (response.status === 200) {
         setLoading(false)
         window.location.href="/"

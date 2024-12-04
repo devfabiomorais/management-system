@@ -68,7 +68,7 @@ const FamilyPage: React.FC = () => {
         setLoading(true)
 
         try {
-            const response = await axios.get("https://back-end-birigui.vercel.app/api/familia/itens/", {
+            const response = await axios.get("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -100,7 +100,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.post("https://back-end-birigui.vercel.app/api/familia/itens/register", bodyForm, {
+            const response = await axios.post("https://back-end-birigui-w3dn.vercel.app/api/familia/itens/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -147,7 +147,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.put(`https://back-end-birigui.vercel.app/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
+            const response = await axios.put(`https://back-end-birigui-w3dn.vercel.app/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -193,7 +193,7 @@ const FamilyPage: React.FC = () => {
         if (familiaIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://back-end-birigui.vercel.app/api/familia/itens/${familiaIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui-w3dn.vercel.app/api/familia/itens/${familiaIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
