@@ -121,6 +121,7 @@ const EstablishmentsPage: React.FC = () => {
                 "nome",
                 "logradouro",
                 "cidade",
+                "numero",
                 "bairro",
                 "estado",
                 "cep",
@@ -180,6 +181,7 @@ const EstablishmentsPage: React.FC = () => {
                 "logradouro",
                 "cidade",
                 "bairro",
+                "numero",
                 "estado",
                 "cep",
             ];
@@ -237,6 +239,7 @@ const EstablishmentsPage: React.FC = () => {
                 "nome",
                 "logradouro",
                 "cidade",
+                "numero",
                 "bairro",
                 "estado",
                 "cep",
