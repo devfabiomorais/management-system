@@ -22,7 +22,7 @@ const useUserPermissions = (userGroupId: number, moduleLabel: string) => {
     const fetchPermissions = async () => {
       try {
         const response = await axios.get(
-          `https://back-end-birigui-w3dn.vercel.app/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
+          `http://localhost:5000/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

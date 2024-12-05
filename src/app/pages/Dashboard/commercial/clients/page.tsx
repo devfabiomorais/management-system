@@ -131,7 +131,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://back-end-birigui-w3dn.vercel.app/api/clients/edit/${selectedClient?.cod_cliente}`,
+        `http://localhost:5000/api/clients/edit/${selectedClient?.cod_cliente}`,
         formValues,
         {
           headers: {
@@ -198,7 +198,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://back-end-birigui-w3dn.vercel.app/api/clients/register",
+        "http://localhost:5000/api/clients/register",
         formValues,
         {
           headers: {
@@ -264,7 +264,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://back-end-birigui-w3dn.vercel.app/api/clients/register",
+        "http://localhost:5000/api/clients/register",
         formValues,
         {
           headers: {
@@ -312,7 +312,7 @@ const ClientsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://back-end-birigui-w3dn.vercel.app/api/clients",
+        "http://localhost:5000/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -343,7 +343,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://back-end-birigui-w3dn.vercel.app/api/clients/${clientIdToDelete}`,
+        `http://localhost:5000/api/clients/${clientIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
