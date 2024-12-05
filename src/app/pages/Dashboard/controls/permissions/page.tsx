@@ -80,7 +80,7 @@ const PermissionsPage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/module", {
+            const response = await axios.get("http://217.196.61.199:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -107,7 +107,7 @@ const PermissionsPage: React.FC = () => {
     const fetchPermission = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/groupPermission", {
+            const response = await axios.get("http://217.196.61.199:9009/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -164,7 +164,7 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend
             })
 
-            const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
+            const response = await axios.post("http://217.196.61.199:9009/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -218,7 +218,7 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend
             }
 
-            const response = await axios.put(`http://localhost:9009/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
+            const response = await axios.put(`http://217.196.61.199:9009/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -311,7 +311,7 @@ const PermissionsPage: React.FC = () => {
         if (permissionIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/groupPermission/${permissionIdToDelete}`, {
+            await axios.delete(`http://217.196.61.199:9009/api/groupPermission/${permissionIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -337,12 +337,12 @@ const PermissionsPage: React.FC = () => {
         setNomeGroup(nomeGrupo);
 
         try {
-            const responsePermissions = await axios.get("http://localhost:9009/api/groupPermission", {
+            const responsePermissions = await axios.get("http://217.196.61.199:9009/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const responseModules = await axios.get("http://localhost:9009/api/module", {
+            const responseModules = await axios.get("http://217.196.61.199:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

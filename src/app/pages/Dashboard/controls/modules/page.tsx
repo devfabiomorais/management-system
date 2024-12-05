@@ -65,7 +65,7 @@ const ModulePage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/module", {
+            const response = await axios.get("http://217.196.61.199:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -107,7 +107,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.post("http://localhost:9009/api/module/register", bodyForm, {
+            const response = await axios.post("http://217.196.61.199:9009/api/module/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -154,7 +154,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.put(`http://localhost:9009/api/module/edit/${selectedModule}`, bodyForm, {
+            const response = await axios.put(`http://217.196.61.199:9009/api/module/edit/${selectedModule}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -200,7 +200,7 @@ const ModulePage: React.FC = () => {
         if (moduleIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/module/${moduleIdToDelete}`, {
+            await axios.delete(`http://217.196.61.199:9009/api/module/${moduleIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

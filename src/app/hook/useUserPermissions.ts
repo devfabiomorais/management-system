@@ -22,7 +22,7 @@ const useUserPermissions = (userGroupId: number, moduleLabel: string) => {
     const fetchPermissions = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:9009/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
+          `http://217.196.61.199:9009/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

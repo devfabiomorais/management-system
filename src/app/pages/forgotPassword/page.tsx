@@ -41,7 +41,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("http://localhost:9009/api/users/sendCode", payload);
+      const response = await axios.post("http://217.196.61.199:9009/api/users/sendCode", payload);
       
       if (response.status === 200) {
         setLoading(false)
@@ -118,7 +118,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("http://localhost:9009/api/users/checkCode", payload);
+      const response = await axios.post("http://217.196.61.199:9009/api/users/checkCode", payload);
       
       if (response.status === 200) {
         setLoading(false)
@@ -177,7 +177,7 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.put(`http://localhost:9009/api/users/changePassword/${idUser}`, payload);
+      const response = await axios.put(`http://217.196.61.199:9009/api/users/changePassword/${idUser}`, payload);
       if (response.status === 200) {
         setLoading(false)
         window.location.href="/"

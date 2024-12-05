@@ -34,7 +34,7 @@ export default function Login() {
     };
 
     try {
-      const response = await axios.post("http://localhost:9009/api/auth/login", payload);
+      const response = await axios.post("http://217.196.61.199:9009/api/auth/login", payload);
 
       if (response.status === 200) {
         setToken(response.data.token)
