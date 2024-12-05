@@ -149,7 +149,7 @@ const ItensPage: React.FC = () => {
         clearInputs()
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:5000/api/itens", {
+            const response = await axios.get("http://localhost:9009/api/itens", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -177,7 +177,7 @@ const ItensPage: React.FC = () => {
     const handleDelete = async () => {
         if (itensIdToDelete === null) return;
         try {
-            await axios.put(`http://localhost:5000/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
+            await axios.put(`http://localhost:9009/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -271,7 +271,7 @@ const ItensPage: React.FC = () => {
                 formData.append("anexo", file);
             }
             const response = await axios.put(
-                `http://localhost:5000/api/itens/edit/${selectedItem?.cod_item}`,
+                `http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`,
                 formData,
                 {
                     headers: {
@@ -370,7 +370,7 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("http://localhost:5000/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -468,7 +468,7 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("http://localhost:5000/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -505,7 +505,7 @@ const ItensPage: React.FC = () => {
         console.log(itens);
         try {
             // Requisição para obter as unidades de medida
-            const unitResponse = await axios.get("http://localhost:5000/api/unMedida", {
+            const unitResponse = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -513,14 +513,14 @@ const ItensPage: React.FC = () => {
             setUnits(unitResponse.data.units);
 
             // Requisição para obter as famílias de itens
-            const familyResponse = await axios.get("http://localhost:5000/api/familia/itens/", {
+            const familyResponse = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
             setFamilies(familyResponse.data.families);
 
-            const estabilishmentResponse = await axios.get("http://localhost:5000/api/estabilishment", {
+            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -586,7 +586,7 @@ const ItensPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -603,7 +603,7 @@ const ItensPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/unMedida", {
+            const response = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -619,7 +619,7 @@ const ItensPage: React.FC = () => {
     const fetchFamilias = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:5000/api/familia/itens/", {
+            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

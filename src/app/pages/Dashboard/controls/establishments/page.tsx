@@ -142,7 +142,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://localhost:5000/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -201,7 +201,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:5000/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -260,7 +260,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:5000/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -306,7 +306,7 @@ const EstablishmentsPage: React.FC = () => {
         setLoading(true)
         try {
 
-            const response = await axios.get("http://localhost:5000/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -334,7 +334,7 @@ const EstablishmentsPage: React.FC = () => {
         if (estabilishmentIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:5000/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
