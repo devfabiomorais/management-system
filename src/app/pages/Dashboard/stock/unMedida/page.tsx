@@ -65,7 +65,7 @@ const UnMedidaPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("http://217.196.61.199:9009/api/unMedida", {
+            const response = await axios.get("https://back-end-birigui.vercel.app/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -96,7 +96,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.post("http://217.196.61.199:9009/api/unMedida/register", bodyForm, {
+            const response = await axios.post("https://back-end-birigui.vercel.app/api/unMedida/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -142,7 +142,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`http://217.196.61.199:9009/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
+            const response = await axios.put(`https://back-end-birigui.vercel.app/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -188,7 +188,7 @@ const UnMedidaPage: React.FC = () => {
         if (unidadeIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://217.196.61.199:9009/api/unMedida/${unidadeIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui.vercel.app/api/unMedida/${unidadeIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

@@ -142,7 +142,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://217.196.61.199:9009/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
+            const response = await axios.put(`https://back-end-birigui.vercel.app/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -201,7 +201,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://217.196.61.199:9009/api/estabilishment/register", formValues, {
+            const response = await axios.post("https://back-end-birigui.vercel.app/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -260,7 +260,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://217.196.61.199:9009/api/estabilishment/register", formValues, {
+            const response = await axios.post("https://back-end-birigui.vercel.app/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -306,7 +306,7 @@ const EstablishmentsPage: React.FC = () => {
         setLoading(true)
         try {
 
-            const response = await axios.get("http://217.196.61.199:9009/api/estabilishment", {
+            const response = await axios.get("https://back-end-birigui.vercel.app/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -334,7 +334,7 @@ const EstablishmentsPage: React.FC = () => {
         if (estabilishmentIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://217.196.61.199:9009/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`https://back-end-birigui.vercel.app/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
