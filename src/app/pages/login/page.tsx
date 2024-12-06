@@ -34,7 +34,7 @@ export default function Login() {
     };
 
     try {
-      const response = await axios.post("https://back-end-birigui.vercel.app/api/auth/login", payload);
+      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/auth/login", payload);
 
       if (response.status === 200) {
         setToken(response.data.token)
