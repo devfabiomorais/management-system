@@ -66,7 +66,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           <img src={Logo.src} alt="Logo" className="w-14 h-14" />
         </header>
 
-        <div className="flex h-screen">
+        <div className="flex ">
           {isSidebarOpen && (
             <aside className="w-40 text-white flex flex-col">
               <nav className="flex flex-col flex-1 items-start space-y-4 pt-5 mt-4 pl-5">

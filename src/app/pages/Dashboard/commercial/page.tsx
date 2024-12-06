@@ -16,7 +16,7 @@ export default function CommercialPage() {
       {" "}
       <SidebarLayout>
         {" "}
-        <div className="flex justify-center h-full ">
+        <div className="flex justify-center h-screen">
           {" "}
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
             {" "}

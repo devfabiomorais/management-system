@@ -753,7 +753,7 @@ const UsersPage: React.FC = () => {
 
 
                 <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between ">
                         <div>
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Usuários</h2>
                         </div>

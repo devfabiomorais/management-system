@@ -277,7 +277,7 @@ const ModulePage: React.FC = () => {
 
 
                 <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between ">
                         <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Módulos</h2>
                     </div>
                     <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>

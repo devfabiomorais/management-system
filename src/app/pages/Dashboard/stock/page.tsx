@@ -20,7 +20,7 @@ export default function StockPage() {
   return (
     <div className="">
       <SidebarLayout>
-        <div className="flex justify-center h-full ">
+        <div className="flex justify-center h-screen ">
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
             <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Estoque</h2>
 
