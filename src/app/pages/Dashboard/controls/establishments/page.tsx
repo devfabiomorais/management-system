@@ -44,7 +44,7 @@ const EstablishmentsPage: React.FC = () => {
     useState(false);
     const [estabilishmentCreateReturnDisabled, setEstabilishmentCreateReturnDisabled] =
     useState(false);
-  const [estabilishmentEditDisabled, setEstabilishmentEditDisabled] = useState(false);
+    const [estabilishmentEditDisabled, setEstabilishmentEditDisabled] = useState(false);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [formValues, setFormValues] = useState<Establishment>({
         cod_estabelecimento: 0,

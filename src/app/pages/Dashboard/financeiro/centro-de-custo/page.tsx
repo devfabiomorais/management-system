@@ -20,29 +20,16 @@ import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 
-interface Client {
-  cod_cliente: number;
-  codigo?: number;
+interface CentroCusto {
+  cod_centro_custo: number;
   nome: string;
-  logradouro?: string;
-  cidade?: string;
-  bairro?: string;
-  estado?: string;
-  complemento?: string;
-  numero?: string;
-  cep?: string;
-  tipo: string;
-  situacao: string;
-  email: string;
-  celular: string;
-  telefone: string;
-  dtCadastro?: string;
+  descricao?: string;
 }
 
-const ClientsPage: React.FC = () => {
+const CentrosCustoPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
-  const { permissions } = useUserPermissions(groupCode ?? 0, "Comercial");
+  const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
   let [loading, setLoading] = useState(false);
   let [color, setColor] = useState("#B8D047");
   const [itemCreateDisabled, setItemCreateDisabled] = useState(false);
@@ -50,50 +37,28 @@ const ClientsPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredClients = clients.filter((client) =>
-    client.nome.toLowerCase().includes(search.toLowerCase())
+  const filteredCentrosCusto = centrosCusto.filter((centrosCusto) =>
+    centrosCusto.nome.toLowerCase().includes(search.toLowerCase())
   );
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
+  const [centrosCustoIdToDelete, setCentroCustoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [formValues, setFormValues] = useState<Client>({
-    cod_cliente: 0,
+  const [selectedCentroCusto, setSelectedCentroCusto] = useState<CentroCusto | null>(null);
+  const [formValues, setFormValues] = useState<CentroCusto>({
+    cod_centro_custo: 0,
     nome: "",
-    logradouro: "",
-    cidade: "",
-    bairro: "",
-    estado: "",
-    complemento: "",
-    numero: "",
-    cep: "",
-    email: "",
-    telefone: "",
-    celular: "",
-    situacao: "",
-    tipo: "",
+    descricao: "",
   });
 
   const clearInputs = () => {
     setFormValues({
-      cod_cliente: 0,
+      cod_centro_custo: 0,
       nome: "",
-      logradouro: "",
-      cidade: "",
-      bairro: "",
-      estado: "",
-      complemento: "",
-      numero: "",
-      cep: "",
-      email: "",
-      telefone: "",
-      celular: "",
-      situacao: "",
-      tipo: "",
+      descricao: "",
     });
   };
 
@@ -103,16 +68,7 @@ const ClientsPage: React.FC = () => {
     try {
       const requiredFields = [
         "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
+        "descricao",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -131,7 +87,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/clients/edit/${selectedClient?.cod_cliente}`,
+        `http://localhost:9009/api/centrosCusto/edit/${selectedCentroCusto?.cod_centro_custo}`,
         formValues,
         {
           headers: {
@@ -143,8 +99,8 @@ const ClientsPage: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
+        fetchCentrosCusto();
+        toast.success("Centro de custo salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -152,7 +108,7 @@ const ClientsPage: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
+        toast.error("Erro ao salvar centro de custo.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -160,7 +116,7 @@ const ClientsPage: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
+      console.error("Erro ao salvar centro de custo:", error);
     }
   };
 
@@ -170,16 +126,7 @@ const ClientsPage: React.FC = () => {
     try {
       const requiredFields = [
         "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
+        "descricao",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -198,7 +145,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -210,15 +157,15 @@ const ClientsPage: React.FC = () => {
         setItemCreateDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
+        fetchCentrosCusto();
+        toast.success("Centro de custo salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
         setItemCreateDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
+        toast.error("Erro ao salvar centro de custo.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -226,7 +173,7 @@ const ClientsPage: React.FC = () => {
     } catch (error) {
       setItemCreateDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
+      console.error("Erro ao salvar centro de custo:", error);
     }
   };
 
@@ -236,16 +183,7 @@ const ClientsPage: React.FC = () => {
     try {
       const requiredFields = [
         "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
+        "descricao",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -264,7 +202,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -276,8 +214,8 @@ const ClientsPage: React.FC = () => {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
+        fetchCentrosCusto();
+        toast.success("Centro de custo salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -285,7 +223,7 @@ const ClientsPage: React.FC = () => {
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
+        toast.error("Erro ao salvar centro de custos.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -293,72 +231,72 @@ const ClientsPage: React.FC = () => {
     } catch (error) {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
+      console.error("Erro ao salvar centro de custos:", error);
     }
   };
 
-  const handleEdit = (client: Client) => {
-    setFormValues(client);
-    setSelectedClient(client);
+  const handleEdit = (centrosCusto: CentroCusto) => {
+    setFormValues(centrosCusto);
+    setSelectedCentroCusto(centrosCusto);
     setIsEditing(true);
     setVisible(true);
   };
 
   useEffect(() => {
-    fetchClients();
+    fetchCentrosCusto();
   }, []);
 
-  const fetchClients = async () => {
+  const fetchCentrosCusto = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/clients",
+        "http://localhost:9009/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      console.log(response.data.clients);
-      setClients(response.data.clients);
+      console.log(response.data.centrosCusto);
+      setCentrosCusto(response.data.centrosCusto);
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar clientes:", error);
+      console.error("Erro ao carregar centro de custos:", error);
     }
   };
 
   const openDialog = (id: number) => {
-    setClientIdToDelete(id);
+    setCentroCustoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setClientIdToDelete(null);
+    setCentroCustoIdToDelete(null);
   };
 
   const handleDelete = async () => {
-    if (clientIdToDelete === null) return;
+    if (centrosCustoIdToDelete === null) return;
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/clients/${clientIdToDelete}`,
+        `http://localhost:9009/api/centrosCusto/${centrosCustoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      toast.success("Cliente removido com sucesso!", {
+      toast.success("Centro de custo removido com sucesso!", {
         position: "top-right",
         autoClose: 3000,
       });
-      fetchClients();
+      fetchCentrosCusto();
       setModalDeleteVisible(false);
     } catch (error) {
-      console.log("Erro ao excluir cliente:", error);
-      toast.error("Erro ao excluir cliente. Tente novamente.", {
+      console.log("Erro ao excluir centro de custo:", error);
+      toast.error("Erro ao excluir centro de custo. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -409,31 +347,7 @@ const ClientsPage: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
-
-  const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    // Remove qualquer caractere não numérico
-    const numericValue = value.replace(/[^0-9]/g, '');
-    
-    // Formata o CEP com o formato 'XXXXX-XXX'
-    const formattedValue = numericValue.replace(
-      /(\d{5})(\d{0,3})/,
-      (match, p1, p2) => `${p1}-${p2}`
-    );
-    
-    setFormValues({
-      ...formValues,
-      [name]: formattedValue, // Atualiza o campo de CEP com a formatação
-    });
-  };
   
-  const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
-    }
-  };
  
 
   return (
@@ -474,11 +388,11 @@ const ClientsPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este cliente?</p>
+            <p>Tem certeza que deseja excluir este centro de custo?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Cliente" : "Novo Cliente"}
+            header={isEditing ? "Editar centrosCusto" : "Novo centrosCusto"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -491,228 +405,38 @@ const ClientsPage: React.FC = () => {
           >
             <div className="p-fluid grid gap-2 mt-2">
               <div className="grid grid-cols-2 gap-2">
-              <div>
+                <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome Completo:
+                    Nome
                   </label>
                   <input
                     type="text"
                     id="nome"
                     name="nome"
                     value={formValues.nome}
-                    onChange={handleAlphabeticInputChange} // Não permite números
-                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o nome completo"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="tipo" className="block text-blue font-medium">
-                    Tipo:
-                  </label>
-                  <select
-                    id="tipo"
-                    name="tipo"
-                    value={formValues.tipo}
-                    onChange={(e) =>
-                      setFormValues({ ...formValues, tipo: e.target.value })
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="">Selecione</option>
-                    <option value="Pessoa_F_sica">Pessoa Física</option>
-                    <option value="Pessoa_Jur_dica">Pessoa Jurídica</option>
-                    <option value="Estrangeiro">Pessoa Estrangeira</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-blue font-medium"
-                  >
-                    E-mail:
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formValues.email}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o e-mail"
                   />
                 </div>
+              </div>              
+
+              <div className="grid grid-cols-1 gap-2">
                 <div>
-                  <label
-                    htmlFor="telefone"
-                    className="block text-blue font-medium"
-                  >
-                    Telefone:
+                  <label htmlFor="descricao" className="block text-blue font-medium">
+                    Descrição
                   </label>
                   <input
                     type="text"
-                    id="telefone"
-                    name="telefone"
-                    value={formValues.telefone}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o telefone"
-                    maxLength={15}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label
-                    htmlFor="celular"
-                    className="block text-blue font-medium"
-                  >
-                    Celular:
-                  </label>
-                  <input
-                    type="text"
-                    id="celular"
-                    name="celular"
-                    value={formValues.celular}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o celular"
-                    maxLength={15}
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="situacao"
-                    className="block text-blue font-medium"
-                  >
-                    Situação:
-                  </label>
-                  <select
-                    id="situacao"
-                    name="situacao"
-                    value={formValues.situacao}
-                    onChange={(e) =>
-                      setFormValues({ ...formValues, situacao: e.target.value })
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="">Selecione</option>
-                    <option value="ATIVO">Ativo</option>
-                    <option value="DESATIVADO">Inativo</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label htmlFor="cep" className="block text-blue font-medium">
-                    CEP:
-                  </label>
-                  <input
-                    type="text"
-                    id="cep"
-                    name="cep"
-                    value={formValues.cep}
-                    onChange={handleCepInputChange} // Formata o CEP enquanto digita
-                    onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o CEP"
-                    maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="logradouro"
-                    className="block text-blue font-medium"
-                  >
-                    Logradouro:
-                  </label>
-                  <input
-                    type="text"
-                    id="logradouro"
-                    name="logradouro"
-                    value={formValues.logradouro}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o logradouro"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                <div>
-                  <label
-                    htmlFor="numero"
-                    className="block text-blue font-medium"
-                  >
-                    Número:
-                  </label>
-                  <input
-                    type="text"
-                    id="numero"
-                    name="numero"
-                    value={formValues.numero}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Número"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="estado"
-                    className="block text-blue font-medium"
-                  >
-                    Estado (sigla):
-                  </label>
-                  <input
-                    type="text"
-                    id="estado"
-                    name="estado"
-                    value={formValues.estado}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Estado"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="bairro"
-                    className="block text-blue font-medium"
-                  >
-                    Bairro:
-                  </label>
-                  <input
-                    type="text"
-                    id="bairro"
-                    name="bairro"
-                    value={formValues.bairro}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o bairro"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cidade"
-                    className="block text-blue font-medium"
-                  >
-                    Cidade:
-                  </label>
-                  <input
-                    type="text"
-                    id="cidade"
-                    name="cidade"
-                    value={formValues.cidade}
-                    onChange={handleAlphabeticInputChange} // Não permite números
-                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite a cidade"
+                    id="descricao"
+                    name="descricao"
+                    value={formValues.descricao}
+                    onChange={handleInputChange} 
+                    className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
                   />
                 </div>
               </div>
             </div>
+
 
             <div className="flex justify-between items-center  mt-16">
               <div className="grid grid-cols-3 gap-3">
@@ -794,7 +518,7 @@ const ClientsPage: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
-                  Clientes
+                  Centro de Custo
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -828,7 +552,7 @@ const ClientsPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredClients.slice(first, first + rows)}
+                value={filteredCentrosCusto.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -844,7 +568,7 @@ const ClientsPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_cliente"
+                  field="cod_centro_custo"
                   header="Código"
                   style={{
                     width: "0%",
@@ -864,7 +588,7 @@ const ClientsPage: React.FC = () => {
                 />
                 <Column
                   field="nome"
-                  header="Nome Completo"
+                  header="Nome"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -882,8 +606,8 @@ const ClientsPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="tipo"
-                  header="Tipo"
+                  field="descricao"
+                  header="Descrição"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -899,133 +623,7 @@ const ClientsPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData: {
-                    tipo: "Pessoa_Jur_dica" | "Pessoa_F_sica" | "Estrangeiro";
-                  }) => {
-                    // Mapeia os valores do tipo para os valores legíveis
-                    const tipoMap: Record<
-                      "Pessoa_Jur_dica" | "Pessoa_F_sica" | "Estrangeiro",
-                      string
-                    > = {
-                      Pessoa_Jur_dica: "Pessoa Jurídica",
-                      Pessoa_F_sica: "Pessoa Física",
-                      Estrangeiro: "Estrangeiro",
-                    };
-
-                    const tipoExibido = tipoMap[rowData.tipo] || rowData.tipo;
-
-                    return <span>{tipoExibido}</span>;
-                  }}
-                />
-                <Column
-                  field="situacao"
-                  header="Situação"
-                  style={{
-                    width: "0%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="email"
-                  header="E-mail"
-                  style={{
-                    width: "0%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="celular"
-                  header="Celular"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="telefone"
-                  header="Telefone"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="dt_hr_criacao"
-                  header="DT Cadastro"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                  body={(rowData) => {
-                    const date = new Date(rowData.dt_hr_criacao);
-                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
-                    }).format(date);
-
-                    return <span>{formattedDate}</span>;
-                  }}
-                />
+                /> 
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
@@ -1063,7 +661,7 @@ const ClientsPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => openDialog(rowData.cod_cliente)}
+                          onClick={() => openDialog(rowData.cod_centro_custo)}
                           className="bg-red text-black p-1 rounded"
                         >
                           <FaTrash className="text-white text-2xl" />
@@ -1098,4 +696,4 @@ const ClientsPage: React.FC = () => {
   );
 };
 
-export default ClientsPage;
+export default CentrosCustoPage;
