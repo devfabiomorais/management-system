@@ -131,7 +131,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/clients/edit/${selectedClient?.cod_cliente}`,
+        `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
         formValues,
         {
           headers: {
@@ -198,7 +198,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/clients/register",
         formValues,
         {
           headers: {
@@ -264,7 +264,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/clients/register",
         formValues,
         {
           headers: {
@@ -312,7 +312,7 @@ const ClientsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/clients",
+        "http://localhost:9009/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -343,7 +343,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/clients/${clientIdToDelete}`,
+        `http://localhost:9009/api/clients/${clientIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -384,14 +384,14 @@ const ClientsPage: React.FC = () => {
       [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
-  
+
+
   const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault();
     }
-  };  
+  };
 
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
@@ -401,7 +401,7 @@ const ClientsPage: React.FC = () => {
       [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
+
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     // Permite qualquer caractere que não seja número
@@ -412,29 +412,29 @@ const ClientsPage: React.FC = () => {
 
   const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Remove qualquer caractere não numérico
     const numericValue = value.replace(/[^0-9]/g, '');
-    
+
     // Formata o CEP com o formato 'XXXXX-XXX'
     const formattedValue = numericValue.replace(
       /(\d{5})(\d{0,3})/,
       (match, p1, p2) => `${p1}-${p2}`
     );
-    
+
     setFormValues({
       ...formValues,
       [name]: formattedValue, // Atualiza o campo de CEP com a formatação
     });
   };
-  
+
   const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
     }
   };
- 
+
 
   return (
     <>
@@ -491,7 +491,7 @@ const ClientsPage: React.FC = () => {
           >
             <div className="p-fluid grid gap-2 mt-2">
               <div className="grid grid-cols-2 gap-2">
-              <div>
+                <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
                     Nome Completo:
                   </label>

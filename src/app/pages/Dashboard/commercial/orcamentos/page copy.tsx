@@ -20,33 +20,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
-
-interface Transportadora {
-  cod_transportadora: number;
-  nome: string;
-}
-
-interface Formas {
-  cod_forma_pagamento?: number; // Adicionado caso precise da chave primária
-  nome?: string;
-  descricao?: string;
-  situacao?: string;
-}
-
-interface User {
-  cod_usuario: number;
-  nome: string;
-  usuario: string;
-  email: string;
-  situacao: string;
-  nomeGrupo?: string;
-  cod_grupo: number;
-  dbs_estabelecimentos_usuario?: {
-    cod_estabel_usuario: number;
-    cod_usuario: number;
-    cod_estabel: number;
-  }
-}
+import ServicosPage from "../services/page";
 
 interface Orcamento {
   cod_orcamento: number;
@@ -99,33 +73,43 @@ interface CentroCusto {
 }
 
 interface Servico {
-  id: number;
   cod_servico: number;
-  nome?: string;
+  nome: string;
   descricao?: string;
   valor_venda?: string;
   valor_custo?: string;
   comissao?: string;
-  quantidade?: number;
   dtCadastro?: string;
-  descontoUnitProdtipo?: string;
-  descontoProd?: number;
-  valor_total?: string;
 }
 
 //mesma coisa que ITENS
 interface Produto {
-  id: number; // Novo campo id
   cod_item: string;
   descricao: string;
+  narrativa: string;
   valor_venda?: string;
   valor_custo?: string;
-  valor_total?: string;
-  quantidade?: number;
-  descontoUnitProdtipo?: string;
-  descontoProd?: number;
+  dbs_unidades_medida?: {
+    un?: string;
+    cod_un: number;
+  };
+  dbs_familias?: {
+    cod_familia: number;
+    nome: string;
+    descricao: string;
+  };
+  dbs_estabelecimentos_item?: Array<{
+    cod_estabel: number;
+    cod_estabel_item: number;
+    cod_item: string;
+  }>;
+  cod_un: { cod_un: number; un: string; descricao: string } | null;
+  cod_familia: { cod_familia: number; nome: string; descricao: string } | null;
+  cod_estabelecimento: string[];
+  dt_hr_criacao?: string;
+  anexo?: File | null;
+  situacao: string;
 }
-
 
 const OrcamentosPage: React.FC = () => {
   const { groupCode } = useGroup();
@@ -149,113 +133,7 @@ const OrcamentosPage: React.FC = () => {
   const [isEditingProd, setIsEditingProd] = useState<boolean>(false);
   const [isEditingServ, setIsEditingServ] = useState<boolean>(false);
 
-  // #region TRANSPORTADORAS
-  const [selectedTransportadora, setSelectedTransportadora] = useState<Transportadora | null>(null);
-  const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
-  const [formValuesTransportadoras, setFormValuesTransportadoras] = useState<Transportadora>({
-    cod_transportadora: 0,
-    nome: "",
-  });
-  const fetchTransportadoras = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get("http://localhost:9009/api/transportadoras", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(response.data.transportadoras);
-      setTransportadoras(response.data.transportadoras);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar transportadoras:", error);
-    }
-  };
-  // #endregion
-
-  // #region FORMAS PAGAMENTO
-  const [formasPagamento, setFormasPagamento] = useState<Formas[]>([]);
-  const [selectedPagamento, setSelectedPagamento] = useState("");
-
-  // Função para buscar as formas de pagamento
-  const fetchFormasPagamento = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/formas_pagamento",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.forma_pagamento);
-      setFormasPagamento(response.data.forma_pagamento);
-      setLoading(false);
-    } catch (error) {
-      console.error("Erro ao buscar formas de pagamento:", error);
-    }
-  };
-  // #endregion
-
-
-
-
-  // #region RESPONSAVEL
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const responseUsers = await axios.get("http://localhost:9009/api/users/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const responseGroup = await axios.get("http://localhost:9009/api/groupPermission/groups", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
-        const matchingGroup = responseGroup.data.groups.find(
-          (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
-        );
-
-        return {
-          ...user,
-          nomeGrupo: matchingGroup ? matchingGroup.nome : "",
-        };
-      });
-
-      //console.log("useerr", usersWithGroupName); 
-      setUsers(usersWithGroupName);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar usuários:", error);
-    }
-  };
-  // #endregion 
-
-
-
-
-  // #region ORÇAMENTOS
-  const [canaisVenda, setCanaisVenda] = useState<string[]>([]);
-  const [selectedCanal, setSelectedCanal] = useState<string>('');
-  const fetchCanaisVenda = async () => {
-    try {
-      const response = await axios.get('http://localhost:9009/api/orcamentos/canais-venda');
-      setCanaisVenda(response.data.canaisVenda);
-      console.log(response.data.canaisVenda);
-    } catch (error) {
-      console.error('Erro ao buscar canais de venda:', error);
-    }
-  };
-
+  //ORÇAMENTOS
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const filteredOrcamentos = orcamentos.filter((orcamento) =>
     orcamento.logradouro.toLowerCase().includes(search.toLowerCase())
@@ -285,33 +163,8 @@ const OrcamentosPage: React.FC = () => {
     observacoes_internas: "",
     desconto_total: 0.0,
   });
-  const fetchOrcamentos = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/orcamentos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.orcamentos);
-      setOrcamentos(response.data.orcamentos);
 
-
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar orçamentos:", error);
-    }
-  };
-  // #endregion
-
-
-
-
-  // #region CLIENTES
+  //CLIENTES
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [formValuesClients, setFormValuesClients] = useState<Client>({
@@ -330,46 +183,8 @@ const OrcamentosPage: React.FC = () => {
     situacao: "",
     tipo: "",
   });
-  //autopreenchimento de campos ao selecionar algo CLIENTS
-  useEffect(() => {
-    if (selectedClient) {
-      setFormValuesClients((prevValues) => ({
-        ...prevValues,
-        logradouro: selectedClient.logradouro || '',
-        cidade: selectedClient.cidade || '',
-        bairro: selectedClient.bairro || '',
-        estado: selectedClient.estado || '',
-        complemento: selectedClient.complemento || '',
-        numero: selectedClient.numero || '',
-        cep: selectedClient.cep || ''
-      }));
-    }
-  }, [selectedClient]);
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/clients",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.clients);
-      setClients(response.data.clients);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar clientes:", error);
-    }
-  };
-  // #endregion
 
-
-
-
-  // #region CENTROS-DE-CUSTO
+  //CENTROS-DE-CUSTO
   const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [selectedCentroCusto, setSelectedCentroCusto] = useState<CentroCusto | null>(null);
   const [formValuesCentroCusto, setFormValuesCentroCusto] = useState<CentroCusto>({
@@ -377,49 +192,19 @@ const OrcamentosPage: React.FC = () => {
     nome: "",
     descricao: "",
   });
-  const fetchCentrosCusto = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/centrosCusto",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.centrosCusto);
-      setCentrosCusto(response.data.centrosCusto);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar centro de custos:", error);
-    }
-  };
-  // #endregion
 
-
-
-
-  // #region SERVIÇOS
-  const calcularTotalServicos = () => {
-    const total = servicosSelecionados.reduce((acc, servico) => acc + parseFloat(servico.valor_total || "0"), 0);
-    return total;
-  };
-
+  //SERVIÇOS
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
   const [formValuesServico, setFormValuesServico] = useState<Servico>({
     cod_servico: 0,
-    id: 0,
-    quantidade: 0,
     nome: "",
     descricao: "",
     valor_custo: "",
     valor_venda: "",
     comissao: "",
   });
-  const [quantidadeServ, setQuantidadeServ] = useState(1);
+  const [quantidadeServ, setQuantidadeServ] = useState(0);
   const [descontoServ, setDescontoServ] = useState(0);
   const [descontoUnit, setDescontoUnit] = useState('%'); // '%' ou 'R$'
   const [valorTotalServ, setValorTotalServ] = useState(0);
@@ -435,50 +220,6 @@ const OrcamentosPage: React.FC = () => {
   const handleDescontoUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDescontoUnit(e.target.value);
   };
-  const [servicosSelecionados, setServicosSelecionados] = useState<Servico[]>([]);
-
-  const handleAdicionarServico = () => {
-    if (!selectedServico || !quantidadeServ) return; // Garante que tenha um serviço e quantidade antes de adicionar
-
-    const novoServico: Servico = {
-      id: Date.now(),  // Usando Date.now() para criar um identificador único
-      cod_servico: selectedServico.cod_servico,
-      nome: selectedServico.nome,  // Usando o campo nome da interface
-      descricao: selectedServico.descricao,
-      valor_venda: selectedServico.valor_venda,
-      quantidade: quantidadeServ,
-      descontoUnitProdtipo: descontoUnit,
-      descontoProd: descontoServ,
-      valor_total: valorTotalServ.toString(),
-    };
-
-    // Adiciona o novo serviço à lista de serviços selecionados
-    setServicosSelecionados((prev) => [...prev, novoServico]);
-
-    // Reseta os estados para permitir a seleção de um novo serviço
-    setSelectedServico(null); // Permite escolher um novo serviço
-    setQuantidadeServ(0);
-    setDescontoServ(0);
-    setDescontoUnit('%');
-    setValorTotalServ(0);
-
-    // Reseta os valores do formValuesServico
-    setFormValuesServico({
-      id: 0,
-      cod_servico: 0,
-      nome: "",
-      descricao: "",
-      valor_venda: "",
-      valor_custo: "",
-      comissao: "",
-    });
-  };
-
-
-  const handleRemoveLinhaServico = (id: number) => {
-    setServicosSelecionados((prev) => prev.filter(servico => servico.id !== id));
-  };
-
   //serviços-cadastro
   const [descricaoServ, setDescricaoServ] = useState('');
   const handleInputChangeDescricaoServ = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -549,105 +290,55 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
-  //autopreenchimento de campos ao selecionar algo SERVIÇOS
-  useEffect(() => {
-    if (selectedServico) {
-      setFormValuesClients((prevValues) => ({
-        ...prevValues,
-        nome: selectedServico.nome || '',
-        descricao: selectedServico.descricao || '',
-        valor_venda: selectedServico.valor_venda ? Number(selectedServico.valor_venda) : '',
-        valor_custo: selectedServico.valor_custo ? Number(selectedServico.valor_custo) : '',
-        comissao: selectedServico.comissao ? Number(selectedServico.comissao) : '',
-        dtCadastro: selectedServico.dtCadastro ? new Date(selectedServico.dtCadastro).toISOString().split('T')[0] : ''
-      }));
-
-      let total = (selectedServico.valor_venda ? Number(selectedServico.valor_venda) : 0) * quantidadeServ;
-      if (descontoUnit === '%') {
-        total -= total * (descontoServ / 100);
-      } else {
-        total -= descontoServ;
-      }
-      setValorTotalServ(total);
-    }
-  }, [selectedServico, quantidadeServ, descontoServ, descontoUnit]);
-  const fetchServicos = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/servicos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.servicos);
-      setServicos(response.data.servicos);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar serviços:", error);
-    }
-  };
-  // #endregion
-
-
-
-
-  // #region PRODUTOS  
+  //PRODUTOS
   const [produtos, setProd] = useState<Produto[]>([]);
-  const [produtosSelecionados, setProdSelecionados] = useState<Produto[]>([]);
   const [selectedProd, setSelectedProd] = useState<Produto | null>(null);
   const [formValuesProd, setFormValuesProd] = useState<Produto>({
-    id: 0, // Inicializando com um id padrão (pode ser 0 ou um valor único)
     cod_item: "",
     descricao: "",
+    narrativa: "",
     valor_custo: "",
     valor_venda: "",
+    dbs_unidades_medida: {
+      un: "",
+      cod_un: 0
+    },
+    cod_estabelecimento: [],
+    cod_un: null,
+    cod_familia: null,
+    situacao: "",
   });
-  const [quantidadeProd, setQuantidadeProd] = useState(1);
+  const [quantidadeProd, setQuantidadeProd] = useState(0);
   const [descontoProd, setDescontoProd] = useState(0);
   const [descontoUnitProd, setDescontoUnitProd] = useState('%prod'); // '%' ou 'R$'
   const [valorTotalProd, setValorTotalProd] = useState(0);
-  const [linhas, setLinhas] = useState<Produto[]>([]);
-  //produtos-handles
-  const handleRemoveLinhaProd = (id: number) => {
-    setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
-  };
-  const handleAdicionarLinha = () => {
-    if (!selectedProd || !quantidadeProd) return; // Garante que tenha um produto e quantidade antes de adicionar
-
+  const handleAdicionaLinha = () => {
+    // Criando um novo produto com os dados essenciais da linha atual
     const novoProduto: Produto = {
-      id: Date.now(),  // Usando Date.now() para criar um identificador único
-      cod_item: selectedProd.cod_item,
-      descricao: selectedProd.descricao,
-      valor_venda: selectedProd.valor_venda,
-      quantidade: quantidadeProd,
-      descontoUnitProdtipo: descontoUnitProd,
-      descontoProd: descontoProd,
-      valor_total: valorTotalProd.toString(),
-    };
-
-    // Adiciona o novo produto à lista de selecionados
-    setProdSelecionados((prev) => [...prev, novoProduto]);
-
-    // Reseta os estados para permitir a seleção de um novo produto
-    setSelectedProd(null); // Permite escolher um novo produto
-    setQuantidadeProd(0);
-    setDescontoProd(0);
-    setDescontoUnitProd('%prod');
-    setValorTotalProd(0);
-
-    // Reseta os valores do formValuesProd
-    setFormValuesProd({
-      id: 0, // Adicionando o campo id
-      cod_item: "",
+      cod_item: Date.now().toString(), // Gera um ID único
       descricao: "",
+      narrativa: "",
       valor_venda: "",
       valor_custo: "",
-    });
+      dbs_unidades_medida: {
+        un: "",
+        cod_un: 0
+      },
+      cod_estabelecimento: [],
+      cod_un: null,
+      cod_familia: null,
+      situacao: "",
+    };
+
+    // Atualiza o estado com o novo produto adicionado à lista
+    setProd([...produtos, novoProduto]);
   };
+
+  // Função para remover a linha do produto
+  const handleRemoveLinha = (cod_item: string) => {
+    setProd((prevProdutos) => prevProdutos.filter((produto) => produto.cod_item !== cod_item));
+  };
+  //produtos-handles
   const handleQuantidadeProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     setQuantidadeProd(value);
@@ -660,128 +351,7 @@ const OrcamentosPage: React.FC = () => {
     setDescontoUnitProd(e.target.value);
   };
 
-  const calcularTotalProdutos = () => {
-    const total = produtosSelecionados.reduce((acc, produto) => acc + parseFloat(produto.valor_total || "0"), 0);
-    return total;
-  };
-
-  //autopreenchimento de campos ao selecionar algo PRODUTOS
-  useEffect(() => {
-    if (selectedProd) {
-      console.log('selectedProd mudou:', selectedProd);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: selectedProd.cod_item || '',
-        descricao: selectedProd.descricao || '',
-        valor_venda: selectedProd.valor_venda || '',
-        valor_custo: selectedProd.valor_custo || '',
-      }));
-
-      let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
-      if (descontoUnitProd === '%prod') {
-        total -= total * (descontoProd / 100);
-      } else {
-        total -= descontoProd;
-      }
-      setValorTotalProd(total);
-    }
-  }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
-  const fetchProd = async () => {
-    clearInputs();
-    setLoading(true);
-    try {
-      const response = await axios.get("http://localhost:9009/api/itens", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(response.data.items);
-      setProd(response.data.items);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
-      }));
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar produtos:", error);
-    }
-  };
-  // #endregion
-
-
-
-
-  // #region TOTAL
-  const [descontoTotal, setDescontoTotal] = useState(0);
-  const [descontoUnitTotal, setDescontoUnitTotal] = useState('%');
-  const [produtosTotal, setProdutosTotal] = useState(0);
-  const [servicosTotal, setServicosTotal] = useState(0);
-  const [valorTotalTotal, setValorTotalTotal] = useState(0);
-
-  const calcularTotal = () => {
-    let totalProdutos = calcularTotalProdutos();
-    let totalServicos = calcularTotalServicos();
-    let total = totalProdutos + totalServicos;
-
-    if (descontoUnitTotal === '%') {
-      total = total - (total * (descontoTotal / 100));
-    } else if (descontoUnitTotal === 'R$') {
-      total = total - descontoTotal;
-    }
-
-    setValorTotalTotal(total);
-  };
-
-  // Função para recalcular o valor total de produtos, serviços e descontos
-  useEffect(() => {
-    calcularTotal();
-  }, [produtosTotal, servicosTotal, descontoTotal, descontoUnitTotal, produtosSelecionados, servicosSelecionados]);  // Dependências que devem disparar o cálculo
-
-
-
-  const handleDescontoTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? 0 : Number(e.target.value);  // Se vazio, o valor é 0
-    setDescontoTotal(value);
-  };
-
-  const handleDescontoUnitTotalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDescontoUnitTotal(e.target.value);
-  };
-
-  const handleProdutosTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setProdutosTotal(value);
-  };
-
-  const handleServicosTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setServicosTotal(value);
-  };
-
-  // #endregion
-
-
-
-
-  // #region USEEFFECT
-  useEffect(() => {
-    fetchTransportadoras();
-    fetchUsers();
-    fetchOrcamentos();
-    fetchClients();
-    fetchCentrosCusto();
-    fetchServicos();
-    fetchProd();
-    fetchCanaisVenda();
-    fetchFormasPagamento();
-  }, [token]);
-  // #endregion
-
-
-
-
-  // #region FUNÇÕES INPUTS
+  //FUNÇÕES INPUTS
   const clearInputs = () => {
     setFormValues({
       cod_orcamento: 0,
@@ -869,12 +439,8 @@ const OrcamentosPage: React.FC = () => {
     setModalDeleteVisible(false);
     setOrcamentoIdToDelete(null);
   };
-  // #endregion
 
-
-
-
-  // #region FUNÇÕES BOTÕES
+  //FUNÇÕES DOS BOTÕES
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
@@ -1119,17 +685,174 @@ const OrcamentosPage: React.FC = () => {
       });
     }
   };
-  // #endregion
 
-
-
-
-
-  // #region FUNÇÕES HANDLES
-  const handleChangeCanal = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCanal(e.target.value);
+  //EFFECTS
+  const fetchOrcamentos = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/orcamentos",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.orcamentos);
+      setOrcamentos(response.data.orcamentos);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar orçamentos:", error);
+    }
   };
+  //autopreenchimento de campos ao selecionar algo CLIENTS
+  useEffect(() => {
+    if (selectedClient) {
+      setFormValuesClients((prevValues) => ({
+        ...prevValues,
+        logradouro: selectedClient.logradouro || '',
+        cidade: selectedClient.cidade || '',
+        bairro: selectedClient.bairro || '',
+        estado: selectedClient.estado || '',
+        complemento: selectedClient.complemento || '',
+        numero: selectedClient.numero || '',
+        cep: selectedClient.cep || ''
+      }));
+    }
+  }, [selectedClient]);
+  const fetchClients = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/clients",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.clients);
+      setClients(response.data.clients);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar clientes:", error);
+    }
+  };
+  //autopreenchimento de campos ao selecionar algo PRODUTOS
+  useEffect(() => {
+    if (selectedProd) {
+      console.log('selectedProd mudou:', selectedProd);
+      setFormValuesProd((prevValues) => ({
+        ...prevValues,
+        cod_item: selectedProd.cod_item || '',
+        descricao: selectedProd.descricao || '',
+        narrativa: selectedProd.narrativa || '',
+        valor_venda: selectedProd.valor_venda || '',
+        valor_custo: selectedProd.valor_custo || '',
+      }));
 
+      let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
+      if (descontoUnitProd === '%prod') {
+        total -= total * (descontoProd / 100);
+      } else {
+        total -= descontoProd;
+      }
+      setValorTotalProd(total);
+    }
+  }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
+  const fetchProd = async () => {
+    clearInputs();
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/itens", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data.items);
+      setProd(response.data.items);
+      setFormValuesProd((prevValues) => ({
+        ...prevValues,
+        cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
+      }));
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar produtos:", error);
+    }
+  };
+  const fetchCentrosCusto = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/centrosCusto",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.centrosCusto);
+      setCentrosCusto(response.data.centrosCusto);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar centro de custos:", error);
+    }
+  };
+  //autopreenchimento de campos ao selecionar algo SERVIÇOS
+  useEffect(() => {
+    if (selectedServico) {
+      setFormValuesClients((prevValues) => ({
+        ...prevValues,
+        nome: selectedServico.nome || '',
+        descricao: selectedServico.descricao || '',
+        valor_venda: selectedServico.valor_venda ? Number(selectedServico.valor_venda) : '',
+        valor_custo: selectedServico.valor_custo ? Number(selectedServico.valor_custo) : '',
+        comissao: selectedServico.comissao ? Number(selectedServico.comissao) : '',
+        dtCadastro: selectedServico.dtCadastro ? new Date(selectedServico.dtCadastro).toISOString().split('T')[0] : ''
+      }));
+
+      let total = (selectedServico.valor_venda ? Number(selectedServico.valor_venda) : 0) * quantidadeServ;
+      if (descontoUnit === '%') {
+        total -= total * (descontoServ / 100);
+      } else {
+        total -= descontoServ;
+      }
+      setValorTotalServ(total);
+    }
+  }, [selectedServico, quantidadeServ, descontoServ, descontoUnit]);
+  const fetchServicos = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/servicos",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.servicos);
+      setServicos(response.data.servicos);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar serviços:", error);
+    }
+  };
+  useEffect(() => {
+    fetchOrcamentos();
+    fetchClients();
+    fetchCentrosCusto();
+    fetchServicos();
+    fetchProd();
+  }, []);
+
+
+  //HANDLES
   const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = clients.find(
       (client) => client.cod_cliente === Number(e.target.value)
@@ -1161,19 +884,23 @@ const OrcamentosPage: React.FC = () => {
     const selected = produtos.find((produto) => produto.cod_item === e.target.value);
     console.log('Produto encontrado:', selected);
     setSelectedProd(selected || null);
-
     if (selected) {
       setFormValuesProd({
-        id: selected.id || 0, // Adiciona o id do produto selecionado
         cod_item: selected.cod_item,
         descricao: selected.descricao || '',
+        narrativa: selected.narrativa || '',
         valor_venda: selected.valor_venda || '',
         valor_custo: selected.valor_custo || '',
+        dbs_unidades_medida: selected.dbs_unidades_medida || { un: '', cod_un: 0 },
+        cod_un: selected.cod_un || { cod_un: 0, un: '', descricao: '' },
+        cod_familia: selected.cod_familia || { cod_familia: 0, nome: '', descricao: '' },
+        cod_estabelecimento: selected.cod_estabelecimento || [],
+        situacao: selected.situacao || '',
+        anexo: selected.anexo || null,
       });
       console.log('formValuesProd atualizado:', formValuesProd);
     }
   };
-
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormValues({ ...formValues, [name]: value });
@@ -1202,12 +929,8 @@ const OrcamentosPage: React.FC = () => {
       });
     }
   }
-  // #endregion
 
-
-
-
-  // #region FUNÇÕES MODAIS
+  //FUNÇÕES DOS MODAIS
   const closeModal = () => {
     clearInputs();
     setIsEditing(false);
@@ -1223,13 +946,9 @@ const OrcamentosPage: React.FC = () => {
     setIsEditingServ(false);
     setVisibleServ(false);
   };
-  // #endregion
 
-
-
-
-  // #region FUNÇÕES INPUTS
-  // numérico
+  //FUNÇÕES DE ENTRADA INPUTS
+  //numérico
   const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
@@ -1256,8 +975,7 @@ const OrcamentosPage: React.FC = () => {
       e.preventDefault();
     }
   };
-
-  // #region alfabético
+  //alfabético
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const alphabeticValue = value.replace(/[\d]/g, '');
@@ -1285,16 +1003,10 @@ const OrcamentosPage: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
-  // #endregion
-  // #endregion
 
 
-
-
-  // #region RETURN
   return (
     <>
-
       <SidebarLayout>
         <div className="flex justify-center overflow-y-auto max-h-screen">
           {loading && (
@@ -1309,9 +1021,7 @@ const OrcamentosPage: React.FC = () => {
             </div>
           )}
 
-          {
-            //#region MODAL DELEÇÃO
-          }
+          {/* MODAL DE DELEÇÃO */}
           <Dialog
             header="Confirmar Exclusão"
             visible={modalDeleteVisible}
@@ -1336,14 +1046,8 @@ const OrcamentosPage: React.FC = () => {
           >
             <p>Tem certeza que deseja excluir este orcamento?</p>
           </Dialog>
-          {
-            //#endregion
-          }
 
-
-          {
-            //#region MODAL PRODUTOS
-          }
+          {/* MODAL DE PRODUTOS */}
           <Dialog
             header={isEditingProd ? "Editar produtos" : "Novo Item"}
             visible={visibleProd}
@@ -1515,14 +1219,8 @@ const OrcamentosPage: React.FC = () => {
 
 
           </Dialog>
-          {
-            //#endregion
-          }
 
-
-          {
-            //#region MODAL SERVIÇOS
-          }
+          {/* MODAL DE SERVIÇOS */}
           <Dialog
             header={isEditingServ ? "Editar servicos" : "Novo Serviço"}
             visible={visibleServ}
@@ -1683,14 +1381,8 @@ const OrcamentosPage: React.FC = () => {
             </div>
 
           </Dialog>
-          {
-            //#endregion
-          }
 
-
-          {
-            //#region MODAL PRINCIPAL
-          }
+          {/* MODAL PRINCIPAL */}
           <Dialog
             header={isEditing ? "Editar orcamento" : "Novo Orçamento"}
             visible={visible}
@@ -1707,9 +1399,7 @@ const OrcamentosPage: React.FC = () => {
 
             <div className="p-fluid grid gap-2 mt-2 ">
 
-              {
-                // #region primeira linha
-              }
+              {/* Primeira Linha */}
               <div className="border border-white p-2 rounded">
                 <div className="grid grid-cols-4 gap-2">
 
@@ -1738,13 +1428,7 @@ const OrcamentosPage: React.FC = () => {
                       onChange={handleClientChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
+                      <option value="">Selecione</option>
                       {clients.map((cliente) => (
                         <option key={cliente.cod_cliente} value={cliente.cod_cliente}>
                           {cliente.nome}
@@ -1757,58 +1441,22 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="responsavel" className="block text-blue font-medium mb-1">
                       Vendedor/Responsável
                     </label>
-                    <select
-                      id="responsavel"
-                      name="responsavel"
-                      className="border border-gray-400 pl-1 rounded-sm h-8 w-full"
-                      value={selectedUser?.cod_usuario || ""}
-                      onChange={(e) => {
-                        const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
-                        setSelectedUser(user || null);
-                      }}
-                    >
-                      <option value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {users.map((user) => (
-                        <option key={user.cod_usuario} value={user.cod_usuario}>
-                          {user.nome}
-                        </option>
-                      ))}
+                    <select id="responsavel" name="responsavel" className="border border-gray-400 pl-1 rounded-sm h-8 w-full">
+                      <option>Selecione</option>
                     </select>
                   </div>
-
                 </div>
-                {
-                  //#endregion
-                }
 
                 <br></br>
 
-                {
-                  // #region segunda linha
-                }
+                {/* Segunda Linha */}
                 <div className="grid grid-cols-4 gap-2">
                   <div>
                     <label htmlFor="canal_venda" className="block text-blue font-medium">
                       Canal de venda
                     </label>
                     <select id="canal_venda" name="canal_venda" className="w-full border border-gray-400 pl-1 rounded-sm h-8">
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {canaisVenda.map((canal) => (
-                        <option key={canal} value={canal}>
-                          {canal}
-                        </option>
-                      ))}
+                      <option>Selecione</option>
                     </select>
                   </div>
                   <div>
@@ -1846,13 +1494,7 @@ const OrcamentosPage: React.FC = () => {
                       }}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
+                      <option value="">Selecione</option>
                       {centrosCusto.map((centrosCusto) => (
                         <option key={centrosCusto.cod_centro_custo} value={centrosCusto.cod_centro_custo}>
                           {centrosCusto.nome}
@@ -1861,17 +1503,13 @@ const OrcamentosPage: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                {
-                  //#endregion
-                }
               </div>
 
 
               <br></br>
 
-              {
-                // #region produtos
-              }
+
+              {/* Produtos */}
               <div className="border border-gray-700 p-2 rounded bg-gray-100">
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Produtos</h3>
@@ -1888,234 +1526,176 @@ const OrcamentosPage: React.FC = () => {
                 </div>
                 <div style={{ height: "16px" }}></div>
 
-                {/* Linha principal (para entrada de dados) */}
+                {produtos.map((produto) => (
+                  <div key={produto.cod_item} className="grid grid-cols-5 gap-2">
+                    <div>
+                      <label htmlFor="produto" className="block text-blue font-medium">
+                        Produto:
+                      </label>
+                      <select
+                        id="produto"
+                        name="produto"
+                        value={selectedProd ? selectedProd.cod_item : ''}
+                        onChange={handleProdChange}
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      >
+                        <option value="">Selecione</option>
+                        {produtos.map((produto) => (
+                          <option key={produto.cod_item} value={produto.cod_item}>
+                            {produto.descricao}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="quantidadeProd" className="block text-blue font-medium">
+                        Quantidade
+                      </label>
+                      <input
+                        id="quantidadeProd"
+                        name="quantidadeProd"
+                        type="number"
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                        value={quantidadeProd}
+                        onChange={handleQuantidadeProdChange}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="vl_unit_prod" className="block text-blue font-medium">
+                        Valor Unitário
+                      </label>
+                      <input
+                        id="vl_unit_prod"
+                        name="vl_unit_prod"
+                        type="text"
+                        disabled
+                        className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                        value={formValuesProd.valor_venda}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="descontoUnitProd" className="block text-blue font-medium">
+                        Desconto
+                        <select
+                          id="descontoUnitProd"
+                          name="descontoUnitProd"
+                          value={descontoUnitProd}
+                          onChange={handleDescontoUnitProdChange}
+                          className="ml-2 border border-gray-400 rounded-sm small-select"
+                        >
+                          <option value="%prod">%</option>
+                          <option value="R$prod">R$</option>
+                        </select>
+                      </label>
+                      <input
+                        id="descontoProd"
+                        name="descontoProd"
+                        type="text"
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                        value={descontoProd}
+                        onChange={handleDescontoProdChange}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="vl_total_prod" className="block text-blue font-medium">
+                        Valor Total
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="vl_total_prod"
+                          name="vl_total_prod"
+                          type="text"
+                          disabled
+                          className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                          value={valorTotalProd}
+                        />
+                        <button
+                          className="bg-red-200 rounded p-2 flex items-center justify-center"
+                          onClick={() => handleRemoveLinha(produto.cod_item)}
+                          style={{
+                            padding: "0.1rem 0.05rem",
+                          }}
+                        >
+                          <FaTimes className="text-red text-2xl" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Nova linha semi-invisível com botão de adição */}
                 <div className="grid grid-cols-5 gap-2">
                   <div>
-                    <label htmlFor="produto" className="block text-blue font-medium">
-                      Produto:
-                    </label>
-                    <select
+                    <input
                       id="produto"
                       name="produto"
-                      value={selectedProd ? selectedProd.cod_item : ''}
-                      onChange={handleProdChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 bg-gray-200 opacity-30"
+                      disabled
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {produtos.map((produto) => (
-                        <option key={produto.cod_item} value={produto.cod_item}>
-                          {produto.descricao}
-                        </option>
-                      ))}
-                    </select>
+                    </input>
                   </div>
                   <div>
-                    <label htmlFor="quantidadeProd" className="block text-blue font-medium">
-                      Quantidade
-                    </label>
                     <input
                       id="quantidadeProd"
                       name="quantidadeProd"
                       type="number"
-                      min="1"
-                      defaultValue="1"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={quantidadeProd}
-                      onChange={handleQuantidadeProdChange}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 bg-gray-200 opacity-30"
+                      disabled
                     />
                   </div>
                   <div>
-                    <label htmlFor="vl_unit_prod" className="block text-blue font-medium">
-                      Valor Unitário
-                    </label>
                     <input
                       id="vl_unit_prod"
                       name="vl_unit_prod"
                       type="text"
                       disabled
-                      className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                      value={formValuesProd.valor_venda}
+                      className="w-full bg-gray-200 border border-gray-400 pl-1 rounded-sm h-8 opacity-30"
                     />
                   </div>
                   <div>
-                    <label htmlFor="descontoProd" className="block text-blue font-medium">
-                      Desconto
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="descontoProd"
-                        name="descontoProd"
-                        type="text"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
-                        value={descontoProd}
-                        onChange={handleDescontoProdChange}
-                      />
-                      <select
-                        id="descontoUnitProd"
-                        name="descontoUnitProd"
-                        value={descontoUnitProd}
-                        onChange={handleDescontoUnitProdChange}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
-
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%prod" ? "R$prod" : "%prod"; // Alterna entre os valores
-
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
-                        }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "none",
-                          appearance: "none",
-                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
-                          color: "black", // Texto preto
-                          textAlign: "center", // Alinha o texto centralizado
-                          border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
-                          borderRadius: "0", // Borda quadrada
-                          paddingRight: "10px", // Ajuste no padding direito
-                          cursor: "pointer", // Indica que é clicável
-                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
-                          e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
-                          e.currentTarget.style.borderColor = "#6b7280"; // Borda original
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
-                        }}
-                      >
-                        <option value="%prod">&nbsp;%</option>
-                        <option value="R$prod">&nbsp;R$</option>
-                      </select>
-
-
-                    </div>
+                    <input
+                      id="descontoProd"
+                      name="descontoProd"
+                      type="text"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 bg-gray-200 opacity-30"
+                      disabled
+                    />
                   </div>
-
-                  <div className="flex flex-col items-start gap-1">
-                    <label htmlFor="vl_total_prod" className="block text-blue font-medium">
-                      Valor Total
-                    </label>
-                    <div className="flex items-center w-full">
+                  <div>
+                    <div className="flex items-center gap-2">
                       <input
                         id="vl_total_prod"
                         name="vl_total_prod"
                         type="text"
                         disabled
-                        className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                        value={valorTotalProd}
+                        className="w-full bg-gray-200 border border-gray-400 pl-1 rounded-sm h-8 opacity-30"
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center ml-2 h-8"
-                        onClick={handleAdicionarLinha}
+                        className="bg-green-200 rounded p-2 flex items-center justify-center"
+                        onClick={handleAdicionaLinha} // Adiciona nova linha principal
+                        style={{
+                          padding: "0.1rem 0.05rem",
+                          filter: "opacity(100%)",
+                        }}
                       >
-                        <FaPlus className="text-green-700 text-xl" />
+                        <IoAddCircleOutline className="text-green-600 text-2xl" />
                       </button>
                     </div>
                   </div>
                 </div>
-
-                <br></br>
-
-                {/* Linhas adicionadas */}
-                {produtosSelecionados.map((produto, index) => (
-                  <div key={`${produto.cod_item}-${index}`} className="grid grid-cols-5 gap-2">
-                    <div>
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.descricao}
-                        disabled
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="number"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.quantidade}
-                        disabled
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.valor_venda}
-                        disabled
-                      />
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.descontoProd}
-                        disabled
-                      />
-                      <select
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-200 px-1"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "none",
-                          appearance: "none",
-                          color: "gray",
-                        }}
-                        value={produto.descontoUnitProdtipo}
-                        disabled
-                      >
-                        <option value="%prod">&nbsp;&nbsp;&nbsp;%</option>
-                        <option value="R$prod">&nbsp;&nbsp;R$</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.valor_total}
-                        disabled
-                      />
-                      <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
-                        onClick={() => handleRemoveLinhaProd(produto.id)}
-                      >
-                        <FaTimes className="text-red text-2xl" />
-                      </button>
-                    </div>
-
-                  </div>
-                ))}
-
               </div>
-              {
-                //#endregion
-              }
 
 
               <br></br>
 
-              {
-                // #region serviços
-              }
+
+              {/* Serviços */}
               <div className="border border-gray-700 p-2 rounded bg-gray-100">
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
                     className="bg-green200 rounded"
-                    onClick={handleAdicionarServico} // Adiciona nova linha ao clicar
+                    onClick={() => setVisibleServ(true)}
                     style={{
                       padding: "0.1rem 0.05rem",
                     }}
@@ -2127,9 +1707,7 @@ const OrcamentosPage: React.FC = () => {
                   </button>
                 </div>
                 <div style={{ height: "16px" }}></div>
-
-                {/* Linha principal (seleção de serviços) */}
-                <div className="grid grid-cols-5 gap-2 items-center">
+                <div className="grid grid-cols-5 gap-2">
                   <div>
                     <label htmlFor="servico" className="block text-blue font-medium">
                       Serviço:
@@ -2141,16 +1719,10 @@ const OrcamentosPage: React.FC = () => {
                       onChange={handleServicoChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {servicos.map((servico) => (
-                        <option key={servico.cod_servico} value={servico.cod_servico}>
-                          {servico.nome}
+                      <option value="">Selecione</option>
+                      {servicos.map((servicos) => (
+                        <option key={servicos.cod_servico} value={servicos.cod_servico}>
+                          {servicos.nome}
                         </option>
                       ))}
                     </select>
@@ -2159,12 +1731,9 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="quantidadeServ" className="block text-blue font-medium">
                       Quantidade
                     </label>
-                    <input
-                      id="quantidadeServ"
+                    <input id="quantidadeServ"
                       name="quantidadeServ"
                       type="number"
-                      min="1"
-                      defaultValue="1"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       value={quantidadeServ}
                       onChange={handleQuantidadeServChange}
@@ -2174,82 +1743,40 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="vl_unit_serv" className="block text-blue font-medium">
                       Valor Unitário
                     </label>
-                    <input
-                      id="vl_unit_serv"
+                    <input id="vl_unit_serv"
                       name="vl_unit_serv"
                       type="text"
-                      disabled
-                      className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
                       value={formValuesServico.valor_venda}
                     />
                   </div>
-                  <div className="relative">
+                  <div>
                     <label htmlFor="descontoServ" className="block text-blue font-medium">
                       Desconto
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="descontoServ"
-                        name="descontoServ"
-                        type="text"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
-                        value={descontoServ}
-                        onChange={handleDescontoServChange}
-                      />
                       <select
                         id="descontoUnit"
                         name="descontoUnit"
                         value={descontoUnit}
                         onChange={handleDescontoUnitChange}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
-
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%" ? "R$" : "%"; // Alterna entre os valores
-
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
-                        }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "none",
-                          appearance: "none",
-                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
-                          color: "black", // Texto preto
-                          textAlign: "center", // Alinha o texto centralizado
-                          border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
-                          borderRadius: "0", // Borda quadrada
-                          paddingRight: "10px", // Ajuste no padding direito
-                          cursor: "pointer", // Indica que é clicável
-                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
-                          e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
-                          e.currentTarget.style.borderColor = "#6b7280"; // Borda original
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
-                        }}
+                        className="ml-2 border border-gray-400 rounded-sm small-select"
                       >
-                        <option value="%">&nbsp;%</option>
-                        <option value="R$">&nbsp;R$</option>
+                        <option value="%">%</option>
+                        <option value="R$">R$</option>
                       </select>
-                    </div>
+                    </label>
+                    <input id="descontoServ"
+                      name="descontoServ"
+                      type="text"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={descontoServ}
+                      onChange={handleDescontoServChange}
+                    />
                   </div>
-
-
-                  <div className="flex flex-col items-start gap-1 w-full">
+                  <div>
                     <label htmlFor="vl_total_serv" className="block text-blue font-medium">
                       Valor Total
                     </label>
-                    <div className="flex items-center w-full gap-2">
+                    <div className="flex items-center gap-2">
                       <input
                         id="vl_total_serv"
                         name="vl_total_serv"
@@ -2258,83 +1785,15 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
                         value={valorTotalServ}
                       />
-                      <button
-                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center h-8 w-8"
-                        onClick={handleAdicionarServico}
-                      >
-                        <FaPlus className="text-green-700 text-xl" />
-                      </button>
                     </div>
                   </div>
-
                 </div>
-
-                <br></br>
-
-                {/* Linhas adicionadas de serviços */}
-                {servicosSelecionados.map((servico) => (
-                  <div key={servico.id} className="grid grid-cols-5 gap-2 items-center mt-2">
-                    <div>
-                      <input
-                        type="text"
-                        disabled
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.nome}
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="number"
-                        disabled
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.quantidade}
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        disabled
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.valor_venda}
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        disabled
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.descontoProd}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.valor_total}
-                        disabled
-                      />
-                      <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
-                        onClick={() => handleRemoveLinhaServico(servico.id)}
-                      >
-                        <FaTimes className="text-red text-2xl" />
-                      </button>
-                    </div>
-
-                  </div>
-                ))}
               </div>
-              {
-                //#endregion
-              }
-
-
 
               <br></br>
 
-              {
-                // #region proxima linha
-              }
+
+              {/* Proxima linha */}
               <div className="border border-white p-2 rounded">
                 <div className="grid grid-cols-4 gap-2 ">
                   <div>
@@ -2353,40 +1812,9 @@ const OrcamentosPage: React.FC = () => {
                   </div>
                   <div>
                     <label htmlFor="transportadora" className="block text-blue font-medium">
-                      Transportadora:
+                      Transportadora
                     </label>
-                    <select
-                      id="transportadora"
-                      name="transportadora"
-                      value={selectedTransportadora ? selectedTransportadora.cod_transportadora : ''}
-                      onChange={(e) => {
-                        const selected = transportadoras.find(
-                          (est) => est.cod_transportadora === Number(e.target.value)
-                        );
-                        setSelectedTransportadora(selected || null);
-                        if (selected) {
-                          setFormValuesTransportadoras(selected);
-                          setFormValuesTransportadoras((prevValues) => ({
-                            ...prevValues,
-                            cod_transportadora: selected.cod_transportadora,
-                          }));
-                        }
-                      }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {transportadoras.map((transportadora) => (
-                        <option key={transportadora.cod_transportadora} value={transportadora.cod_transportadora}>
-                          {transportadora.nome}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="text" id="transportadora" name="transportadora" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
                   </div>
                   <div>
                     <label htmlFor="frete" className="block text-blue font-medium">
@@ -2396,15 +1824,10 @@ const OrcamentosPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {
-                //#endregion
-              }
 
               <br></br>
 
-              {
-                // #region endereço de entrega
-              }
+              {/* Endereço de Entrega */}
               <div className="border border-gray-700 p-2 rounded bg-gray-100">
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Endereço de Entrega</h3>
@@ -2507,16 +1930,11 @@ const OrcamentosPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {
-                //#endregion
-              }
 
 
               <br></br>
 
-              {
-                // #region total
-              }
+              {/* Total */}
               <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
                 <h3 className="text-blue font-medium text-xl mr-2">Total</h3>
                 <div style={{ height: "16px" }}></div>
@@ -2525,113 +1943,32 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="produtos" className="block text-blue font-medium">
                       Produtos
                     </label>
-                    <input
-                      id="produtos"
-                      name="produtos"
-                      type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={calcularTotalProdutos()}  // Passando o valor total calculado
-                      disabled  // Tornando o input apenas leitura, já que é o valor total
-                    />
+                    <input id="produtos" name="produtos" type="text" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
                   </div>
-
                   <div>
                     <label htmlFor="servicos" className="block text-blue font-medium">
                       Serviços
                     </label>
-                    <input
-                      id="servicos"
-                      name="servicos"
-                      type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={calcularTotalServicos()}
-                      disabled
-                    />
-                  </div>
-                  <div className="relative">
-                    <label htmlFor="descontoTotal" className="block text-blue font-medium">
-                      Desconto
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="descontoTotal"
-                        name="descontoTotal"
-                        type="text"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
-                        value={descontoTotal}
-                        onChange={handleDescontoTotalChange}
-                      />
-                      <select
-                        id="descontoUnitTotal"
-                        name="descontoUnitTotal"
-                        value={descontoUnitTotal}
-                        onChange={handleDescontoUnitTotalChange}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
-
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%" ? "R$" : "%"; // Alterna entre os valores
-
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
-                        }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "none",
-                          appearance: "none",
-                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
-                          color: "black", // Texto preto
-                          textAlign: "center", // Alinha o texto centralizado
-                          border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
-                          borderRadius: "0", // Borda quadrada
-                          paddingRight: "10px", // Ajuste no padding direito
-                          cursor: "pointer", // Indica que é clicável
-                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
-                          e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
-                          e.currentTarget.style.borderColor = "#6b7280"; // Borda original
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
-                        }}
-                      >
-                        <option value="%">&nbsp;%</option>
-                        <option value="R$">&nbsp;R$</option>
-                      </select>
-                    </div>
+                    <input id="servicos" name="servicos" type="text" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
                   </div>
                   <div>
-                    <label htmlFor="vl_total_total" className="block text-blue font-medium">
+                    <label htmlFor="desconto" className="block text-blue font-medium">
+                      Desconto
+                    </label>
+                    <input id="desconto" name="desconto" type="text" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
+                  </div>
+                  <div>
+                    <label htmlFor="vl_total" className="block text-blue font-medium">
                       Valor Total
                     </label>
-                    <input
-                      id="vl_total_total"
-                      value={valorTotalTotal}
-                      name="vl_total_total"
-                      type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      disabled // O valor total final não é editável
-                    />
+                    <input id="vl_total" name="vl_total" type="text" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
                   </div>
                 </div>
               </div>
-              {
-                //#endregion
-              }
 
               <br></br>
 
-              {
-                // #region pagamentos
-              }
+              {/* Pagamentos */}
               <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
                 <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
                 <div style={{ height: "16px" }}></div>
@@ -2641,25 +1978,13 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="pagamento" className="block text-blue font-medium">
                       Forma de Pagamento
                     </label>
-                    <select
-                      id="pagamento"
-                      name="pagamento"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={selectedPagamento}
-                      onChange={(e) => setSelectedPagamento(e.target.value)}
-                    >
-                      <option value="">Selecione</option>
-                      {formasPagamento.map((forma) => (
-                        <option
-                          key={forma.cod_forma_pagamento} // Garantindo que a chave seja única
-                          value={forma.cod_forma_pagamento} // Usando o cod_forma_pagamento como valor
-                        >
-                          {forma.nome ?? "Sem Nome"}
-                        </option>
-                      ))}
+                    <select id="pagamento" name="pagamento" className="w-full border border-gray-400 pl-1 rounded-sm h-8">
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="credito">Crédito</option>
+                      <option value="debito">Débito</option>
+                      <option value="pix">PIX</option>
                     </select>
                   </div>
-
                   <div>
                     <label htmlFor="parcela" className="block text-blue font-medium">
                       Parcela
@@ -2697,15 +2022,10 @@ const OrcamentosPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {
-                //#endregion
-              }
 
               <br></br>
 
-              {
-                // #region oberservações
-              }
+              {/* Observações */}
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <div>
                   <label htmlFor="nf-compra" className="block text-blue font-medium">
@@ -2715,19 +2035,14 @@ const OrcamentosPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="nf-compra" className="block text-blue font-medium">
-                    Obervações Internas:
+                    Obervações Gerais:
                   </label>
                   <textarea id="obervacoes_internas" name="obervacoes_internas" className="w-full border border-gray-400 pl-1 rounded-sm h-32" ></textarea>
                 </div>
               </div>
-              {
-                //#endregion
-              }
             </div>
 
-            {
-              // #region botoes
-            }
+
             <div className="flex justify-between items-center  mt-16">
               <div className="grid grid-cols-3 gap-3 w-full">
                 <Button
@@ -2802,18 +2117,8 @@ const OrcamentosPage: React.FC = () => {
                 )}
               </div>
             </div>
-            {
-              //#endregion
-            }
           </Dialog>
-          {
-            //#endregion
-          }
 
-
-          {
-            //#region TABELA
-          }
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
@@ -3071,15 +2376,11 @@ const OrcamentosPage: React.FC = () => {
               </DataTable>
             </div>
           </div>
-          {
-            //#endregion
-          }
         </div>
       </SidebarLayout>
       <Footer />
     </>
   );
 };
-// #endregion
 
 export default OrcamentosPage;

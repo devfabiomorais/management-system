@@ -37,7 +37,7 @@ interface Transportadora {
   celular: string;
   telefone: string;
   dtCadastro?: string;
-  estabelecimento: number; 
+  estabelecimento: number;
 }
 
 interface Establishment {
@@ -80,56 +80,96 @@ const TransportadorasPage: React.FC = () => {
     cod_transportadora: 0,
     nome: "",
     observacoes: "",
-    tipo: "",             
-    telefone: "",           
-    celular: "",            
-    responsavel: "",       
-    email: "",             
-    logradouro: "",        
-    cidade: "",             
-    bairro: "",             
-    estado: "",            
-    complemento: "",        
-    numero: undefined,             
-    cep: "",           
+    tipo: "",
+    telefone: "",
+    celular: "",
+    responsavel: "",
+    email: "",
+    logradouro: "",
+    cidade: "",
+    bairro: "",
+    estado: "",
+    complemento: "",
+    numero: undefined,
+    cep: "",
     // situacao: "",        
-    estabelecimento: 0,    
+    estabelecimento: 0,
   });
-  const [formValuesEstablishments, setFormValuesEstablishments] = useState<Establishment>({
-          cod_estabelecimento: 0,
-          nome: "",
-          logradouro: "",
-          cidade: "",
-          bairro: "",
-          estado: "",
-          complemento: "",
-          numero: 0,
-          cep: "",
+  const [tipos, setTipos] = useState<string[]>([]);
+
+  // Função para buscar os tipos
+  const fetchTipos = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/transportadoras", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      console.log(response.data.tipos); // Verifique se o campo correto está sendo retornado
+      setTipos(response.data.tipos); // Armazena os tipos retornados
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar tipos:", error);
+    }
+  };
+
+  // Função para buscar transportadoras
+  const fetchTransportadoras = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/transportadoras", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data.transportadoras);
+      setTransportadoras(response.data.transportadoras);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar transportadoras:", error);
+    }
+  };
+
+
+
+  const [formValuesEstablishments, setFormValuesEstablishments] = useState<Establishment>({
+    cod_estabelecimento: 0,
+    nome: "",
+    logradouro: "",
+    cidade: "",
+    bairro: "",
+    estado: "",
+    complemento: "",
+    numero: 0,
+    cep: "",
+  });
 
   const clearInputs = () => {
     setFormValues({
       cod_transportadora: 0,
       nome: "",
       observacoes: "",
-      tipo: "",             
-      telefone: "",           
-      celular: "",            
-      responsavel: "",       
-      email: "",             
-      logradouro: "",        
-      cidade: "",             
-      bairro: "",             
-      estado: "",            
-      complemento: "",        
-      numero: 0,             
-      cep: "",           
+      tipo: "",
+      telefone: "",
+      celular: "",
+      responsavel: "",
+      email: "",
+      logradouro: "",
+      cidade: "",
+      bairro: "",
+      estado: "",
+      complemento: "",
+      numero: 0,
+      cep: "",
       // situacao: "",        
-      estabelecimento: 0,   
+      estabelecimento: 0,
     });
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
@@ -198,105 +238,105 @@ const TransportadorasPage: React.FC = () => {
     }
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
-const handleSave = async () => {
-  setItemCreateReturnDisabled(true);
-  setLoading(true);
-  try {
-    const requiredFields = [
-      "nome",
-      "tipo",
-      "telefone",
-      "celular",
-      "responsavel",        
-      "complemento",
-      "email",
-      "logradouro",
-      "cidade",
-      "bairro",
-      "estado",
-      "numero",
-      "cep",
-      "cod_estabel",
-    ];
+  const handleSave = async () => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+    try {
+      const requiredFields = [
+        "nome",
+        "tipo",
+        "telefone",
+        "celular",
+        "responsavel",
+        "complemento",
+        "email",
+        "logradouro",
+        "cidade",
+        "bairro",
+        "estado",
+        "numero",
+        "cep",
+        "cod_estabel",
+      ];
 
-    const isEmptyField = requiredFields.some((field) => {
-      const value = formValues[field as keyof typeof formValues];
-      return value === "" || value === null || value === undefined;
-    });
-
-    if (isEmptyField) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
-      toast.info("Todos os campos devem ser preenchidos!", {
-        position: "top-right",
-        autoClose: 3000,
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
+        return value === "" || value === null || value === undefined;
       });
-      return;
-    }
 
-    // Verifica se o código do estabelecimento é válido
-    const estabelecimento = selectedEstabilishment?.cod_estabelecimento;
-    if (!estabelecimento) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
-      toast.info("Por favor, selecione um estabelecimento válido.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
+      if (isEmptyField) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
 
-    // Envia os dados para o backend
-    const response = await axios.post(
-      "http://localhost:9009/api/transportadoras/register",
-      {
-        ...formValues,
-        dbs_estabelecimentos_transportadora: {
-          create: {
-            cod_estabel: estabelecimento, // Agora usando 'cod_estabel' para o relacionamento correto
-            dbs_estabelecimentos: {
-              connect: {
-                cod_estabelecimento: estabelecimento, // Conectando com o estabelecimento correto
+      // Verifica se o código do estabelecimento é válido
+      const estabelecimento = selectedEstabilishment?.cod_estabelecimento;
+      if (!estabelecimento) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Por favor, selecione um estabelecimento válido.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      // Envia os dados para o backend
+      const response = await axios.post(
+        "http://localhost:9009/api/transportadoras/register",
+        {
+          ...formValues,
+          dbs_estabelecimentos_transportadora: {
+            create: {
+              cod_estabel: estabelecimento, // Agora usando 'cod_estabel' para o relacionamento correto
+              dbs_estabelecimentos: {
+                connect: {
+                  cod_estabelecimento: estabelecimento, // Conectando com o estabelecimento correto
+                },
               },
             },
           },
         },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchTransportadoras();
+        toast.success("Transportadora salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar transportadora.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       }
-    );
-
-    if (response.status >= 200 && response.status < 300) {
+    } catch (error) {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      clearInputs();
-      fetchTransportadoras();
-      toast.success("Transportadora salva com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    } else {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
-      toast.error("Erro ao salvar transportadora.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      console.error("Erro ao salvar transportadora:", error);
     }
-  } catch (error) {
-    setItemCreateReturnDisabled(false);
-    setLoading(false);
-    console.error("Erro ao salvar transportadora:", error);
-  }
-};
+  };
 
-// ---------------------------------------------------------------------------------------------------------------
-  
+  // ---------------------------------------------------------------------------------------------------------------
+
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
@@ -306,7 +346,7 @@ const handleSave = async () => {
         "tipo",
         "telefone",
         "celular",
-        "responsavel",        
+        "responsavel",
         "complemento",
         "email",
         "logradouro",
@@ -394,7 +434,7 @@ const handleSave = async () => {
   };
 
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleEdit = (transportadora: Transportadora) => {
     setFormValues(transportadora);
@@ -403,52 +443,34 @@ const handleSave = async () => {
     setVisible(true);
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
     fetchTransportadoras();
     fetchEstabilishments();
-  }, []);
+    fetchTipos();
+  }, [token]);
 
-  const fetchTransportadoras = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/transportadoras",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.transportadoras);
-      setTransportadoras(response.data.transportadoras);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar transportadoras:", error);
-    }
-  };
 
   const fetchEstabilishments = async () => {
     setLoading(true)
     try {
 
-        const response = await axios.get("http://localhost:9009/api/estabilishment", {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        console.log(response.data.estabelecimentos)
-        setEstablishments(response.data.estabelecimentos);
-        setLoading(false)
+      const response = await axios.get("http://localhost:9009/api/estabilishment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data.estabelecimentos)
+      setEstablishments(response.data.estabelecimentos);
+      setLoading(false)
     } catch (error) {
-        setLoading(false)
-        console.error("Erro ao carregar estabelecimentos:", error);
+      setLoading(false)
+      console.error("Erro ao carregar estabelecimentos:", error);
     }
-};
+  };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const openDialog = (id: number) => {
     setTransportadoraIdToDelete(id);
@@ -460,7 +482,7 @@ const handleSave = async () => {
     setTransportadoraIdToDelete(null);
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleDelete = async () => {
     if (transportadoraIdToDelete === null) return;
@@ -489,7 +511,7 @@ const handleSave = async () => {
     }
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -502,27 +524,27 @@ const handleSave = async () => {
     setVisible(false);
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
     const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
     setFormValues({
       ...formValues,
-      [name]: Number(numericValue) , // Atualiza dinamicamente o campo com base no "name"
+      [name]: Number(numericValue), // Atualiza dinamicamente o campo com base no "name"
     });
   };
 
-// ---------------------------------------------------------------------------------------------------------------  
+  // ---------------------------------------------------------------------------------------------------------------  
 
   const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault();
     }
-  };  
+  };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
@@ -533,7 +555,7 @@ const handleSave = async () => {
     });
   };
 
-// ---------------------------------------------------------------------------------------------------------------  
+  // ---------------------------------------------------------------------------------------------------------------  
 
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
@@ -543,27 +565,27 @@ const handleSave = async () => {
     }
   };
 
-// ---------------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------------
 
   const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Remove qualquer caractere não numérico
     const numericValue = value.replace(/[^0-9]/g, '');
-    
+
     // Formata o CEP com o formato 'XXXXX-XXX'
     const formattedValue = numericValue.replace(
       /(\d{5})(\d{0,3})/,
       (match, p1, p2) => `${p1}-${p2}`
     );
-    
+
     setFormValues({
       ...formValues,
       [name]: formattedValue, // Atualiza o campo de CEP com a formatação
     });
   };
 
-// ---------------------------------------------------------------------------------------------------------------  
+  // ---------------------------------------------------------------------------------------------------------------  
 
   const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
@@ -571,7 +593,7 @@ const handleSave = async () => {
       e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
     }
   };
- 
+
 
   return (
     <>
@@ -627,247 +649,246 @@ const handleSave = async () => {
             onHide={() => closeModal()}
           >
             <div className="p-fluid grid gap-2 mt-2">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2">
-            <label htmlFor="nome" className="block text-blue font-medium">
-              Nome:
-            </label>
-            <input
-              type="text"
-              id="nome"
-              name="nome"
-              value={formValues.nome}
-              onChange={handleAlphabeticInputChange} // Não permite números
-              onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="tipo" className="block text-blue font-medium">
-              Tipo:
-            </label>
-            <select
-              id="tipo"
-              name="tipo"
-              value={formValues.tipo}
-              onChange={(e) =>
-                setFormValues({ ...formValues, tipo: e.target.value })
-              }
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            >
-              <option value="">Selecione</option>
-              <option value="TERRESTRE">TERRESTRE</option>
-              <option value="AEREO">AEREO</option>
-              <option value="MARITIMO">MARITIMO</option>
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="telefone" className="block text-blue font-medium">
-              Telefone:
-            </label>
-            <input
-              type="text"
-              id="telefone"
-              name="telefone"
-              value={formValues.telefone}
-              onChange={handleNumericInputChange} // Permite apenas números
-              onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-              maxLength={15}
-            />
-          </div>
-          <div>
-            <label htmlFor="celular" className="block text-blue font-medium">
-              Celular:
-            </label>
-            <input
-              type="text"
-              id="celular"
-              name="celular"
-              value={formValues.celular}
-              onChange={handleNumericInputChange} // Permite apenas números
-              onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-              maxLength={15}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label htmlFor="responsavel" className="block text-blue font-medium">
-              Responsável:
-            </label>
-            <input
-              type="text"
-              id="responsavel"
-              name="responsavel"
-              value={formValues.responsavel}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-blue font-medium">
-              E-mail:
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formValues.email}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="complemento" className="block text-blue font-medium">
-              Complemento:
-            </label>
-            <input
-              type="text"
-              id="complemento"
-              name="complemento"
-              value={formValues.complemento}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="estabelecimento" className="block text-blue font-medium">
-              Estabelecimento:
-            </label>
-            <select
-            id="estabelecimento"
-            name="cod_estabel"
-            value={selectedEstabilishment ? selectedEstabilishment.cod_estabelecimento : ''}
-            onChange={(e) => {
-              const selected = establishments.find(
-                (est) => est.cod_estabelecimento === Number(e.target.value)
-              );
-              setSelectedEstabilishment(selected || null);
-              if (selected) {
-                setFormValuesEstablishments(selected); // Atualiza os dados do estabelecimento
-                setFormValues((prevValues) => ({
-                  ...prevValues,
-                  cod_estabel: selected.cod_estabelecimento, // Atualiza o campo de estabelecimento
-                }));
-              }
-            }}
-            className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-          >
-            <option value="">Selecione</option>
-            {establishments.map((estabelecimento) => (
-              <option key={estabelecimento.cod_estabelecimento} value={estabelecimento.cod_estabelecimento}>
-                {estabelecimento.nome}
-              </option>
-            ))}
-          </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-2">
-        <div>
-            <label htmlFor="observacoes" className="block text-blue font-medium">
-              Observações:
-            </label>
-            <input
-              type="text"
-              id="observacoes"
-              name="observacoes"
-              value={formValues.observacoes}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="cep" className="block text-blue font-medium">
-              CEP:
-            </label>
-            <input
-              type="text"
-              id="cep"
-              name="cep"
-              value={formValues.cep}
-              onChange={handleCepInputChange} // Formata o CEP enquanto digita
-              onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-              maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
-            />
-          </div>
-          <div>
-            <label htmlFor="logradouro" className="block text-blue font-medium">
-              Logradouro:
-            </label>
-            <input
-              type="text"
-              id="logradouro"
-              name="logradouro"
-              value={formValues.logradouro}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          <div>
-            <label htmlFor="numero" className="block text-blue font-medium">
-              Número:
-            </label>
-            <input
-              type="number"
-              id="numero"
-              name="numero"
-              value={formValues.numero}
-              onChange={handleNumericInputChange} // Não permite letras
-              onKeyPress={handleNumericKeyPress} // Bloqueia letras
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="estado" className="block text-blue font-medium">
-              Estado (sigla):
-            </label>
-            <input
-              type="text"
-              id="estado"
-              name="estado"
-              value={formValues.estado}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="bairro" className="block text-blue font-medium">
-              Bairro:
-            </label>
-            <input
-              type="text"
-              id="bairro"
-              name="bairro"
-              value={formValues.bairro}
-              onChange={handleInputChange}
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-          <div>
-            <label htmlFor="cidade" className="block text-blue font-medium">
-              Cidade:
-            </label>
-            <input
-              type="text"
-              id="cidade"
-              name="cidade"
-              value={formValues.cidade}
-              onChange={handleAlphabeticInputChange} // Não permite números
-              onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
-              className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            />
-          </div>
-        </div>
-      </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label htmlFor="nome" className="block text-blue font-medium">
+                    Nome:
+                  </label>
+                  <input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    value={formValues.nome}
+                    onChange={handleAlphabeticInputChange} // Não permite números
+                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tipo" className="block text-blue font-medium">
+                    Tipo:
+                  </label>
+                  <select
+                    id="tipo"
+                    name="tipo"
+                    value={formValues.tipo}
+                    onChange={(e) =>
+                      setFormValues({ ...formValues, tipo: e.target.value })
+                    }
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="PessoaFisica">Pessoa Física</option>
+                    <option value="PessoaJuridica">Pessoa Jurídica</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="telefone" className="block text-blue font-medium">
+                    Telefone:
+                  </label>
+                  <input
+                    type="text"
+                    id="telefone"
+                    name="telefone"
+                    value={formValues.telefone}
+                    onChange={handleNumericInputChange} // Permite apenas números
+                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={15}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="celular" className="block text-blue font-medium">
+                    Celular:
+                  </label>
+                  <input
+                    type="text"
+                    id="celular"
+                    name="celular"
+                    value={formValues.celular}
+                    onChange={handleNumericInputChange} // Permite apenas números
+                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={15}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="responsavel" className="block text-blue font-medium">
+                    Responsável:
+                  </label>
+                  <input
+                    type="text"
+                    id="responsavel"
+                    name="responsavel"
+                    value={formValues.responsavel}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-blue font-medium">
+                    E-mail:
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formValues.email}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="complemento" className="block text-blue font-medium">
+                    Complemento:
+                  </label>
+                  <input
+                    type="text"
+                    id="complemento"
+                    name="complemento"
+                    value={formValues.complemento}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento:
+                  </label>
+                  <select
+                    id="estabelecimento"
+                    name="cod_estabel"
+                    value={selectedEstabilishment ? selectedEstabilishment.cod_estabelecimento : ''}
+                    onChange={(e) => {
+                      const selected = establishments.find(
+                        (est) => est.cod_estabelecimento === Number(e.target.value)
+                      );
+                      setSelectedEstabilishment(selected || null);
+                      if (selected) {
+                        setFormValuesEstablishments(selected); // Atualiza os dados do estabelecimento
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          cod_estabel: selected.cod_estabelecimento, // Atualiza o campo de estabelecimento
+                        }));
+                      }
+                    }}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  >
+                    <option value="">Selecione</option>
+                    {establishments.map((estabelecimento) => (
+                      <option key={estabelecimento.cod_estabelecimento} value={estabelecimento.cod_estabelecimento}>
+                        {estabelecimento.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <label htmlFor="observacoes" className="block text-blue font-medium">
+                    Observações:
+                  </label>
+                  <input
+                    type="text"
+                    id="observacoes"
+                    name="observacoes"
+                    value={formValues.observacoes}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="cep" className="block text-blue font-medium">
+                    CEP:
+                  </label>
+                  <input
+                    type="text"
+                    id="cep"
+                    name="cep"
+                    value={formValues.cep}
+                    onChange={handleCepInputChange} // Formata o CEP enquanto digita
+                    onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
+                  />
+                </div>
+                <div>
+                  <label htmlFor="logradouro" className="block text-blue font-medium">
+                    Logradouro:
+                  </label>
+                  <input
+                    type="text"
+                    id="logradouro"
+                    name="logradouro"
+                    value={formValues.logradouro}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                <div>
+                  <label htmlFor="numero" className="block text-blue font-medium">
+                    Número:
+                  </label>
+                  <input
+                    type="number"
+                    id="numero"
+                    name="numero"
+                    value={formValues.numero}
+                    onChange={handleNumericInputChange} // Não permite letras
+                    onKeyPress={handleNumericKeyPress} // Bloqueia letras
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estado" className="block text-blue font-medium">
+                    Estado (sigla):
+                  </label>
+                  <input
+                    type="text"
+                    id="estado"
+                    name="estado"
+                    value={formValues.estado}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bairro" className="block text-blue font-medium">
+                    Bairro:
+                  </label>
+                  <input
+                    type="text"
+                    id="bairro"
+                    name="bairro"
+                    value={formValues.bairro}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cidade" className="block text-blue font-medium">
+                    Cidade:
+                  </label>
+                  <input
+                    type="text"
+                    id="cidade"
+                    name="cidade"
+                    value={formValues.cidade}
+                    onChange={handleAlphabeticInputChange} // Não permite números
+                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+            </div>
 
 
             <div className="flex justify-between items-center  mt-16">
@@ -1000,154 +1021,154 @@ const handleSave = async () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                field="cod_transportadora"
-                header="Código"
-                style={{
-                  width: "0%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="nome"
-                header="Nome"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="observacoes"
-                header="Observações"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="telefone"
-                header="Telefone"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="celular"
-                header="Celular"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="responsavel"
-                header="Responsável"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-              />
-              <Column
-                field="dtCadastro"
-                header="DT Cadastro"
-                style={{
-                  width: "1%",
-                  textAlign: "center",
-                  border: "1px solid #ccc",
-                }}
-                headerStyle={{
-                  fontSize: "1.2rem",
-                  color: "#1B405D",
-                  fontWeight: "bold",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                  backgroundColor: "#D9D9D980",
-                  verticalAlign: "middle",
-                  padding: "10px",
-                }}
-                body={(rowData) => {
-                  const date = new Date(rowData.dtCadastro);
-                  const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                  }).format(date);
+                  field="cod_transportadora"
+                  header="Código"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="nome"
+                  header="Nome"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="observacoes"
+                  header="Observações"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="telefone"
+                  header="Telefone"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="celular"
+                  header="Celular"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="responsavel"
+                  header="Responsável"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="dtCadastro"
+                  header="DT Cadastro"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    const date = new Date(rowData.dtCadastro);
+                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    }).format(date);
 
-                  return <span>{formattedDate}</span>;
-                }}
-              />
+                    return <span>{formattedDate}</span>;
+                  }}
+                />
 
-                
+
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""

@@ -322,14 +322,14 @@ const CentrosCustoPage: React.FC = () => {
       [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
-  
+
+
   const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault();
     }
-  };  
+  };
 
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
@@ -339,7 +339,7 @@ const CentrosCustoPage: React.FC = () => {
       [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
+
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     // Permite qualquer caractere que não seja número
@@ -347,8 +347,8 @@ const CentrosCustoPage: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
-  
- 
+
+
 
   return (
     <>
@@ -418,7 +418,7 @@ const CentrosCustoPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-              </div>              
+              </div>
 
               <div className="grid grid-cols-1 gap-2">
                 <div>
@@ -430,7 +430,7 @@ const CentrosCustoPage: React.FC = () => {
                     id="descricao"
                     name="descricao"
                     value={formValues.descricao}
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
                     className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
                   />
                 </div>
@@ -623,7 +623,7 @@ const CentrosCustoPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                /> 
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""

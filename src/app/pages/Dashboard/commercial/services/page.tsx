@@ -341,14 +341,14 @@ const ServicosPage: React.FC = () => {
       [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
-  
+
+
   const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault();
     }
-  };  
+  };
 
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
@@ -358,7 +358,7 @@ const ServicosPage: React.FC = () => {
       [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
+
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     // Permite qualquer caractere que não seja número
@@ -366,8 +366,8 @@ const ServicosPage: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
-  
- 
+
+
 
   return (
     <>
@@ -447,9 +447,9 @@ const ServicosPage: React.FC = () => {
                     id="cod_servico"
                     name="cod_servico"
                     value={formValues.cod_servico}
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />                    
+                  />
                 </div>
               </div>
 
@@ -508,7 +508,7 @@ const ServicosPage: React.FC = () => {
                     id="descricao"
                     name="descricao"
                     value={formValues.descricao}
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
                     className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
                   />
                 </div>
@@ -758,7 +758,7 @@ const ServicosPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />                
+                />
                 <Column
                   field="dtCadastro"
                   header="DT Cadastro"
