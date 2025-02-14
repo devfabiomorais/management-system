@@ -21,9 +21,22 @@ import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 
+
+
 interface Transportadora {
   cod_transportadora: number;
   nome: string;
+}
+
+interface Pagamento {
+  nome: string | number | readonly string[] | undefined;
+  formaPagamento: any;
+  id: number;
+  cod_forma_pagamento?: number; // Adicionado caso precise da chave primária
+  parcela?: number;
+  valorParcela?: number;
+  juros?: number;
+  data_parcela?: string;
 }
 
 interface Formas {
@@ -170,30 +183,6 @@ const OrcamentosPage: React.FC = () => {
     } catch (error) {
       setLoading(false);
       console.error("Erro ao carregar transportadoras:", error);
-    }
-  };
-  // #endregion
-
-  // #region FORMAS PAGAMENTO
-  const [formasPagamento, setFormasPagamento] = useState<Formas[]>([]);
-  const [selectedPagamento, setSelectedPagamento] = useState("");
-
-  // Função para buscar as formas de pagamento
-  const fetchFormasPagamento = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/formas_pagamento",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.forma_pagamento);
-      setFormasPagamento(response.data.forma_pagamento);
-      setLoading(false);
-    } catch (error) {
-      console.error("Erro ao buscar formas de pagamento:", error);
     }
   };
   // #endregion
@@ -718,12 +707,14 @@ const OrcamentosPage: React.FC = () => {
   const [produtosTotal, setProdutosTotal] = useState(0);
   const [servicosTotal, setServicosTotal] = useState(0);
   const [valorTotalTotal, setValorTotalTotal] = useState(0);
+  const [frete, setFrete] = useState(0.0);
 
   const calcularTotal = () => {
     let totalProdutos = calcularTotalProdutos();
     let totalServicos = calcularTotalServicos();
-    let total = totalProdutos + totalServicos;
+    let total = totalProdutos + totalServicos + frete;
 
+    // Aplicando o desconto, se houver
     if (descontoUnitTotal === '%') {
       total = total - (total * (descontoTotal / 100));
     } else if (descontoUnitTotal === 'R$') {
@@ -736,7 +727,14 @@ const OrcamentosPage: React.FC = () => {
   // Função para recalcular o valor total de produtos, serviços e descontos
   useEffect(() => {
     calcularTotal();
-  }, [produtosTotal, servicosTotal, descontoTotal, descontoUnitTotal, produtosSelecionados, servicosSelecionados]);  // Dependências que devem disparar o cálculo
+  }, [produtosTotal,
+    servicosTotal,
+    descontoTotal,
+    descontoUnitTotal,
+    produtosSelecionados,
+    servicosSelecionados,
+    frete
+  ]);  // Dependências que devem disparar o cálculo
 
 
 
@@ -762,6 +760,123 @@ const OrcamentosPage: React.FC = () => {
   // #endregion
 
 
+
+  // #region PAGAMENTOS
+  const [formasPagamento, setFormasPagamento] = useState<Formas[]>([]);
+  const [selectedPagamento, setSelectedPagamento] = useState<Pagamento[]>([]);
+  const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
+  const [selectedFormaPagamento, setSelectedFormaPagamento] = useState<Pagamento | null>(null);
+  const [parcela, setParcela] = useState<number>(0);
+  const [valorParcela, setvalorParcela] = useState<number>(0);
+  const [juros, setJuros] = useState<number>(0);
+  const [data_parcela, setDataParcela] = useState<string>("");
+  const [quantidadeParcelas, setQuantidadeParcelas] = useState<number>(1); // Novo estado para quantidade de parcelas
+  const [restanteAserPago, setRestanteAserPago] = useState(valorTotalTotal);
+  const [totalPagamentos, setTotalPagamentos] = useState(0);
+
+
+  const fetchFormasPagamento = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/formas_pagamento",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.forma_pagamento);
+      setFormasPagamento(response.data.forma_pagamento);
+      setLoading(false);
+    } catch (error) {
+      console.error("Erro ao buscar formas de pagamento:", error);
+    }
+  };
+
+  const handleRemovePagamento = (id: number) => {
+    setPagamentos((prev) => {
+      // Remove o pagamento com base no ID
+      const novaLista = prev.filter((pagamento) => pagamento.id !== id);
+
+      // Recalcula as parcelas para manter a sequência correta
+      return novaLista.map((pagamento, index) => ({
+        ...pagamento,
+        parcela: index + 1, // Atualiza a parcela com base na nova posição
+      }));
+    });
+  };
+
+  const handleAdicionarPagamento = () => {
+    if (!selectedFormaPagamento || !data_parcela) {
+      alert("Prencha a forma de pagamento, o valor e a data de pagamento");
+      return;
+    }
+    const novoPagamento: Pagamento = {
+      id: Date.now(),
+      cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
+      nome: selectedFormaPagamento.nome,
+      formaPagamento: selectedFormaPagamento,
+      parcela: pagamentos.length + 1, // Garante que a parcela seja sempre sequencial
+      valorParcela,
+      juros,
+      data_parcela,
+    };
+
+    setPagamentos((prev) => [...prev, novoPagamento]);
+
+    setSelectedFormaPagamento(null);
+    setJuros(0);
+    setDataParcela("");
+    setvalorParcela(0);
+  };
+
+  const handleAdicionarMultiplasParcelas = () => {
+    if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) return;
+
+    const novasParcelas = Array.from({ length: quantidadeParcelas }, (_, i) => ({
+      id: Date.now() + i, // Garantindo IDs únicos
+      cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
+      nome: selectedFormaPagamento.nome,
+      formaPagamento: selectedFormaPagamento,
+      parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
+      valorParcela,
+      juros,
+      data_parcela,
+    }));
+
+    setPagamentos((prev) => [...prev, ...novasParcelas]);
+    setSelectedFormaPagamento(null);
+    setvalorParcela(0);
+    setJuros(0);
+    setDataParcela("");
+    setQuantidadeParcelas(1); // Reseta a quantidade de parcelas para 1 após adicionar
+  };
+
+  useEffect(() => {
+    setParcela(pagamentos.length > 0 ? pagamentos[pagamentos.length - 1].parcela! + 1 : 1);
+  }, [pagamentos]);
+
+  useEffect(() => {
+    const totalPago = pagamentos.reduce((acc, pagamento) => acc + (pagamento.valorParcela ?? 0), 0);
+    setRestanteAserPago(valorTotalTotal - totalPago);
+  }, [pagamentos, valorTotalTotal]);
+
+  useEffect(() => {
+    const totalComJuros = pagamentos.reduce((acc, pagamento) => {
+      const valorParcela = pagamento.valorParcela ?? 0; // Garantir que valorParcela não seja undefined
+      const juros = pagamento.juros ?? 0; // Garantir que juros não seja undefined
+      const valorComJuros = valorParcela * (1 + juros / 100);
+      return acc + valorComJuros;
+    }, 0);
+
+    setTotalPagamentos(totalComJuros);
+  }, [pagamentos]);
+
+
+
+
+
+  // #endregion
 
 
   // #region USEEFFECT
@@ -2392,8 +2507,18 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="frete" className="block text-blue font-medium">
                       Frete
                     </label>
-                    <input id="frete" name="frete" className="w-full border border-gray-400 pl-1 rounded-sm h-8"></input>
+                    <input
+                      id="frete"
+                      name="frete"
+                      type="number"
+                      min={0}
+                      defaultValue={0}
+                      value={frete}
+                      onChange={(e) => setFrete(parseFloat(e.target.value))}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
                   </div>
+
                 </div>
               </div>
               {
@@ -2635,25 +2760,49 @@ const OrcamentosPage: React.FC = () => {
               <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
                 <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
                 <div style={{ height: "16px" }}></div>
-                <div style={{ height: "4px" }}></div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-6 gap-2">
+                  <div>
+                    <label htmlFor="restanteAserPago" className="block text-black font-small">Restante</label>
+                    <input
+                      id="restanteAserPago"
+                      name="restanteAserPago"
+                      type="number"
+                      className={`w-full border ${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'}  pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}
+                      value={restanteAserPago}
+                      disabled
+                    />
+                  </div>
+
+                </div>
+                <br></br>
+                <div className="grid grid-cols-6 gap-2">
                   <div>
                     <label htmlFor="pagamento" className="block text-blue font-medium">
-                      Forma de Pagamento
+                      Forma
                     </label>
                     <select
                       id="pagamento"
                       name="pagamento"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={selectedPagamento}
-                      onChange={(e) => setSelectedPagamento(e.target.value)}
+                      value={selectedFormaPagamento?.cod_forma_pagamento || ""}
+                      onChange={(e) => {
+                        const selected = formasPagamento.find(f => f.cod_forma_pagamento === Number(e.target.value));
+                        if (selected) {
+                          setSelectedFormaPagamento({
+                            id: Date.now(),
+                            nome: selected.nome,
+                            cod_forma_pagamento: selected.cod_forma_pagamento,
+                            formaPagamento: selected // Incluindo a formaPagamento completa
+                          });
+                        } else {
+                          setSelectedFormaPagamento(null);
+                        }
+                      }}
+
                     >
                       <option value="">Selecione</option>
                       {formasPagamento.map((forma) => (
-                        <option
-                          key={forma.cod_forma_pagamento} // Garantindo que a chave seja única
-                          value={forma.cod_forma_pagamento} // Usando o cod_forma_pagamento como valor
-                        >
+                        <option key={forma.cod_forma_pagamento} value={forma.cod_forma_pagamento}>
                           {forma.nome ?? "Sem Nome"}
                         </option>
                       ))}
@@ -2661,42 +2810,160 @@ const OrcamentosPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="parcela" className="block text-blue font-medium">
-                      Parcela
-                    </label>
-                    <input id="parcela" name="parcela" type="number" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
+                    <label htmlFor="parcela" className="block text-blue font-medium">Parcela</label>
+                    <input
+                      id="parcela"
+                      name="parcela"
+                      type="number"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 !bg-gray-200"
+                      value={pagamentos.length > 0 ? (pagamentos[pagamentos.length - 1]?.parcela ?? 0) + 1 : 1}
+                      disabled
+                    />
                   </div>
+
                   <div>
-                    <label htmlFor="juros" className="block text-blue font-medium">
-                      Juros
-                    </label>
-                    <input id="juros" name="juros" type="number" className="w-full border border-gray-400 pl-1 rounded-sm h-8" placeholder="R$" />
+                    <label htmlFor="valorParcela" className="block text-blue font-medium">Valor</label>
+                    <input
+                      id="valorParcela"
+                      name="valorParcela"
+                      type="number"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={valorParcela}
+                      onChange={(e) => setvalorParcela(Number(e.target.value))}
+                    />
                   </div>
+
+
                   <div>
-                    <label htmlFor="dt_parcela" className="block text-blue font-medium">
+                    <label htmlFor="juros" className="block text-blue font-medium">Juros %</label>
+                    <input
+                      id="juros"
+                      name="juros"
+                      type="number"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      placeholder="R$"
+                      value={juros}
+                      onChange={(e) => setJuros(Number(e.target.value))}
+                    />
+                  </div>
+
+
+                  <div className="col-span-2 flex flex-col items-start gap-1 w-full">
+                    <label htmlFor="data_parcela" className="block text-blue font-medium">
                       Data da Parcela
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center w-full gap-2">
                       <input
-                        id="dt_parcela"
-                        name="dt_parcela"
+                        id="data_parcela"
+                        name="data_parcela"
                         type="date"
-                        disabled
-                        className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                        value={data_parcela}
+                        onChange={(e) => setDataParcela(e.target.value)}
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex items-center justify-center"
-                        onClick={() => setVisible(true)}
-                        style={{
-                          padding: "0.1rem 0.05rem",
-                        }}
+                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center h-8"
+                        onClick={handleAdicionarPagamento}
+                      >
+                        <FaPlus className="text-green-700 text-xl" />
+                      </button>
+                    </div>
+                    <div className="flex ml-auto items-center gap-1">
+                      <label htmlFor="quantidadeParcelas" className="text-sm">Parcelas Rápido&nbsp;</label>
+                      <input
+                        type="number"
+                        id="quantidadeParcelas"
+                        value={quantidadeParcelas}
+                        onChange={(e) => setQuantidadeParcelas(Number(e.target.value))}
+                        min={1}
+                        max={24}
+                        className="w-10 h-5 text-center border border-gray-400 rounded-sm"
+                      />
+                      <button
+                        onClick={handleAdicionarMultiplasParcelas}
+                        className="bg-blue300 border border-blue500 rounded p-1 flex items-center justify-center h-5 w-7.5 ml-[4px]"
+                      >
+                        <FaPlus className="text-white text-xl h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <br />
+
+                {/* Pagamentos Adicionados */}
+                {pagamentos.map((pagamento, index) => (
+                  <div key={`${pagamento.id}-${index}`} className="grid grid-cols-6 gap-2 items-center mt-2">
+                    <div>
+                      <input
+                        type="text"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={pagamento.nome}
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="number"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={pagamento.parcela} // valor individual da parcela
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="text"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={pagamento.valorParcela}
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        type="text"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={pagamento.juros}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="col-span-2 flex items-center gap-2">
+                      <input
+                        type="text"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={pagamento.data_parcela
+                          ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
+                          : ""} // Exibe como DD/MM/AAAA, vazio caso não tenha data
+
+                      />
+                      <button
+                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
+                        onClick={() => handleRemovePagamento(pagamento.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
                       </button>
                     </div>
                   </div>
+                ))}
+                <div className="flex justify-end mt-5">
+                  <div className="flex items-center space-x-2">
+                    <label htmlFor="totalPagamentos" className="text-blue text-[16px]">Total final</label>
+                    <input
+                      id="totalPagamentos"
+                      name="totalPagamentos"
+                      type="number"
+                      className="w-25 h-6 border border-gray-400 pl-1 rounded-sm !bg-gray-200"
+                      value={totalPagamentos}
+                      readOnly
+                    />
+                  </div>
                 </div>
+
               </div>
+
               {
                 //#endregion
               }
