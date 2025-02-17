@@ -66,8 +66,8 @@ interface Orcamento {
   cod_responsavel: number;
   cod_cliente: number;
   canal_venda: string;
-  data_venda: Date;
-  prazo: Date;
+  data_venda: string;
+  prazo: string;
   cod_centro_custo: number;
   frota: string;
   nf_compra: string;
@@ -84,6 +84,8 @@ interface Orcamento {
   observacoes_gerais?: string;
   observacoes_internas?: string;
   desconto_total: number;
+  valor_total: number;
+  situacao?: string;
 }
 
 interface Client {
@@ -232,74 +234,6 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-  // #region ORÇAMENTOS
-  const [canaisVenda, setCanaisVenda] = useState<string[]>([]);
-  const [selectedCanal, setSelectedCanal] = useState<string>('');
-  const fetchCanaisVenda = async () => {
-    try {
-      const response = await axios.get('http://localhost:9009/api/orcamentos/canais-venda');
-      setCanaisVenda(response.data.canaisVenda);
-      console.log(response.data.canaisVenda);
-    } catch (error) {
-      console.error('Erro ao buscar canais de venda:', error);
-    }
-  };
-
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
-  const filteredOrcamentos = orcamentos.filter((orcamento) =>
-    orcamento.logradouro.toLowerCase().includes(search.toLowerCase())
-  );
-  const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
-  const [formValues, setFormValues] = useState<Orcamento>({
-    cod_orcamento: 0,
-    cod_responsavel: 0,
-    cod_cliente: 0,
-    canal_venda: "",
-    data_venda: new Date(),
-    prazo: new Date(),
-    cod_centro_custo: 0,
-    frota: "",
-    nf_compra: "",
-    cod_transportadora: 0,
-    frete: 0.0,
-    endereco_cliente: "Sim",
-    logradouro: "",
-    cidade: "",
-    bairro: "",
-    estado: "",
-    complemento: "",
-    numero: 0,
-    cep: "",
-    observacoes_gerais: "",
-    observacoes_internas: "",
-    desconto_total: 0.0,
-  });
-  const fetchOrcamentos = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/orcamentos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data.orcamentos);
-      setOrcamentos(response.data.orcamentos);
-
-
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar orçamentos:", error);
-    }
-  };
-  // #endregion
-
-
-
-
   // #region CLIENTES
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -427,7 +361,11 @@ const OrcamentosPage: React.FC = () => {
   const [servicosSelecionados, setServicosSelecionados] = useState<Servico[]>([]);
 
   const handleAdicionarServico = () => {
-    if (!selectedServico || !quantidadeServ) return; // Garante que tenha um serviço e quantidade antes de adicionar
+    if (!selectedServico || !quantidadeServ) {
+      alert("Após selecionar um serviço, insira a quantidade.");
+      return;
+    }
+    // Garante que tenha um serviço e quantidade antes de adicionar
 
     const novoServico: Servico = {
       id: Date.now(),  // Usando Date.now() para criar um identificador único
@@ -605,7 +543,11 @@ const OrcamentosPage: React.FC = () => {
     setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
   };
   const handleAdicionarLinha = () => {
-    if (!selectedProd || !quantidadeProd) return; // Garante que tenha um produto e quantidade antes de adicionar
+    if (!selectedProd || !quantidadeProd) {
+      alert("Após selecionar um produto, insira a quantidade.");
+      return;
+    }
+    // Garante que tenha um produto e quantidade antes de adicionar
 
     const novoProduto: Produto = {
       id: Date.now(),  // Usando Date.now() para criar um identificador único
@@ -879,6 +821,86 @@ const OrcamentosPage: React.FC = () => {
   // #endregion
 
 
+  // #region ORÇAMENTOS
+  const [canaisVenda, setCanaisVenda] = useState<string[]>([]);
+  const [selectedCanal, setSelectedCanal] = useState<string>('');
+  const fetchCanaisVenda = async () => {
+    try {
+      const response = await axios.get('http://localhost:9009/api/orcamentos/canais-venda');
+      setCanaisVenda(response.data.canaisVenda);
+      console.log(response.data.canaisVenda);
+    } catch (error) {
+      console.error('Erro ao buscar canais de venda:', error);
+    }
+  };
+
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const filteredOrcamentos = orcamentos.filter((orcamento) =>
+    orcamento.logradouro.toLowerCase().includes(search.toLowerCase())
+  );
+  const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
+
+
+  const [formValues, setFormValues] = useState<Orcamento>({
+    cod_orcamento: 0,
+    cod_responsavel: selectedUser?.cod_usuario || 0,
+    cod_cliente: selectedClient?.cod_cliente || 0,
+    canal_venda: "",
+    data_venda: "",
+    prazo: "",
+    cod_centro_custo: 0,
+    frota: "",
+    nf_compra: "",
+    cod_transportadora: selectedTransportadora?.cod_transportadora || 0,
+    frete: frete || 0,
+    endereco_cliente: "Sim",
+    logradouro: formValuesClients?.logradouro || "",
+    cidade: "",
+    bairro: "",
+    estado: "",
+    complemento: "",
+    numero: 0,
+    cep: "",
+    observacoes_gerais: "",
+    observacoes_internas: "",
+    desconto_total: 0.0,
+    valor_total: 0.0,
+    situacao: "Pendente",
+  });
+
+  useEffect(() => {
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      valor_total: totalPagamentos || 0,
+    }));
+  }, [totalPagamentos]);
+
+
+  const fetchOrcamentos = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/orcamentos",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(response.data.orcamentos);
+      setOrcamentos(response.data.orcamentos);
+
+
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar orçamentos:", error);
+    }
+  };
+  // #endregion
+
+
+
   // #region USEEFFECT
   useEffect(() => {
     fetchTransportadoras();
@@ -903,8 +925,8 @@ const OrcamentosPage: React.FC = () => {
       cod_responsavel: 0,
       cod_cliente: 0,
       canal_venda: "",
-      data_venda: new Date(),
-      prazo: new Date(),
+      data_venda: "",
+      prazo: "",
       cod_centro_custo: 0,
       frota: "",
       nf_compra: "",
@@ -921,6 +943,7 @@ const OrcamentosPage: React.FC = () => {
       observacoes_gerais: "",
       observacoes_internas: "",
       desconto_total: 0.0,
+      valor_total: 0.0,
     });
   };
   const clearInputsProd = () => {
@@ -929,8 +952,8 @@ const OrcamentosPage: React.FC = () => {
       cod_responsavel: 0,
       cod_cliente: 0,
       canal_venda: "",
-      data_venda: new Date(),
-      prazo: new Date(),
+      data_venda: "",
+      prazo: "",
       cod_centro_custo: 0,
       frota: "",
       nf_compra: "",
@@ -947,6 +970,7 @@ const OrcamentosPage: React.FC = () => {
       observacoes_gerais: "",
       observacoes_internas: "",
       desconto_total: 0.0,
+      valor_total: 0.0,
     });
   };
   const clearInputsServ = () => {
@@ -955,8 +979,8 @@ const OrcamentosPage: React.FC = () => {
       cod_responsavel: 0,
       cod_cliente: 0,
       canal_venda: "",
-      data_venda: new Date(),
-      prazo: new Date(),
+      data_venda: "",
+      prazo: "",
       cod_centro_custo: 0,
       frota: "",
       nf_compra: "",
@@ -973,6 +997,7 @@ const OrcamentosPage: React.FC = () => {
       observacoes_gerais: "",
       observacoes_internas: "",
       desconto_total: 0.0,
+      valor_total: 0.0,
     });
   };
   const [isDisabled, setIsDisabled] = useState(false);
@@ -1135,6 +1160,12 @@ const OrcamentosPage: React.FC = () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
     try {
+      // Atualizando o formValues com o campo 'situacao'
+      const updatedFormValues = {
+        ...formValues,
+        situacao: "Pendente", // Adiciona o campo situacao antes de enviar
+      };
+
       const requiredFields = [
         "cod_responsavel",
         "cod_cliente",
@@ -1151,18 +1182,21 @@ const OrcamentosPage: React.FC = () => {
         "cidade",
         "bairro",
         "estado",
-        "cep"
+        "cep",
+        "valor_total",
+        "situacao",  // Verifique se 'situacao' está aqui
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
+      // Encontrar o primeiro campo vazio
+      const missingField = requiredFields.find((field) => {
+        const value = updatedFormValues[field as keyof typeof updatedFormValues];
         return value === "" || value === null || value === undefined;
       });
 
-      if (isEmptyField) {
+      if (missingField) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+        toast.info(`Por favor, preencha o campo: ${missingField.replace("_", " ")}`, {
           position: "top-right",
           autoClose: 3000,
         });
@@ -1171,13 +1205,14 @@ const OrcamentosPage: React.FC = () => {
 
       const response = await axios.post(
         "http://localhost:9009/api/orcamentos/register",
-        formValues,
+        updatedFormValues,  // Envia o objeto atualizado com 'situacao'
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -1202,6 +1237,9 @@ const OrcamentosPage: React.FC = () => {
       console.error("Erro ao salvar orçamentos:", error);
     }
   };
+
+
+
   const handleEdit = (orcamento: Orcamento) => {
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
@@ -1249,15 +1287,39 @@ const OrcamentosPage: React.FC = () => {
     const selected = clients.find(
       (client) => client.cod_cliente === Number(e.target.value)
     );
-    setSelectedClient(selected || null);
+
+    setSelectedClient(selected || null); // Atualiza o estado de selectedClient
+
     if (selected) {
-      setFormValuesClients(selected);
+      // Atualizando formValuesClients corretamente com os dados do cliente
+      setFormValuesClients((prevValues) => ({
+        ...prevValues,
+        logradouro: selected.logradouro || '',
+        cidade: selected.cidade || '',
+        bairro: selected.bairro || '',
+        estado: selected.estado || '',
+        complemento: selected.complemento || '',
+        numero: String(selected.numero || ''),  // Garanta que seja uma string, se necessário
+        cep: selected.cep || '',
+      }));
+
+      // Atualizando formValues com o cod_cliente e os dados do cliente
       setFormValues((prevValues) => ({
         ...prevValues,
         cod_cliente: selected.cod_cliente,
+        logradouro: selected.logradouro || '',
+        cidade: selected.cidade || '',
+        bairro: selected.bairro || '',
+        estado: selected.estado || '',
+        complemento: selected.complemento || '',
+        numero: selected.numero ? Number(selected.numero) : 0,  // Convertendo para number
+        cep: selected.cep || '',
       }));
     }
   };
+
+
+
   const handleServicoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = servicos.find(
       (servico) => servico.cod_servico === Number(e.target.value)
@@ -1853,11 +1915,7 @@ const OrcamentosPage: React.FC = () => {
                       onChange={handleClientChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
+                      <option value="" disabled>
                         Selecione
                       </option>
                       {clients.map((cliente) => (
@@ -1867,6 +1925,7 @@ const OrcamentosPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
 
                   <div>
                     <label htmlFor="responsavel" className="block text-blue font-medium mb-1">
@@ -1880,12 +1939,14 @@ const OrcamentosPage: React.FC = () => {
                       onChange={(e) => {
                         const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
                         setSelectedUser(user || null);
+                        // Atualizando formValues com o valor de cod_responsavel
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          cod_responsavel: user?.cod_usuario || 0, // Garantir que cod_responsavel seja atualizado
+                        }));
                       }}
                     >
-                      <option value=''
-                        disabled
-                        selected
-                      >
+                      <option value='' disabled selected>
                         Selecione
                       </option>
                       {users.map((user) => (
@@ -1895,6 +1956,7 @@ const OrcamentosPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
 
                 </div>
                 {
@@ -1911,12 +1973,19 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="canal_venda" className="block text-blue font-medium">
                       Canal de venda
                     </label>
-                    <select id="canal_venda" name="canal_venda" className="w-full border border-gray-400 pl-1 rounded-sm h-8">
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
+                    <select
+                      id="canal_venda"
+                      name="canal_venda"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={formValues.canal_venda}
+                      onChange={(e) => {
+                        setFormValues((prev) => ({
+                          ...prev,
+                          canal_venda: e.target.value,
+                        }));
+                      }}
+                    >
+                      <option value="" disabled>
                         Selecione
                       </option>
                       {canaisVenda.map((canal) => (
@@ -1926,18 +1995,49 @@ const OrcamentosPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
                   <div>
                     <label htmlFor="data_venda" className="block text-blue font-medium">
                       Data de venda
                     </label>
-                    <input type="date" id="data_venda" name="data_venda" className="w-full border border-gray-400 pl-1 rounded-sm h-8" placeholder="Data da Venda" />
+                    <input
+                      type="date"
+                      id="data_venda"
+                      name="data_venda"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={formValues.data_venda || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;  // O valor já estará no formato correto
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          data_venda: value,  // Envia como string "yyyy-mm-dd"
+                        }));
+                      }}
+                    />
                   </div>
+
+
                   <div>
                     <label htmlFor="prazo_entrega" className="block text-blue font-medium">
                       Prazo de entrega
                     </label>
-                    <input type="date" id="prazo_entrega" name="prazo_entrega" className="w-full border border-gray-400 pl-1 rounded-sm h-8" placeholder="Prazo de Entrega" />
+                    <input
+                      type="date"
+                      id="prazo_entrega"
+                      name="prazo_entrega"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={formValues.prazo || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;  // O valor já estará no formato correto
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          prazo: value,  // Envia como string "yyyy-mm-dd"
+                        }));
+                      }}
+                    />
                   </div>
+
+
                   <div>
                     <label htmlFor="centrosCusto" className="block text-blue font-medium">
                       Centro de Custo:
@@ -1951,9 +2051,9 @@ const OrcamentosPage: React.FC = () => {
                           (est) => est.cod_centro_custo === Number(e.target.value)
                         );
                         setSelectedCentroCusto(selected || null);
+
                         if (selected) {
-                          setFormValuesCentroCusto(selected);
-                          setFormValuesCentroCusto((prevValues) => ({
+                          setFormValues((prevValues) => ({
                             ...prevValues,
                             cod_centro_custo: selected.cod_centro_custo,
                           }));
@@ -1961,20 +2061,17 @@ const OrcamentosPage: React.FC = () => {
                       }}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
+                      <option value='' disabled selected>
                         Selecione
                       </option>
-                      {centrosCusto.map((centrosCusto) => (
-                        <option key={centrosCusto.cod_centro_custo} value={centrosCusto.cod_centro_custo}>
-                          {centrosCusto.nome}
+                      {centrosCusto.map((centro) => (
+                        <option key={centro.cod_centro_custo} value={centro.cod_centro_custo}>
+                          {centro.nome}
                         </option>
                       ))}
                     </select>
                   </div>
+
                 </div>
                 {
                   //#endregion
@@ -2230,10 +2327,8 @@ const OrcamentosPage: React.FC = () => {
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
                     className="bg-green200 rounded"
-                    onClick={handleAdicionarServico} // Adiciona nova linha ao clicar
-                    style={{
-                      padding: "0.1rem 0.05rem",
-                    }}
+                    onClick={() => setVisibleServ(true)}
+                    style={{ padding: "0.1rem 0.1rem" }}
                   >
                     <IoAddCircleOutline
                       style={{ fontSize: "1.5rem" }}
@@ -2243,7 +2338,7 @@ const OrcamentosPage: React.FC = () => {
                 </div>
                 <div style={{ height: "16px" }}></div>
 
-                {/* Linha principal (seleção de serviços) */}
+                {/* linha principal */}
                 <div className="grid grid-cols-5 gap-2 items-center">
                   <div>
                     <label htmlFor="servico" className="block text-blue font-medium">
@@ -2456,16 +2551,40 @@ const OrcamentosPage: React.FC = () => {
                     <label htmlFor="frota" className="block text-blue font-medium">
                       Frota
                     </label>
-                    <select id="frota" name="frota" className="w-full border border-gray-400 pl-1 rounded-sm h-8">
-                      <option>Selecione</option>
-                    </select>
+                    <input
+                      id="frota"
+                      name="frota"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      type="text"
+                      value={formValues.frota} // Mantém o valor sincronizado com formValues
+                      onChange={(e) => {
+                        setFormValues((prev) => ({
+                          ...prev,
+                          frota: e.target.value, // Atualiza o valor de frota
+                        }));
+                      }}
+                    />
                   </div>
+
                   <div>
                     <label htmlFor="nf-compra" className="block text-blue font-medium">
                       NF-Compra
                     </label>
-                    <input type="text" id="nf-compra" name="nf-compra" className="w-full border border-gray-400 pl-1 rounded-sm h-8" />
+                    <input
+                      type="text"
+                      id="nf-compra"
+                      name="nf-compra"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={formValues.nf_compra}
+                      onChange={(e) => {
+                        setFormValues((prev) => ({
+                          ...prev,
+                          nf_compra: e.target.value,
+                        }));
+                      }}
+                    />
                   </div>
+
                   <div>
                     <label htmlFor="transportadora" className="block text-blue font-medium">
                       Transportadora:
@@ -2480,20 +2599,15 @@ const OrcamentosPage: React.FC = () => {
                         );
                         setSelectedTransportadora(selected || null);
                         if (selected) {
-                          setFormValuesTransportadoras(selected);
-                          setFormValuesTransportadoras((prevValues) => ({
+                          setFormValues((prevValues) => ({
                             ...prevValues,
-                            cod_transportadora: selected.cod_transportadora,
+                            cod_transportadora: selected.cod_transportadora, // Atualizando formValues com cod_transportadora
                           }));
                         }
                       }}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
+                      <option value='' disabled selected>
                         Selecione
                       </option>
                       {transportadoras.map((transportadora) => (
@@ -2503,6 +2617,7 @@ const OrcamentosPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
                   <div>
                     <label htmlFor="frete" className="block text-blue font-medium">
                       Frete
@@ -2514,10 +2629,18 @@ const OrcamentosPage: React.FC = () => {
                       min={0}
                       defaultValue={0}
                       value={frete}
-                      onChange={(e) => setFrete(parseFloat(e.target.value))}
+                      onChange={(e) => {
+                        const newFrete = parseFloat(e.target.value) || 0;
+                        setFrete(newFrete);
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          frete: newFrete,
+                        }));
+                      }}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                     />
                   </div>
+
 
                 </div>
               </div>
@@ -2574,6 +2697,12 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.logradouro}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
+                      onChange={(e) => {
+                        setFormValuesClients((prev) => ({
+                          ...prev,
+                          logradouro: e.target.value,
+                        }));
+                      }}
                     />
                   </div>
                 </div>
@@ -2743,7 +2872,7 @@ const OrcamentosPage: React.FC = () => {
                       name="vl_total_total"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      disabled // O valor total final não é editável
+                      disabled // O valor total final não é editável                      
                     />
                   </div>
                 </div>
@@ -2900,6 +3029,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={pagamento.nome}
                         disabled
+                        readOnly
                       />
                     </div>
 
@@ -2909,6 +3039,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={pagamento.parcela} // valor individual da parcela
                         disabled
+                        readOnly
                       />
                     </div>
 
@@ -2918,6 +3049,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={pagamento.valorParcela}
                         disabled
+                        readOnly
                       />
                     </div>
 
@@ -2927,6 +3059,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={pagamento.juros}
                         disabled
+                        readOnly
                       />
                     </div>
 
@@ -2935,9 +3068,8 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={pagamento.data_parcela
-                          ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
-                          : ""} // Exibe como DD/MM/AAAA, vazio caso não tenha data
-
+                          ? new Date(pagamento.data_parcela + 'T00:00:00').toLocaleDateString("pt-BR") // Força a data para o formato local sem interferir no fuso horário
+                          : ""}
                       />
                       <button
                         className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
@@ -2975,17 +3107,40 @@ const OrcamentosPage: React.FC = () => {
               }
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <div>
-                  <label htmlFor="nf-compra" className="block text-blue font-medium">
-                    Obervações Gerais:
+                  <label htmlFor="obervacoes_gerais" className="block text-blue font-medium">
+                    Observações Gerais:
                   </label>
-                  <textarea id="obervacoes_gerais" name="obervacoes_gerais" className="w-full border border-gray-400 pl-1 rounded-sm h-32"></textarea>
+                  <textarea
+                    id="obervacoes_gerais"
+                    name="obervacoes_gerais"
+                    value={formValues.observacoes_gerais || ""}
+                    className="w-full border border-gray-400 pl-1 rounded-sm h-32"
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        observacoes_gerais: e.target.value, // Atualiza o campo observacoes_gerais
+                      }));
+                    }}
+                  />
                 </div>
                 <div>
-                  <label htmlFor="nf-compra" className="block text-blue font-medium">
-                    Obervações Internas:
+                  <label htmlFor="obervacoes_internas" className="block text-blue font-medium">
+                    Observações Internas:
                   </label>
-                  <textarea id="obervacoes_internas" name="obervacoes_internas" className="w-full border border-gray-400 pl-1 rounded-sm h-32" ></textarea>
+                  <textarea
+                    id="obervacoes_internas"
+                    name="obervacoes_internas"
+                    value={formValues.observacoes_internas || ""}
+                    className="w-full border border-gray-400 pl-1 rounded-sm h-32"
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        observacoes_internas: e.target.value, // Atualiza o campo observacoes_internas
+                      }));
+                    }}
+                  />
                 </div>
+
               </div>
               {
                 //#endregion
@@ -3173,7 +3328,7 @@ const OrcamentosPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="valor_venda"
+                  field="valor_total"
                   header="Valor"
                   style={{
                     width: "10%",
@@ -3192,7 +3347,7 @@ const OrcamentosPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="situação" // Esse campo precisará ser adicionado na interface
+                  field="situacao"
                   header="Situação"
                   style={{
                     width: "10%",
@@ -3229,16 +3384,28 @@ const OrcamentosPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const date = new Date(rowData.prazo);
-                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    }).format(date);
+                    // Verifica se a data de prazo está presente e é válida
+                    if (rowData.prazo) {
+                      // Certifica-se de que rowData.prazo é um número de timestamp (se for uma string ISO)
+                      const date = new Date(rowData.prazo);
 
-                    return <span>{formattedDate}</span>;
+                      // Verifica se a data é válida
+                      if (!isNaN(date.getTime())) {
+                        const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }).format(date);
+                        return <span>{formattedDate}</span>;
+                      } else {
+                        return <span>Data inválida</span>;
+                      }
+                    } else {
+                      return <span>Sem prazo</span>;
+                    }
                   }}
                 />
+
                 <Column
                   field="dtCadastro"
                   header="DT Cadastro"
@@ -3258,20 +3425,32 @@ const OrcamentosPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const date = new Date(rowData.dtCadastro);
-                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
-                    }).format(date);
+                    // Verifica se a data de dtCadastro está presente e é válida
+                    if (rowData.dtCadastro) {
+                      // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
+                      const date = new Date(rowData.dtCadastro);
 
-                    return <span>{formattedDate}</span>;
+                      // Verifica se a data é válida
+                      if (!isNaN(date.getTime())) {
+                        const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: true,
+                        }).format(date);
+                        return <span>{formattedDate}</span>;
+                      } else {
+                        return <span>Data inválida</span>;
+                      }
+                    } else {
+                      return <span>Sem data</span>;
+                    }
                   }}
                 />
+
 
                 {permissions?.edicao === "SIM" && (
                   <Column
