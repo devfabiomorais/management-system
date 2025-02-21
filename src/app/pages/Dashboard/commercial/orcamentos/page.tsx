@@ -1,6 +1,6 @@
 "use client";
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { FaTimes, FaPlus } from "react-icons/fa";
+import { FaTimes, FaPlus, FaBan } from "react-icons/fa";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -37,6 +37,7 @@ interface Pagamento {
   valorParcela?: number;
   juros?: number;
   data_parcela?: string;
+  tipo_juros?: "Percentual" | "Reais";
 }
 
 interface Formas {
@@ -125,21 +126,32 @@ interface Servico {
   dtCadastro?: string;
   descontoUnitProdtipo?: string;
   descontoProd?: number;
+  valor_desconto?: number;
   valor_total?: string;
+  tipo_juros?: "Percentual" | "Reais";
+  tipo_desconto?: "Percentual" | "Reais";
+  valor_unitario?: string;
 }
 
 //mesma coisa que ITENS
 interface Produto {
   id: number; // Novo campo id
   cod_item: string;
+  cod_produto: string;
   descricao: string;
   valor_venda?: string;
   valor_custo?: string;
   valor_total?: string;
+  valor_unitario?: string;
   quantidade?: number;
   descontoUnitProdtipo?: string;
   descontoProd?: number;
+  desconto?: number;
+  tipo_juros?: "Percentual" | "Reais";
+  valor_desconto: number;
+  tipo_desconto: "Percentual"| "Reais";
 }
+//cod_produto, cod_orcamento, quantidade, valor_unitario, desconto
 
 
 const OrcamentosPage: React.FC = () => {
@@ -156,6 +168,7 @@ const OrcamentosPage: React.FC = () => {
   const [visibleProd, setVisibleProd] = useState(false);
   const [visibleServ, setVisibleServ] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchField, setSearchField] = useState("cod_cliente");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
@@ -167,10 +180,7 @@ const OrcamentosPage: React.FC = () => {
   // #region TRANSPORTADORAS
   const [selectedTransportadora, setSelectedTransportadora] = useState<Transportadora | null>(null);
   const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
-  const [formValuesTransportadoras, setFormValuesTransportadoras] = useState<Transportadora>({
-    cod_transportadora: 0,
-    nome: "",
-  });
+
   const fetchTransportadoras = async () => {
     setLoading(true);
     try {
@@ -341,10 +351,16 @@ const OrcamentosPage: React.FC = () => {
     valor_custo: "",
     valor_venda: "",
     comissao: "",
+    valor_desconto: 0,
+    descontoProd: 0,
+    valor_unitario: "",
+    tipo_juros: "Percentual",
+    tipo_desconto: "Percentual",
+    valor_total: "",
   });
   const [quantidadeServ, setQuantidadeServ] = useState(1);
   const [descontoServ, setDescontoServ] = useState(0);
-  const [descontoUnit, setDescontoUnit] = useState('%'); // '%' ou 'R$'
+  const [descontoUnit, setDescontoUnit] = useState('Percentual'); // '%' ou 'R$'
   const [valorTotalServ, setValorTotalServ] = useState(0);
   //serviços-handles
   const handleQuantidadeServChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,7 +372,8 @@ const OrcamentosPage: React.FC = () => {
     setDescontoServ(value);
   };
   const handleDescontoUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDescontoUnit(e.target.value);
+    const newValue = e.target.value === "%" ? "Percentual" : "Reais";
+    setDescontoUnit(newValue);
   };
   const [servicosSelecionados, setServicosSelecionados] = useState<Servico[]>([]);
 
@@ -375,9 +392,13 @@ const OrcamentosPage: React.FC = () => {
       valor_venda: selectedServico.valor_venda,
       quantidade: quantidadeServ,
       descontoUnitProdtipo: descontoUnit,
+      valor_desconto: formValuesServico.valor_desconto? Number(formValuesServico.valor_desconto) : 0,
       descontoProd: descontoServ,
       valor_total: valorTotalServ.toString(),
-    };
+      tipo_juros: "Percentual",
+      tipo_desconto: "Percentual",
+      valor_unitario: selectedServico.valor_venda,
+    };  
 
     // Adiciona o novo serviço à lista de serviços selecionados
     setServicosSelecionados((prev) => [...prev, novoServico]);
@@ -490,7 +511,7 @@ const OrcamentosPage: React.FC = () => {
       }));
 
       let total = (selectedServico.valor_venda ? Number(selectedServico.valor_venda) : 0) * quantidadeServ;
-      if (descontoUnit === '%') {
+      if (descontoUnit === 'Percentual') {
         total -= total * (descontoServ / 100);
       } else {
         total -= descontoServ;
@@ -532,12 +553,29 @@ const OrcamentosPage: React.FC = () => {
     descricao: "",
     valor_custo: "",
     valor_venda: "",
+    cod_produto: "0",
+    quantidade: 0,
+    descontoUnitProdtipo: "",
+    descontoProd: 0,
+    desconto: 0,
+    valor_total: "",
+    valor_unitario: "",
+    valor_desconto: 0,
+    tipo_juros: "Percentual",
+    tipo_desconto: "Percentual",
   });
+  useEffect(() => {
+    setFormValuesProd((prev) => ({
+      ...prev,
+      valor_unitario: prev.valor_venda,
+    }));
+  }, [formValuesProd.valor_venda]);
+
   const [quantidadeProd, setQuantidadeProd] = useState(1);
   const [descontoProd, setDescontoProd] = useState(0);
-  const [descontoUnitProd, setDescontoUnitProd] = useState('%prod'); // '%' ou 'R$'
+  const [descontoUnitProd, setDescontoUnitProd] = useState('Percentual'); // '%' ou 'R$'
   const [valorTotalProd, setValorTotalProd] = useState(0);
-  const [linhas, setLinhas] = useState<Produto[]>([]);
+
   //produtos-handles
   const handleRemoveLinhaProd = (id: number) => {
     setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
@@ -558,6 +596,13 @@ const OrcamentosPage: React.FC = () => {
       descontoUnitProdtipo: descontoUnitProd,
       descontoProd: descontoProd,
       valor_total: valorTotalProd.toString(),
+      tipo_juros: "Percentual",
+      cod_produto: selectedProd.cod_item,
+      desconto: 0,
+      valor_custo: selectedProd.valor_custo,
+      valor_unitario: selectedProd.valor_venda,
+      valor_desconto: Number(descontoProd) || 0,
+      tipo_desconto: "Percentual",
     };
 
     // Adiciona o novo produto à lista de selecionados
@@ -577,6 +622,16 @@ const OrcamentosPage: React.FC = () => {
       descricao: "",
       valor_venda: "",
       valor_custo: "",
+      cod_produto: "",
+      quantidade: 0,
+      valor_total: "",
+      descontoUnitProdtipo: "",
+      descontoProd: 0,
+      desconto: 0,
+      tipo_juros: "Percentual",
+      valor_unitario: "",
+      valor_desconto: 0,
+      tipo_desconto: "Percentual",
     });
   };
   const handleQuantidadeProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -588,7 +643,8 @@ const OrcamentosPage: React.FC = () => {
     setDescontoProd(value);
   };
   const handleDescontoUnitProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDescontoUnitProd(e.target.value);
+    const newValue = e.target.value === "%prod" ? "Percentual" : "Reais";
+    setDescontoUnitProd(newValue);
   };
 
   const calcularTotalProdutos = () => {
@@ -609,7 +665,7 @@ const OrcamentosPage: React.FC = () => {
       }));
 
       let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
-      if (descontoUnitProd === '%prod') {
+      if (descontoUnitProd === 'Percentual') {
         total -= total * (descontoProd / 100);
       } else {
         total -= descontoProd;
@@ -761,6 +817,7 @@ const OrcamentosPage: React.FC = () => {
       parcela: pagamentos.length + 1, // Garante que a parcela seja sempre sequencial
       valorParcela,
       juros,
+      tipo_juros: "Percentual",
       data_parcela,
     };
 
@@ -775,7 +832,7 @@ const OrcamentosPage: React.FC = () => {
   const handleAdicionarMultiplasParcelas = () => {
     if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) return;
 
-    const novasParcelas = Array.from({ length: quantidadeParcelas }, (_, i) => ({
+    const novasParcelas: Pagamento[] = Array.from({ length: quantidadeParcelas }, (_, i) => ({
       id: Date.now() + i, // Garantindo IDs únicos
       cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
       nome: selectedFormaPagamento.nome,
@@ -783,6 +840,7 @@ const OrcamentosPage: React.FC = () => {
       parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
       valorParcela,
       juros,
+      tipo_juros: "Percentual",
       data_parcela,
     }));
 
@@ -835,9 +893,31 @@ const OrcamentosPage: React.FC = () => {
   };
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
-  const filteredOrcamentos = orcamentos.filter((orcamento) =>
-    orcamento.logradouro.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOrcamentos = orcamentos.filter((orcamento) => {
+    switch (searchField) {
+      case "cod_usuario":
+        return (
+          (orcamento.cod_responsavel &&
+            orcamento.cod_responsavel.toString().includes(search)) || ""
+        );
+      case "cod_orcamento":
+        return (
+          (orcamento.cod_orcamento &&
+            orcamento.cod_orcamento.toString().includes(search)) || ""
+        );
+      case "situacao":
+        return (
+          (orcamento.situacao &&
+            orcamento.situacao.toLowerCase().includes(search.toLowerCase())) || ""
+        );
+      default:
+        return (
+          (orcamento.cod_cliente &&
+            orcamento.cod_cliente.toString().includes(search)) || ""
+        );
+    }
+  });
+
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
 
 
@@ -874,6 +954,7 @@ const OrcamentosPage: React.FC = () => {
       valor_total: totalPagamentos || 0,
     }));
   }, [totalPagamentos]);
+
 
 
   const fetchOrcamentos = async () => {
@@ -931,7 +1012,7 @@ const OrcamentosPage: React.FC = () => {
       frota: "",
       nf_compra: "",
       cod_transportadora: 0,
-      frete: 0.0,
+      frete: 0,
       endereco_cliente: "Sim",
       logradouro: "",
       cidade: "",
@@ -945,6 +1026,30 @@ const OrcamentosPage: React.FC = () => {
       desconto_total: 0.0,
       valor_total: 0.0,
     });
+    setFormValuesClients({
+      cod_cliente: 0,
+    nome: "",
+    logradouro: "",
+    cidade: "",
+    bairro: "",
+    estado: "",
+    complemento: "",
+    numero: "",
+    cep: "",
+    email: "",
+    telefone: "",
+    celular: "",
+    situacao: "",
+    tipo: "",
+    });    
+    setSelectedClient(null);
+    setSelectedUser(null);
+    setSelectedTransportadora(null);
+    setSelectedCentroCusto(null);
+    setSelectedServico(null);
+    setProdSelecionados([]);
+    setServicosSelecionados([]);
+    setPagamentos([]);
   };
   const clearInputsProd = () => {
     setFormValues({
@@ -971,7 +1076,7 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0.0,
       valor_total: 0.0,
-    });
+    });    
   };
   const clearInputsServ = () => {
     setFormValues({
@@ -1018,74 +1123,102 @@ const OrcamentosPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+  
     try {
-      const requiredFields = [
-        "cod_responsavel",
-        "cod_cliente",
-        "canal_venda",
-        "data_venda",
-        "prazo",
-        "cod_centro_custo",
-        "frota",
-        "nf_compra",
-        "cod_transportadora",
-        "frete",
-        "endereco_cliente",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep"
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
+        const requiredFields = [
+            "cod_responsavel",
+            "cod_cliente",
+            "canal_venda",
+            "data_venda",
+            "prazo",
+            "cod_centro_custo",
+            "frota",
+            "nf_compra",
+            "cod_transportadora",
+            "frete",
+            "endereco_cliente",
+            "logradouro",
+            "cidade",
+            "bairro",
+            "estado",
+            "cep"
+        ];
+  
+        const isEmptyField = requiredFields.some((field) => {
+            const value = formValues[field as keyof typeof formValues];
+            return value === "" || value === null || value === undefined;
         });
-        return;
-      }
-
-      const response = await axios.put(
-        `http://localhost:9009/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+  
+        if (isEmptyField) {
+            setItemEditDisabled(false);
+            setLoading(false);
+            toast.info("Todos os campos devem ser preenchidos!", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
         }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchOrcamentos();
-        toast.success("Orçamento salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setVisible(false);
-      } else {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar orçamento.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
+  
+        // Função para formatar a data no formato yyyy-MM-dd
+        const formatDate = (date: string) => {
+            const formattedDate = new Date(date);
+            return formattedDate.toISOString().split("T")[0]; // Formato yyyy-MM-dd
+        };
+  
+        const updatedFormValues = {
+            ...formValues,
+            data_venda: formValues.data_venda ? formatDate(formValues.data_venda) : "",
+            prazo: formValues.prazo ? formatDate(formValues.prazo) : "",
+            produtos: produtosSelecionados.map((produto) => ({
+                ...produto,
+            })),
+            servicos: servicosSelecionados.map((servico) => ({
+                ...servico,
+            })),
+            parcelas: pagamentos.map((parcela) => ({
+                ...parcela,
+                data_parcela: parcela.data_parcela ? formatDate(parcela.data_parcela) : ""
+            })),
+            situacao: "Pendente",
+        };
+  
+        const response = await axios.put(
+            `http://localhost:9009/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
+            updatedFormValues,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+  
+        if (response.status >= 200 && response.status < 300) {
+            setItemEditDisabled(false);
+            setLoading(false);
+            clearInputs();
+            fetchOrcamentos();
+            toast.success("Orçamento atualizado com sucesso!", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            setVisible(false);
+        } else {
+            setItemEditDisabled(false);
+            setLoading(false);
+            toast.error("Erro ao salvar orçamento.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
     } catch (error) {
-      setItemEditDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar orçamento:", error);
+        setItemEditDisabled(false);
+        setLoading(false);
+        console.error("Erro ao salvar orçamento:", error);
     }
-  };
+};
+
+  
+
   const handleSave = async () => {
     setItemCreateDisabled(true);
     setLoading(true);
@@ -1156,16 +1289,21 @@ const OrcamentosPage: React.FC = () => {
       console.error("Erro ao salvar orçamento:", error);
     }
   };
+
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
-    try {
-      // Atualizando o formValues com o campo 'situacao'
+
+    try {      
       const updatedFormValues = {
         ...formValues,
         situacao: "Pendente", // Adiciona o campo situacao antes de enviar
+        parcelas: pagamentos,
+        produtos: produtosSelecionados,
+        servicos: servicosSelecionados,
       };
 
+      // Lista apenas com os campos obrigatórios
       const requiredFields = [
         "cod_responsavel",
         "cod_cliente",
@@ -1173,24 +1311,21 @@ const OrcamentosPage: React.FC = () => {
         "data_venda",
         "prazo",
         "cod_centro_custo",
-        "frota",
         "nf_compra",
         "cod_transportadora",
         "frete",
         "endereco_cliente",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
         "valor_total",
-        "situacao",  // Verifique se 'situacao' está aqui
+        "situacao",
+        "parcelas",
+        "produtos",
+        "servicos",
       ];
 
-      // Encontrar o primeiro campo vazio
+      // Encontrar o primeiro campo obrigatório vazio
       const missingField = requiredFields.find((field) => {
         const value = updatedFormValues[field as keyof typeof updatedFormValues];
-        return value === "" || value === null || value === undefined;
+        return value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
       });
 
       if (missingField) {
@@ -1238,14 +1373,45 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
-
-
   const handleEdit = (orcamento: Orcamento) => {
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
     setIsEditing(true);
     setVisible(true);
   };
+
+  const handleCancelar = async () => {
+    if (orcamentoIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/orcamentos/cancel/${orcamentoIdToDelete}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchOrcamentos();
+        setModalDeleteVisible(false);
+        toast.success("Orçamento cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar orçamento.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao cancelar orçamento:", error);
+    }
+  };
+
   const handleDelete = async () => {
     if (orcamentoIdToDelete === null) return;
 
@@ -1346,6 +1512,16 @@ const OrcamentosPage: React.FC = () => {
         descricao: selected.descricao || '',
         valor_venda: selected.valor_venda || '',
         valor_custo: selected.valor_custo || '',
+        cod_produto: selected.cod_produto || '',
+        valor_total: '',
+        quantidade: 0,
+        descontoUnitProdtipo: '',
+        descontoProd: 0,
+        desconto: 0,
+        tipo_juros: 'Percentual',
+        valor_unitario: selected.valor_venda || '',
+        valor_desconto: 0,
+        tipo_desconto: "Percentual",
       });
       console.log('formValuesProd atualizado:', formValuesProd);
     }
@@ -1357,8 +1533,20 @@ const OrcamentosPage: React.FC = () => {
   };
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+
     if (value === "usar") {
       setIsDisabled(false);
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        endereco_cliente: "Sim",
+        logradouro: formValuesClients?.logradouro || "",
+        cidade: formValuesClients?.cidade || "",
+        bairro: formValuesClients?.bairro || "",
+        estado: formValuesClients?.estado || "",
+        complemento: formValuesClients?.complemento || "",
+        numero: Number(formValuesClients?.numero) || 0,
+        cep: formValuesClients?.cep || "",
+      }));
     } else {
       setIsDisabled(true);
       setFormValuesClients({
@@ -1377,8 +1565,22 @@ const OrcamentosPage: React.FC = () => {
         situacao: "",
         tipo: "",
       });
+
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        endereco_cliente: "Não",
+        logradouro: "",
+        cidade: "",
+        bairro: "",
+        estado: "",
+        complemento: "",
+        numero: 0,
+        cep: "",
+      }));
     }
-  }
+  };
+
+
   // #endregion
 
 
@@ -1490,7 +1692,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL DELEÇÃO
           }
           <Dialog
-            header="Confirmar Exclusão"
+            header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
             style={{ width: "auto" }}
             onHide={closeDialog}
@@ -1505,13 +1707,13 @@ const OrcamentosPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleDelete}
+                  onClick={handleCancelar}
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este orcamento?</p>
+            <p>Tem certeza que deseja cancelar este orcamento?</p>
           </Dialog>
           {
             //#endregion
@@ -2171,43 +2373,37 @@ const OrcamentosPage: React.FC = () => {
                       <select
                         id="descontoUnitProd"
                         name="descontoUnitProd"
-                        value={descontoUnitProd}
+                        value={descontoUnitProd === "Percentual" ? "%prod" : "R$prod"} // Exibe % ou R$
                         onChange={handleDescontoUnitProdChange}
                         onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
+                          e.preventDefault(); // Impede a abertura do select padrão
 
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%prod" ? "R$prod" : "%prod"; // Alterna entre os valores
-
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
+                          setDescontoUnitProd((prev) => (prev === "Percentual" ? "Reais" : "Percentual"));
                         }}
                         className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
                         style={{
                           WebkitAppearance: "none",
                           MozAppearance: "none",
                           appearance: "none",
-                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
-                          color: "black", // Texto preto
-                          textAlign: "center", // Alinha o texto centralizado
-                          border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
-                          borderRadius: "0", // Borda quadrada
-                          paddingRight: "10px", // Ajuste no padding direito
-                          cursor: "pointer", // Indica que é clicável
-                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
+                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)",
+                          color: "black",
+                          textAlign: "center",
+                          border: "2px solid #6b7280",
+                          borderRadius: "0",
+                          paddingRight: "10px",
+                          cursor: "pointer",
+                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
-                          e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
+                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)";
+                          e.currentTarget.style.borderColor = "#4b5563";
+                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
-                          e.currentTarget.style.borderColor = "#6b7280"; // Borda original
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
+                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)";
+                          e.currentTarget.style.borderColor = "#6b7280";
+                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
                         }}
                       >
                         <option value="%prod">&nbsp;%</option>
@@ -2409,18 +2605,12 @@ const OrcamentosPage: React.FC = () => {
                       <select
                         id="descontoUnit"
                         name="descontoUnit"
-                        value={descontoUnit}
+                        value={descontoUnit === "Percentual" ? "%" : "R$"}
                         onChange={handleDescontoUnitChange}
                         onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
+                          e.preventDefault(); // Evita abrir o select padrão
 
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%" ? "R$" : "%"; // Alterna entre os valores
-
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
+                          setDescontoUnit((prev) => (prev === "Percentual" ? "Reais" : "Percentual"));
                         }}
                         className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
                         style={{
@@ -3263,15 +3453,26 @@ const OrcamentosPage: React.FC = () => {
             >
               <div className="mb-4 flex justify-end">
                 <p className="text-blue font-bold text-lg">Busca:</p>
-                <InputText
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder=""
-                  className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                  style={{
-                    border: "1px solid #1B405D80",
-                  }}
-                />
+                <div className="flex items-center">
+                  <InputText
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder=""
+                    className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                    style={{ border: "1px solid #1B405D80" }}
+                  />
+                  <select
+                    value={searchField}
+                    onChange={(e) => setSearchField(e.target.value)}
+                    className="p-inputtext-sm border rounded-md h-7 w-13 text-black"
+                    style={{ border: "1px solid #1B405D80" }}
+                  >
+                    <option value="cod_cliente">Código do Cliente</option>
+                    <option value="cod_orcamento">Código do Orçamento</option>
+                    <option value="situacao">Situação</option>
+                  </select>
+
+                </div>
               </div>
               <DataTable
                 value={filteredOrcamentos.slice(first, first + rows)}
@@ -3369,7 +3570,7 @@ const OrcamentosPage: React.FC = () => {
                   field="prazo"
                   header="Prazo"
                   style={{
-                    width: "15%",
+                    width: "10%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -3384,27 +3585,13 @@ const OrcamentosPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    // Verifica se a data de prazo está presente e é válida
-                    if (rowData.prazo) {
-                      // Certifica-se de que rowData.prazo é um número de timestamp (se for uma string ISO)
-                      const date = new Date(rowData.prazo);
+                    if (!rowData.prazo) return "-"; // Se estiver vazio, exibe '-'
 
-                      // Verifica se a data é válida
-                      if (!isNaN(date.getTime())) {
-                        const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        }).format(date);
-                        return <span>{formattedDate}</span>;
-                      } else {
-                        return <span>Data inválida</span>;
-                      }
-                    } else {
-                      return <span>Sem prazo</span>;
-                    }
+                    const [year, month, day] = rowData.prazo.split("T")[0].split("-");
+                    return `${day}/${month}/${year}`;
                   }}
                 />
+
 
                 <Column
                   field="dtCadastro"
@@ -3460,6 +3647,7 @@ const OrcamentosPage: React.FC = () => {
                         <button
                           onClick={() => handleEdit(rowData)}
                           className="bg-yellow p-1 rounded"
+                          title="Editar"
                         >
                           <MdOutlineModeEditOutline className="text-white text-2xl" />
                         </button>
@@ -3491,8 +3679,9 @@ const OrcamentosPage: React.FC = () => {
                         <button
                           onClick={() => openDialog(rowData.cod_orcamento)}
                           className="bg-red text-black p-1 rounded"
+                          title="Cancelar"
                         >
-                          <FaTrash className="text-white text-2xl" />
+                          <FaBan className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
