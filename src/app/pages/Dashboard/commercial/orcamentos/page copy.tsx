@@ -444,6 +444,7 @@ const OrcamentosPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+    setIsEditing(false);
     try {
       const requiredFields = [
         "cod_responsavel",

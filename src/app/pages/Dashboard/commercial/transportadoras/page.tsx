@@ -124,7 +124,8 @@ const TransportadorasPage: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data.transportadoras);
+      setRowData(response.data.transportadoras);
+      setIsDataLoaded(true);
       setTransportadoras(response.data.transportadoras);
       setLoading(false);
     } catch (error) {
@@ -174,6 +175,7 @@ const TransportadorasPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+    setIsEditing(false);
     try {
       const requiredFields = [
         "nome",
@@ -336,6 +338,8 @@ const TransportadorasPage: React.FC = () => {
   };
 
   // ---------------------------------------------------------------------------------------------------------------
+  const [rowData, setRowData] = useState<Transportadora[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
@@ -382,6 +386,22 @@ const TransportadorasPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
+        return;
+      }
+
+      // Verificar se o "nome" já existe no storedRowData
+      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+
+      if (nomeExists) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe, escolha outro", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+
         return;
       }
 

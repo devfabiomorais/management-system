@@ -1,5 +1,6 @@
 "use client";
 import React, { ChangeEvent, useEffect, useState } from "react";
+import { MdVisibility } from "react-icons/md";
 import { FaTimes, FaPlus, FaBan } from "react-icons/fa";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
@@ -87,6 +88,9 @@ interface Orcamento {
   desconto_total: number;
   valor_total: number;
   situacao?: string;
+  dbs_pagamentos_orcamento: [];
+  dbs_produtos_orcamento: [];
+  dbs_servicos_orcamento: [];
 }
 
 interface Client {
@@ -149,7 +153,7 @@ interface Produto {
   desconto?: number;
   tipo_juros?: "Percentual" | "Reais";
   valor_desconto: number;
-  tipo_desconto: "Percentual"| "Reais";
+  tipo_desconto: "Percentual" | "Reais";
 }
 //cod_produto, cod_orcamento, quantidade, valor_unitario, desconto
 
@@ -392,13 +396,13 @@ const OrcamentosPage: React.FC = () => {
       valor_venda: selectedServico.valor_venda,
       quantidade: quantidadeServ,
       descontoUnitProdtipo: descontoUnit,
-      valor_desconto: formValuesServico.valor_desconto? Number(formValuesServico.valor_desconto) : 0,
+      valor_desconto: formValuesServico.valor_desconto ? Number(formValuesServico.valor_desconto) : 0,
       descontoProd: descontoServ,
       valor_total: valorTotalServ.toString(),
       tipo_juros: "Percentual",
       tipo_desconto: "Percentual",
       valor_unitario: selectedServico.valor_venda,
-    };  
+    };
 
     // Adiciona o novo serviço à lista de serviços selecionados
     setServicosSelecionados((prev) => [...prev, novoServico]);
@@ -946,7 +950,14 @@ const OrcamentosPage: React.FC = () => {
     desconto_total: 0.0,
     valor_total: 0.0,
     situacao: "Pendente",
+    dbs_pagamentos_orcamento: [],
+    dbs_produtos_orcamento: [],
+    dbs_servicos_orcamento: [],
   });
+  useEffect(() => {
+    console.log("FormValues atualizado:", formValues);
+  }, [formValues]);
+
 
   useEffect(() => {
     setFormValues((prevValues) => ({
@@ -954,6 +965,7 @@ const OrcamentosPage: React.FC = () => {
       valor_total: totalPagamentos || 0,
     }));
   }, [totalPagamentos]);
+
 
 
 
@@ -1025,23 +1037,26 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0.0,
       valor_total: 0.0,
+      dbs_pagamentos_orcamento: [],
+      dbs_produtos_orcamento: [],
+      dbs_servicos_orcamento: [],
     });
     setFormValuesClients({
       cod_cliente: 0,
-    nome: "",
-    logradouro: "",
-    cidade: "",
-    bairro: "",
-    estado: "",
-    complemento: "",
-    numero: "",
-    cep: "",
-    email: "",
-    telefone: "",
-    celular: "",
-    situacao: "",
-    tipo: "",
-    });    
+      nome: "",
+      logradouro: "",
+      cidade: "",
+      bairro: "",
+      estado: "",
+      complemento: "",
+      numero: "",
+      cep: "",
+      email: "",
+      telefone: "",
+      celular: "",
+      situacao: "",
+      tipo: "",
+    });
     setSelectedClient(null);
     setSelectedUser(null);
     setSelectedTransportadora(null);
@@ -1076,7 +1091,10 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0.0,
       valor_total: 0.0,
-    });    
+      dbs_pagamentos_orcamento: [],
+      dbs_produtos_orcamento: [],
+      dbs_servicos_orcamento: [],
+    });
   };
   const clearInputsServ = () => {
     setFormValues({
@@ -1103,6 +1121,9 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0.0,
       valor_total: 0.0,
+      dbs_pagamentos_orcamento: [],
+      dbs_produtos_orcamento: [],
+      dbs_servicos_orcamento: [],
     });
   };
   const [isDisabled, setIsDisabled] = useState(false);
@@ -1123,101 +1144,102 @@ const OrcamentosPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
-  
+    setIsEditing(false);
+
     try {
-        const requiredFields = [
-            "cod_responsavel",
-            "cod_cliente",
-            "canal_venda",
-            "data_venda",
-            "prazo",
-            "cod_centro_custo",
-            "frota",
-            "nf_compra",
-            "cod_transportadora",
-            "frete",
-            "endereco_cliente",
-            "logradouro",
-            "cidade",
-            "bairro",
-            "estado",
-            "cep"
-        ];
-  
-        const isEmptyField = requiredFields.some((field) => {
-            const value = formValues[field as keyof typeof formValues];
-            return value === "" || value === null || value === undefined;
-        });
-  
-        if (isEmptyField) {
-            setItemEditDisabled(false);
-            setLoading(false);
-            toast.info("Todos os campos devem ser preenchidos!", {
-                position: "top-right",
-                autoClose: 3000,
-            });
-            return;
-        }
-  
-        // Função para formatar a data no formato yyyy-MM-dd
-        const formatDate = (date: string) => {
-            const formattedDate = new Date(date);
-            return formattedDate.toISOString().split("T")[0]; // Formato yyyy-MM-dd
-        };
-  
-        const updatedFormValues = {
-            ...formValues,
-            data_venda: formValues.data_venda ? formatDate(formValues.data_venda) : "",
-            prazo: formValues.prazo ? formatDate(formValues.prazo) : "",
-            produtos: produtosSelecionados.map((produto) => ({
-                ...produto,
-            })),
-            servicos: servicosSelecionados.map((servico) => ({
-                ...servico,
-            })),
-            parcelas: pagamentos.map((parcela) => ({
-                ...parcela,
-                data_parcela: parcela.data_parcela ? formatDate(parcela.data_parcela) : ""
-            })),
-            situacao: "Pendente",
-        };
-  
-        const response = await axios.put(
-            `http://localhost:9009/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
-            updatedFormValues,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-  
-        if (response.status >= 200 && response.status < 300) {
-            setItemEditDisabled(false);
-            setLoading(false);
-            clearInputs();
-            fetchOrcamentos();
-            toast.success("Orçamento atualizado com sucesso!", {
-                position: "top-right",
-                autoClose: 3000,
-            });
-            setVisible(false);
-        } else {
-            setItemEditDisabled(false);
-            setLoading(false);
-            toast.error("Erro ao salvar orçamento.", {
-                position: "top-right",
-                autoClose: 3000,
-            });
-        }
-    } catch (error) {
+      const requiredFields = [
+        "cod_responsavel",
+        "cod_cliente",
+        "canal_venda",
+        "data_venda",
+        "prazo",
+        "cod_centro_custo",
+        "frota",
+        "nf_compra",
+        "cod_transportadora",
+        "frete",
+        "endereco_cliente",
+        "logradouro",
+        "cidade",
+        "bairro",
+        "estado",
+        "cep"
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (isEmptyField) {
         setItemEditDisabled(false);
         setLoading(false);
-        console.error("Erro ao salvar orçamento:", error);
-    }
-};
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
 
-  
+      // Função para formatar a data no formato yyyy-MM-dd
+      const formatDate = (date: string) => {
+        const formattedDate = new Date(date);
+        return formattedDate.toISOString().split("T")[0]; // Formato yyyy-MM-dd
+      };
+
+      const updatedFormValues = {
+        ...formValues,
+        data_venda: formValues.data_venda ? formatDate(formValues.data_venda) : "",
+        prazo: formValues.prazo ? formatDate(formValues.prazo) : "",
+        produtos: produtosSelecionados.map((produto) => ({
+          ...produto,
+        })),
+        servicos: servicosSelecionados.map((servico) => ({
+          ...servico,
+        })),
+        parcelas: pagamentos.map((parcela) => ({
+          ...parcela,
+          data_parcela: parcela.data_parcela ? formatDate(parcela.data_parcela) : ""
+        })),
+        situacao: "Pendente",
+      };
+
+      const response = await axios.put(
+        `http://localhost:9009/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
+        updatedFormValues,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchOrcamentos();
+        toast.success("Orçamento atualizado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+      } else {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar orçamento.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemEditDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar orçamento:", error);
+    }
+  };
+
+
 
   const handleSave = async () => {
     setItemCreateDisabled(true);
@@ -1294,7 +1316,7 @@ const OrcamentosPage: React.FC = () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
 
-    try {      
+    try {
       const updatedFormValues = {
         ...formValues,
         situacao: "Pendente", // Adiciona o campo situacao antes de enviar
@@ -1374,11 +1396,25 @@ const OrcamentosPage: React.FC = () => {
   };
 
   const handleEdit = (orcamento: Orcamento) => {
+    console.log("Orçamento recebido para edição:", orcamento);
+
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
+
+    // Atualiza os selects com os valores corretos
+    setSelectedClient(clients.find(c => c.cod_cliente === orcamento.cod_cliente) || null);
+    setSelectedUser(users.find(u => u.cod_usuario === orcamento.cod_responsavel) || null);
+    setSelectedTransportadora(transportadoras.find(t => t.cod_transportadora === orcamento.cod_transportadora) || null);
+    setSelectedCentroCusto(centrosCusto.find(cc => cc.cod_centro_custo === orcamento.cod_centro_custo) || null);
+
+    setProdSelecionados(orcamento.dbs_produtos_orcamento || []);
+    setServicosSelecionados(orcamento.dbs_servicos_orcamento || []);
+    setPagamentos(orcamento.dbs_pagamentos_orcamento || []);
+
     setIsEditing(true);
-    setVisible(true);
+    setVisible(true); // Abre o modal
   };
+
 
   const handleCancelar = async () => {
     if (orcamentoIdToDelete === null) return;
@@ -3638,6 +3674,36 @@ const OrcamentosPage: React.FC = () => {
                   }}
                 />
 
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData)}
+                        className="bg-blue300 p-1 rounded hover:bg-blue400 transition-all duration-200 w-8 h-8 flex items-center justify-center"
+                        title="Visualizar"
+                      >
+                        <MdVisibility className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
 
                 {permissions?.edicao === "SIM" && (
                   <Column
@@ -3645,7 +3711,7 @@ const OrcamentosPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => console.log(rowData)} //arrumar aqui
                           className="bg-yellow p-1 rounded"
                           title="Editar"
                         >

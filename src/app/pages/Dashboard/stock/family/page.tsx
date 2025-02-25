@@ -73,7 +73,8 @@ const FamilyPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.families)
+            setRowData(response.data.families);
+            setIsDataLoaded(true);
             setItens(response.data.families);
             setLoading(false)
         } catch (error) {
@@ -81,6 +82,10 @@ const FamilyPage: React.FC = () => {
             console.error("Erro ao carregar familia de itens:", error);
         }
     };
+
+
+    const [rowData, setRowData] = useState<Item[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const createItem = async () => {
         setFamilyCreateDisabled(true)
@@ -91,6 +96,21 @@ const FamilyPage: React.FC = () => {
                 position: "top-right",
                 autoClose: 3000,
             });
+            return;
+        }
+        // Verificar se o "nome" já existe no storedRowData
+        const nomeExists = rowData.some((item) => item.nome === nome);
+
+        if (nomeExists) {
+            setFamilyCreateDisabled(false);
+            setLoading(false);
+            toast.info("Esse nome já existe, escolha outro", {
+                position: "top-right",
+                autoClose: 3000,
+                progressStyle: { background: "yellow" },
+                icon: <span>⚠️</span>, // Usa o emoji de alerta
+            });
+
             return;
         }
 
@@ -351,60 +371,60 @@ const FamilyPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                                {permissions?.edicao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                    <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                                </button>
+                                    {permissions?.edicao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                    </button>
 
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
-                                                {permissions?.delecao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => openDialog(rowData.cod_familia)} className="bg-red text-black p-1 rounded">
-                                                    <FaTrash className="text-white text-2xl" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                    {permissions?.delecao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => openDialog(rowData.cod_familia)} className="bg-red text-black p-1 rounded">
+                                                        <FaTrash className="text-white text-2xl" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
                                 </DataTable>
                             </div>
@@ -439,39 +459,39 @@ const FamilyPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                    {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao === "SIM" && (
                                             <>
-                                        {!isEditing && (<Button
-                                            label="Salvar Família"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => createItem()}
-                                            disabled={familyCreateDisabled}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        {isEditing && (<Button
-                                            label="Salvar Família"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => editItem()}
-                                            disabled={familyEditDisabled}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
- </>
+                                                {!isEditing && (<Button
+                                                    label="Salvar Família"
+                                                    className="text-white"
+                                                    icon="pi pi-check"
+                                                    onClick={() => createItem()}
+                                                    disabled={familyCreateDisabled}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                                {isEditing && (<Button
+                                                    label="Salvar Família"
+                                                    className="text-white"
+                                                    icon="pi pi-check"
+                                                    onClick={() => editItem()}
+                                                    disabled={familyEditDisabled}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                            </>
                                         )}
                                     </div>
                                 </div>

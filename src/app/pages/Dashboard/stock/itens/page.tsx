@@ -154,7 +154,8 @@ const ItensPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.items)
+            setRowData(response.data.items);
+            setIsDataLoaded(true);
             setItens(response.data.items);
             setFormValues({ ...formValues, cod_item: (response.data.items.length + 1) })
             setLoading(false)
@@ -208,6 +209,7 @@ const ItensPage: React.FC = () => {
     const handleSaveEdit = async () => {
         setIsItemEditDisabled(true)
         setLoading(true);
+        setIsEditing(false);
         try {
             // Verificar campos obrigatórios
             const requiredFields = [
@@ -402,6 +404,10 @@ const ItensPage: React.FC = () => {
         }
     };
 
+
+    const [rowData, setRowData] = useState<Item[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
     const handleSaveReturn = async () => {
         setItemCreateDisabledReturn(true)
         setLoading(true);
@@ -468,6 +474,23 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
+
+            // Verificar se o "nome" já existe no storedRowData
+            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao);
+
+            if (nomeExists) {
+                setItemCreateDisabledReturn(false);
+                setLoading(false);
+                toast.info("Essa descrição já existe, escolha outra!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>, // Usa o emoji de alerta
+                });
+
+                return;
+            }
+
             const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
@@ -908,11 +931,11 @@ const ItensPage: React.FC = () => {
                         </div>
 
                         {permissions?.insercao === "SIM" && (
-                        <div>
-                            <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
-                                <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
-                            </button>
-                        </div>
+                            <div>
+                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                    <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -1052,60 +1075,60 @@ const ItensPage: React.FC = () => {
 
                                     return <span>{formattedDate}</span>;
                                 }} />
-                                {permissions?.edicao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                            <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                        </button>
+                            {permissions?.edicao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                            </button>
 
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
-                                {permissions?.delecao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => openDialog(rowData.cod_item)} className="bg-red text-black p-1 rounded">
-                                            <FaTrash className="text-white text-2xl" />
-                                        </button>
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                            {permissions?.delecao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => openDialog(rowData.cod_item)} className="bg-red text-black p-1 rounded">
+                                                <FaTrash className="text-white text-2xl" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
                         </DataTable>
                     </div>

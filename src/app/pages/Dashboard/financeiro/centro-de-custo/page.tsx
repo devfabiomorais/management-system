@@ -65,6 +65,7 @@ const CentrosCustoPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+    setIsEditing(false);
     try {
       const requiredFields = [
         "nome",
@@ -177,6 +178,9 @@ const CentrosCustoPage: React.FC = () => {
     }
   };
 
+  const [rowData, setRowData] = useState<CentroCusto[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
@@ -198,6 +202,22 @@ const CentrosCustoPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
+        return;
+      }
+
+      // Verificar se o "nome" já existe no storedRowData
+      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+
+      if (nomeExists) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe, escolha outro", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+
         return;
       }
 
@@ -257,7 +277,8 @@ const CentrosCustoPage: React.FC = () => {
           },
         }
       );
-      console.log(response.data.centrosCusto);
+      setRowData(response.data.centrosCusto);
+      setIsDataLoaded(true);
       setCentrosCusto(response.data.centrosCusto);
       setLoading(false);
     } catch (error) {

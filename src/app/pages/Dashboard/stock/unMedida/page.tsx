@@ -70,7 +70,9 @@ const UnMedidaPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.units)
+            console.log("Unidades de medidas:", response.data.units);
+            setRowData(response.data.units);
+            setIsDataLoaded(true);
             setItens(response.data.units);
             setLoading(false)
         } catch (error) {
@@ -78,6 +80,9 @@ const UnMedidaPage: React.FC = () => {
             console.error("Erro ao carregar unidades de medidas:", error);
         }
     };
+
+    const [rowData, setRowData] = useState<Item[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const createUnMedida = async () => {
         setIsUnMedidaCreateDisabled(true)
@@ -88,6 +93,22 @@ const UnMedidaPage: React.FC = () => {
                 position: "top-right",
                 autoClose: 3000,
             });
+            return;
+        }
+
+        // Verificar se o "nome" já existe no storedRowData
+        const nomeExists = rowData.some((item) => item.un === medida);
+
+        if (nomeExists) {
+            setIsUnMedidaCreateDisabled(false);
+            setLoading(false);
+            toast.info("Essa unidade de medida já existe, escolha outra!", {
+                position: "top-right",
+                autoClose: 3000,
+                progressStyle: { background: "yellow" },
+                icon: <span>⚠️</span>, // Usa o emoji de alerta
+            });
+
             return;
         }
 
@@ -346,7 +367,7 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                         {permissions?.edicao === "SIM" && (
+                                    {permissions?.edicao === "SIM" && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -373,34 +394,34 @@ const UnMedidaPage: React.FC = () => {
                                                 verticalAlign: "middle",
                                                 padding: "10px",
                                             }} />
-                                        )}
-                                    
+                                    )}
+
                                     {permissions?.delecao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => openDialog(rowData.cod_un)} className="bg-red text-black p-1 rounded">
-                                                    <FaTrash className="text-white text-2xl" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => openDialog(rowData.cod_un)} className="bg-red text-black p-1 rounded">
+                                                        <FaTrash className="text-white text-2xl" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
                                 </DataTable>
                             </div>
@@ -435,7 +456,7 @@ const UnMedidaPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                    {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao === "SIM" && (
                                             <>
                                                 {!isEditing && (
                                                     <Button

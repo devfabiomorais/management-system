@@ -41,9 +41,9 @@ const EstablishmentsPage: React.FC = () => {
     } = useUserPermissions(groupCode ?? 0, "Controles");
     const [visible, setVisible] = useState(false);
     const [estabilishmentCreateDisabled, setEstabilishmentCreateDisabled] =
-    useState(false);
+        useState(false);
     const [estabilishmentCreateReturnDisabled, setEstabilishmentCreateReturnDisabled] =
-    useState(false);
+        useState(false);
     const [estabilishmentEditDisabled, setEstabilishmentEditDisabled] = useState(false);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [formValues, setFormValues] = useState<Establishment>({
@@ -116,6 +116,7 @@ const EstablishmentsPage: React.FC = () => {
 
     const handleSaveEdit = async () => {
         setLoading(true)
+        setIsEditing(false);
         try {
             const requiredFields = [
                 "nome",
@@ -172,6 +173,9 @@ const EstablishmentsPage: React.FC = () => {
         }
     };
 
+    const [rowData, setRowData] = useState<Establishment[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
     const handleSaveReturn = async () => {
         setEstabilishmentCreateReturnDisabled(true)
         setLoading(true)
@@ -198,6 +202,22 @@ const EstablishmentsPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
+                return;
+            }
+
+            // Verificar se o "nome" já existe no storedRowData
+            const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+
+            if (nomeExists) {
+                setEstabilishmentCreateReturnDisabled(false);
+                setLoading(false);
+                toast.info("Esse nome já existe, escolha outro", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>, // Usa o emoji de alerta
+                });
+
                 return;
             }
 
@@ -311,7 +331,8 @@ const EstablishmentsPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.estabelecimentos)
+            setRowData(response.data.estabelecimentos);
+            setIsDataLoaded(true);
             setEstablishments(response.data.estabelecimentos);
             setLoading(false)
         } catch (error) {
@@ -649,11 +670,11 @@ const EstablishmentsPage: React.FC = () => {
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Estabelecimentos</h2>
                         </div>
                         {permissions?.insercao === "SIM" && (
-                        <div>
-                            <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
-                                <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
-                            </button>
-                        </div>
+                            <div>
+                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                    <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
+                                </button>
+                            </div>
                         )}
                     </div>
                     <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
@@ -804,60 +825,60 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
-   {permissions?.edicao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                            <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                        </button>
+                            {permissions?.edicao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                            </button>
 
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
-                               {permissions?.delecao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => openDialog(rowData.cod_estabelecimento)} className="bg-red text-black p-1 rounded">
-                                            <FaTrash className="text-white text-2xl" />
-                                        </button>
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                            {permissions?.delecao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => openDialog(rowData.cod_estabelecimento)} className="bg-red text-black p-1 rounded">
+                                                <FaTrash className="text-white text-2xl" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
                         </DataTable>
 

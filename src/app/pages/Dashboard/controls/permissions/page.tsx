@@ -80,7 +80,7 @@ const PermissionsPage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
+            const response = await axios.get("http://localhost:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -107,7 +107,7 @@ const PermissionsPage: React.FC = () => {
     const fetchPermission = async () => {
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission", {
+            const response = await axios.get("http://localhost:9009/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -164,7 +164,7 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend
             })
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/groupPermission/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -218,7 +218,7 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -311,7 +311,7 @@ const PermissionsPage: React.FC = () => {
         if (permissionIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/groupPermission/${permissionIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/groupPermission/${permissionIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -337,12 +337,12 @@ const PermissionsPage: React.FC = () => {
         setNomeGroup(nomeGrupo);
 
         try {
-            const responsePermissions = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission", {
+            const responsePermissions = await axios.get("http://localhost:9009/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const responseModules = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
+            const responseModules = await axios.get("http://localhost:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -491,60 +491,60 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                            {permissions?.edicao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                    <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                                </button>
+                                    {permissions?.edicao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                    </button>
 
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
-                                            {permissions?.delecao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => openDialog(rowData.cod_permissao_grupo)} className="bg-red text-black p-1 rounded">
-                                                    <FaTrash className="text-white text-2xl" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                    {permissions?.delecao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <button onClick={() => openDialog(rowData.cod_permissao_grupo)} className="bg-red text-black p-1 rounded">
+                                                        <FaTrash className="text-white text-2xl" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
                                 </DataTable>
                             </div>
@@ -611,38 +611,38 @@ const PermissionsPage: React.FC = () => {
 
 
                                     <div className="flex justify-end mt-5">
-                                    {(permissions?.insercao)?.toString() === "SIM" && (
-                                        <>
-                                         {!isEditing && (<Button
-                                            label="Salvar Permissão"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => createPermission()}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        {isEditing && (<Button
-                                            label="Salvar Permissão"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => editPermission()}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        </>)}
-                                       
+                                        {(permissions?.insercao)?.toString() === "SIM" && (
+                                            <>
+                                                {!isEditing && (<Button
+                                                    label="Salvar Permissão"
+                                                    className="text-white"
+                                                    icon="pi pi-check"
+                                                    onClick={() => createPermission()}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                                {isEditing && (<Button
+                                                    label="Salvar Permissão"
+                                                    className="text-white"
+                                                    icon="pi pi-check"
+                                                    onClick={() => editPermission()}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                            </>)}
+
                                     </div>
                                 </div>
                             </div>

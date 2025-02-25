@@ -100,6 +100,7 @@ const ClientsPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+    setIsEditing(false);
     try {
       const requiredFields = [
         "nome",
@@ -230,6 +231,9 @@ const ClientsPage: React.FC = () => {
     }
   };
 
+  const [rowData, setRowData] = useState<Client[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
@@ -260,6 +264,22 @@ const ClientsPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
+        return;
+      }
+
+      // Verificar se o "nome" já existe no storedRowData
+      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+
+      if (nomeExists) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe, escolha outro", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+
         return;
       }
 
@@ -319,7 +339,8 @@ const ClientsPage: React.FC = () => {
           },
         }
       );
-      console.log(response.data.clients);
+      setRowData(response.data.clients);
+      setIsDataLoaded(true);
       setClients(response.data.clients);
       setLoading(false);
     } catch (error) {

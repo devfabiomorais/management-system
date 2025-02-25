@@ -67,10 +67,10 @@ const UsersPage: React.FC = () => {
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [userCreateDisabled, setUserCreateDisabled] =
-    useState(false);
+        useState(false);
     const [userCreateReturnDisabled, setUserCreateReturnDisabled] =
-    useState(false);
-  const [userEditDisabled, setUserEditDisabled] = useState(false);
+        useState(false);
+    const [userEditDisabled, setUserEditDisabled] = useState(false);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -115,16 +115,17 @@ const UsersPage: React.FC = () => {
     const handleSaveEdit = async () => {
         setUserEditDisabled(true)
         setLoading(true)
+        setIsEditing(false);
         try {
             let requiredFields: any[] = []
-            if(isEditing){
+            if (isEditing) {
                 requiredFields = [
                     "nome",
                     "email",
                     "usuario",
                     "situacao",
                 ];
-            }else {
+            } else {
                 requiredFields = [
                     "nome",
                     "email",
@@ -133,7 +134,7 @@ const UsersPage: React.FC = () => {
                     "situacao",
                 ];
             }
-           
+
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
                 return value === "" || value === null || value === undefined;
@@ -184,45 +185,48 @@ const UsersPage: React.FC = () => {
 
         try {
             //if(users.cod_grupo !== null){
-                const groups = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const selectedGroup = groups.data.groups.find(
-                    (group: Group) => group.cod_grupo === users.cod_grupo
-                );
-    
-                const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                // Encontrar o estabelecimento correspondente pelo ID
-                const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
-                    (es: Establishment) =>
-                        Array.isArray(users.dbs_estabelecimentos_usuario) &&
-                        users.dbs_estabelecimentos_usuario.some(
-                            (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
-                        )
-                );
-                setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
-                setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
-                setEstablishments(estabilishmentResponse.data.estabelecimentos);
-           // }
-            
+            const groups = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const selectedGroup = groups.data.groups.find(
+                (group: Group) => group.cod_grupo === users.cod_grupo
+            );
 
-            
-        
+            const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment/", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            // Encontrar o estabelecimento correspondente pelo ID
+            const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
+                (es: Establishment) =>
+                    Array.isArray(users.dbs_estabelecimentos_usuario) &&
+                    users.dbs_estabelecimentos_usuario.some(
+                        (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
+                    )
+            );
+            setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
+            setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
+            setEstablishments(estabilishmentResponse.data.estabelecimentos);
+            // }
+
+
+
+
             setFormValues(users);
             setSelectedUser(users);
-           
+
             setIsEditing(true);
             setVisible(true);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
         }
     };
+
+    const [rowData, setRowData] = useState<User[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const handleSaveReturn = async () => {
         setUserCreateReturnDisabled(true)
@@ -258,6 +262,22 @@ const UsersPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
+                return;
+            }
+
+            // Verificar se o "nome" já existe no storedRowData
+            const nomeExists = rowData.some((item) => item.usuario === formValues.usuario);
+
+            if (nomeExists) {
+                setUserCreateReturnDisabled(false);
+                setLoading(false);
+                toast.info("Esse usuario já existe, escolha outro", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>, // Usa o emoji de alerta
+                });
+
                 return;
             }
 
@@ -405,25 +425,27 @@ const UsersPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+            setRowData(responseUsers.data.users);
+            setIsDataLoaded(true);
+
             const responseGroup = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
                 const matchingGroup = responseGroup.data.groups.find(
                     (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
                 );
-            
+
                 return {
                     ...user,
                     nomeGrupo: matchingGroup ? matchingGroup.nome : "",
                 };
             });
-    
-            //console.log("useerr", usersWithGroupName); 
+
+            //console.log("useerr", usersWithGroupName);             
             setUsers(usersWithGroupName);
             setLoading(false);
         } catch (error) {
@@ -758,11 +780,11 @@ const UsersPage: React.FC = () => {
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Usuários</h2>
                         </div>
                         {permissions?.insercao === "SIM" && (
-                        <div>
-                            <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
-                                <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
-                            </button>
-                        </div>
+                            <div>
+                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                    <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -908,59 +930,59 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
-                                    {permissions?.edicao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                            <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                        </button>
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                            {permissions?.edicao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
-                                {permissions?.delecao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => openDialog(rowData.cod_usuario)} className="bg-red text-black p-1 rounded">
-                                            <FaTrash className="text-white text-2xl" />
-                                        </button>
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                            {permissions?.delecao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="flex gap-2 justify-center">
+                                            <button onClick={() => openDialog(rowData.cod_usuario)} className="bg-red text-black p-1 rounded">
+                                                <FaTrash className="text-white text-2xl" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
                         </DataTable>
 

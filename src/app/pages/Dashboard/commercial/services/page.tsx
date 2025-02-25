@@ -75,6 +75,7 @@ const ServicosPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
+    setIsEditing(false);
     try {
       const requiredFields = [
         "nome",
@@ -193,6 +194,9 @@ const ServicosPage: React.FC = () => {
     }
   };
 
+  const [rowData, setRowData] = useState<Servico[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const handleSaveReturn = async () => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
@@ -220,6 +224,22 @@ const ServicosPage: React.FC = () => {
         return;
       }
 
+      // Verificar se o "nome" já existe no storedRowData
+      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+
+      if (nomeExists) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe, escolha outro", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+
+        return;
+      }
+
       const response = await axios.post(
         "http://localhost:9009/api/servicos/register",
         formValues,
@@ -229,6 +249,7 @@ const ServicosPage: React.FC = () => {
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -254,6 +275,9 @@ const ServicosPage: React.FC = () => {
     }
   };
 
+
+
+
   const handleEdit = (servico: Servico) => {
     setFormValues(servico);
     setSelectedServico(servico);
@@ -276,8 +300,10 @@ const ServicosPage: React.FC = () => {
           },
         }
       );
-      console.log(response.data.servicos);
+      setRowData(response.data.servicos);
+      setIsDataLoaded(true);
       setServicos(response.data.servicos);
+
       setLoading(false);
     } catch (error) {
       setLoading(false);
