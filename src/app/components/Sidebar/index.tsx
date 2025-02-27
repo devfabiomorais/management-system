@@ -76,11 +76,10 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                       <a
                         key={item.label}
                         href={item.href}
-                        className={`flex flex-col items-center justify-center w-28 h-24 rounded-lg transform transition-transform duration-200 ${
-                          activePath === item.href
-                            ? "bg-blue100 cursor-default scale-110"
-                            : "bg-blue hover:bg-blue-600 hover:scale-105"
-                        }`}
+                        className={`flex flex-col items-center justify-center w-28 h-24 rounded-lg transform transition-transform duration-50 ${activePath === item.href
+                          ? "bg-green100 cursor-default scale-125"
+                          : "bg-blue hover:bg-blue600 hover:scale-125"
+                          }`}
                       >
                         {item.icon}
                         <span className="text-sm">{item.label}</span>

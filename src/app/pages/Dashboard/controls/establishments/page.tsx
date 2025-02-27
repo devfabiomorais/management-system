@@ -96,8 +96,11 @@ const EstablishmentsPage: React.FC = () => {
         { sigla: "TO", nome: "Tocantins" },
     ];
     const filteredEstablishments = establishments.filter((establishment) =>
-        establishment.nome.toLowerCase().includes(search.toLowerCase())
+        Object.values(establishment).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        )
     );
+
 
 
     const clearInputs = () => {
@@ -375,6 +378,32 @@ const EstablishmentsPage: React.FC = () => {
         }
     };
 
+    const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+
+        // Remove qualquer caractere não numérico
+        const numericValue = value.replace(/[^0-9]/g, '');
+
+        // Formata o CEP com o formato 'XXXXX-XXX'
+        const formattedValue = numericValue.replace(
+            /(\d{5})(\d{0,3})/,
+            (match, p1, p2) => `${p1}-${p2}`
+        );
+
+        // Atualiza o estado com o valor formatado
+        setFormValues({
+            ...formValues,
+            [name]: formattedValue, // Atualiza o campo de CEP com a formatação
+        });
+    };
+
+    const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const char = e.key;
+        if (!/[0-9]/.test(char)) {
+            e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
+        }
+    };
+
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -454,7 +483,7 @@ const EstablishmentsPage: React.FC = () => {
 
                             <div>
                                 <label htmlFor="name" className="block text-blue font-medium">
-                                    Nome:
+                                    Nome
                                 </label>
                                 <input
                                     type="text"
@@ -469,7 +498,7 @@ const EstablishmentsPage: React.FC = () => {
 
                         <div>
                             <label htmlFor="street" className="block text-blue font-medium">
-                                Logradouro:
+                                Logradouro
                             </label>
                             <input
                                 type="text"
@@ -484,7 +513,7 @@ const EstablishmentsPage: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2">
                             <div>
                                 <label htmlFor="number" className="block text-blue font-medium">
-                                    Número:
+                                    Número
                                 </label>
                                 <input
                                     type="text"
@@ -498,21 +527,23 @@ const EstablishmentsPage: React.FC = () => {
 
                             <div>
                                 <label htmlFor="cep" className="block text-blue font-medium">
-                                    Cep:
+                                    CEP
                                 </label>
                                 <input
                                     type="text"
                                     id="cep"
                                     name="cep"
-                                    value={formValues.cep}
-                                    onChange={handleInputChange}
+                                    value={formValues.cep || ""} // Garante que o valor seja atualizado corretamente
+                                    onChange={handleCepInputChange}
+                                    onKeyPress={handleCepKeyPress}
+                                    maxLength={9}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
                             </div>
 
                             <div>
                                 <label htmlFor="complement" className="block text-blue font-medium">
-                                    Complemento:
+                                    Complemento
                                 </label>
                                 <input
                                     type="text"
@@ -528,7 +559,7 @@ const EstablishmentsPage: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2">
                             <div>
                                 <label htmlFor="state" className="block text-blue font-medium">
-                                    Estado:
+                                    Estado
                                 </label>
                                 <select
                                     id="state"
@@ -550,7 +581,7 @@ const EstablishmentsPage: React.FC = () => {
 
                             <div>
                                 <label htmlFor="city" className="block text-blue font-medium">
-                                    Cidade:
+                                    Cidade
                                 </label>
                                 <input
                                     type="text"
@@ -564,7 +595,7 @@ const EstablishmentsPage: React.FC = () => {
 
                             <div>
                                 <label htmlFor="neighborHood" className="block text-blue font-medium">
-                                    Bairro:
+                                    Bairro
                                 </label>
                                 <input
                                     type="text"

@@ -46,8 +46,11 @@ const ServicosPage: React.FC = () => {
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const filteredServicos = servicos.filter((servico) =>
-    servico.nome.toLowerCase().includes(search.toLowerCase())
+    Object.values(servico).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    )
   );
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [servicoIdToDelete, setServicoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -433,11 +436,11 @@ const ServicosPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este servico?</p>
+            <p>Tem certeza que deseja excluir este serviço?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar servico" : "Novo servico"}
+            header={isEditing ? "Editar Serviço" : "Novo Serviço"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",

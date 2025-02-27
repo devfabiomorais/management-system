@@ -115,11 +115,12 @@ const ItensPage: React.FC = () => {
 
 
 
-    const filteredItens = itens.filter(
-        (item) =>
-            item.descricao.toLowerCase().includes(search.toLowerCase()) ||
-            item.narrativa.toLowerCase().includes(search.toLowerCase())
+    const filteredItens = itens.filter((item) =>
+        Object.values(item).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        )
     );
+
 
     const clearInputs = () => {
         setFormValues({

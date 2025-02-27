@@ -68,8 +68,11 @@ const TransportadorasPage: React.FC = () => {
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const filteredTransportadoras = transportadoras.filter((transportadora) =>
-    transportadora.nome.toLowerCase().includes(search.toLowerCase())
+    Object.values(transportadora).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    )
   );
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [transportadoraIdToDelete, setTransportadoraIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -653,11 +656,11 @@ const TransportadorasPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este transportadora?</p>
+            <p>Tem certeza que deseja excluir esta transportadora?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Transportadora" : "Novo Transportadora"}
+            header={isEditing ? "Editar Transportadora" : "Nova Transportadora"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -672,7 +675,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
                   <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome:
+                    Nome
                   </label>
                   <input
                     type="text"
@@ -686,7 +689,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="tipo" className="block text-blue font-medium">
-                    Tipo:
+                    Tipo
                   </label>
                   <select
                     id="tipo"
@@ -706,7 +709,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="telefone" className="block text-blue font-medium">
-                    Telefone:
+                    Telefone
                   </label>
                   <input
                     type="text"
@@ -721,7 +724,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="celular" className="block text-blue font-medium">
-                    Celular:
+                    Celular
                   </label>
                   <input
                     type="text"
@@ -738,7 +741,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label htmlFor="responsavel" className="block text-blue font-medium">
-                    Responsável:
+                    Responsável
                   </label>
                   <input
                     type="text"
@@ -751,7 +754,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="email" className="block text-blue font-medium">
-                    E-mail:
+                    E-mail
                   </label>
                   <input
                     type="email"
@@ -764,7 +767,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="complemento" className="block text-blue font-medium">
-                    Complemento:
+                    Complemento
                   </label>
                   <input
                     type="text"
@@ -777,7 +780,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="estabelecimento" className="block text-blue font-medium">
-                    Estabelecimento:
+                    Estabelecimento
                   </label>
                   <select
                     id="estabelecimento"
@@ -810,7 +813,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-1 gap-2">
                 <div>
                   <label htmlFor="observacoes" className="block text-blue font-medium">
-                    Observações:
+                    Observações
                   </label>
                   <input
                     type="text"
@@ -825,7 +828,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="cep" className="block text-blue font-medium">
-                    CEP:
+                    CEP
                   </label>
                   <input
                     type="text"
@@ -840,7 +843,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="logradouro" className="block text-blue font-medium">
-                    Logradouro:
+                    Logradouro
                   </label>
                   <input
                     type="text"
@@ -855,7 +858,7 @@ const TransportadorasPage: React.FC = () => {
               <div className="grid grid-cols-4 gap-2">
                 <div>
                   <label htmlFor="numero" className="block text-blue font-medium">
-                    Número:
+                    Número
                   </label>
                   <input
                     type="number"
@@ -869,7 +872,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="estado" className="block text-blue font-medium">
-                    Estado (sigla):
+                    Estado (sigla)
                   </label>
                   <input
                     type="text"
@@ -882,7 +885,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="bairro" className="block text-blue font-medium">
-                    Bairro:
+                    Bairro
                   </label>
                   <input
                     type="text"
@@ -895,7 +898,7 @@ const TransportadorasPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="cidade" className="block text-blue font-medium">
-                    Cidade:
+                    Cidade
                   </label>
                   <input
                     type="text"

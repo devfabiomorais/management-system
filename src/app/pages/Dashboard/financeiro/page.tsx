@@ -32,9 +32,8 @@ export default function CommercialPage() {
                 {" "}
                 <div
                   onClick={checkOpen}
-                  className={`flex flex-col justify-center items-center w-40 h-40 ${
-                    openedCategory ? "bg-green100" : "bg-blue"
-                  } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                  className={`flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? "bg-green100" : "bg-blue"
+                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
                 >
                   {" "}
                   <FaFolderPlus className="text-5xl " />{" "}
@@ -45,22 +44,22 @@ export default function CommercialPage() {
                   <div className="flex gap-4">
                     {" "}
                     <div
-                      onClick={() => redirect("financeiro/centro-de-custo")}
+                      onClick={() => redirect("financeiro/centrosCusto")}
                       className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
                     >
                       {" "}
                       <TbWallet className="text-5xl" />{" "}
                       <span className="text-sm mt-3 font-bold">Centro de Custo</span>{" "}
                     </div>{" "}
-                    
-                  </div>                  
+
+                  </div>
                 )}{" "}
               </div>{" "}
             </div>{" "}
           </div>{" "}
         </div>{" "}
       </SidebarLayout>{" "}
-      <Footer/>
+      <Footer />
     </div>
   );
 }

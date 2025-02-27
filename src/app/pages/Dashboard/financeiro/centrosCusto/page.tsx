@@ -41,9 +41,12 @@ const CentrosCustoPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredCentrosCusto = centrosCusto.filter((centrosCusto) =>
-    centrosCusto.nome.toLowerCase().includes(search.toLowerCase())
+  const filteredCentrosCusto = centrosCusto.filter((centroCusto) =>
+    Object.values(centroCusto).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    )
   );
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [centrosCustoIdToDelete, setCentroCustoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -413,7 +416,7 @@ const CentrosCustoPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar centrosCusto" : "Novo centrosCusto"}
+            header={isEditing ? "Editar Centro de Custo" : "Novo Centro de Custo"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -611,7 +614,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="nome"
                   header="Nome"
                   style={{
-                    width: "1%",
+                    width: "0.5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -630,7 +633,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="descricao"
                   header="Descrição"
                   style={{
-                    width: "1%",
+                    width: "0.5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}

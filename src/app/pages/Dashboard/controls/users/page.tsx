@@ -10,7 +10,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from 'primereact/dialog';
 import { MdOutlineModeEditOutline } from "react-icons/md";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
@@ -108,9 +108,11 @@ const UsersPage: React.FC = () => {
     }
 
     const filteredUsers = users.filter((user) =>
-        user.nome.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase())
+        Object.values(user).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        )
     );
+
 
     const handleSaveEdit = async () => {
         setUserEditDisabled(true)
@@ -150,7 +152,7 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
+            const response = await axios.put(`http://localhost:9009/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -185,7 +187,7 @@ const UsersPage: React.FC = () => {
 
         try {
             //if(users.cod_grupo !== null){
-            const groups = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/", {
+            const groups = await axios.get("http://localhost:9009/api/groupPermission/groups/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -194,7 +196,7 @@ const UsersPage: React.FC = () => {
                 (group: Group) => group.cod_grupo === users.cod_grupo
             );
 
-            const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment/", {
+            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -229,7 +231,7 @@ const UsersPage: React.FC = () => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const handleSaveReturn = async () => {
-        setUserCreateReturnDisabled(true)
+        setUserCreateReturnDisabled(true);
         setLoading(true);
         try {
             const requiredFields = [
@@ -246,7 +248,7 @@ const UsersPage: React.FC = () => {
             });
 
             if (selectedEstablishments?.cod_estabelecimento === null) {
-                setUserCreateReturnDisabled(false)
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -256,7 +258,7 @@ const UsersPage: React.FC = () => {
             }
 
             if (isEmptyField) {
-                setUserCreateReturnDisabled(false)
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -275,7 +277,7 @@ const UsersPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                     progressStyle: { background: "yellow" },
-                    icon: <span>⚠️</span>, // Usa o emoji de alerta
+                    icon: <span>⚠️</span>,
                 });
 
                 return;
@@ -291,7 +293,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
+            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -299,7 +301,34 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
-                setUserCreateReturnDisabled(false)
+                // Enviar e-mail após salvar o usuário
+                const emailPayload = {
+                    to: formValues.email,  // E-mail do novo usuário
+                    subject: "Bem-vindo ao sistema!",  // Assunto do e-mail
+                    body: `Olá ${formValues.nome},\n\nSeu cadastro foi realizado com sucesso! Estamos felizes em tê-lo conosco.`,  // Corpo do e-mail
+                };
+
+                // Chamar a API de envio de e-mail
+                const emailResponse = await axios.post("http://localhost:9009/api/email/send-email", emailPayload, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (emailResponse.status >= 200 && emailResponse.status < 300) {
+                    toast.success("E-mail de boas-vindas enviado com sucesso!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                    });
+                } else {
+                    toast.error("Erro ao enviar e-mail de boas-vindas.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                    });
+                }
+
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 clearInputs();
                 fetchUsers();
@@ -309,7 +338,7 @@ const UsersPage: React.FC = () => {
                 });
                 setVisible(false);
             } else {
-                setUserCreateReturnDisabled(false)
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 toast.error("Erro ao salvar o usuário:" + response.data.msg, {
                     position: "top-right",
@@ -317,7 +346,7 @@ const UsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            setUserCreateReturnDisabled(false)
+            setUserCreateReturnDisabled(false);
             setLoading(false);
             console.error("Erro ao salvar usuário:", error);
             toast.error("Erro ao salvar o usuário", {
@@ -326,6 +355,7 @@ const UsersPage: React.FC = () => {
             });
         }
     };
+
 
     const handleSave = async () => {
         setUserCreateDisabled(true)
@@ -374,7 +404,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
+            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -420,7 +450,7 @@ const UsersPage: React.FC = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const responseUsers = await axios.get("https://api-birigui-teste.comviver.cloud/api/users/", {
+            const responseUsers = await axios.get("http://localhost:9009/api/users/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -428,7 +458,7 @@ const UsersPage: React.FC = () => {
             setRowData(responseUsers.data.users);
             setIsDataLoaded(true);
 
-            const responseGroup = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            const responseGroup = await axios.get("http://localhost:9009/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -457,7 +487,7 @@ const UsersPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -474,7 +504,7 @@ const UsersPage: React.FC = () => {
     const fetchGroupPermissions = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            const response = await axios.get("http://localhost:9009/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -502,7 +532,7 @@ const UsersPage: React.FC = () => {
 
         setLoading(true)
         try {
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
+            const response = await axios.put(`http://localhost:9009/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -531,7 +561,7 @@ const UsersPage: React.FC = () => {
         /*if (clientIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/users/${clientIdToDelete}`);
+            await axios.delete(`http://localhost:9009/api/users/${clientIdToDelete}`);
             toast.success("Usuario removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -613,7 +643,7 @@ const UsersPage: React.FC = () => {
                     <div className="p-fluid grid gap-3 mt-2">
                         <div className="">
                             <label htmlFor="nome" className="block text-blue font-medium">
-                                Nome Completo:
+                                Nome Completo
                             </label>
                             <input
                                 type="text"
@@ -627,7 +657,7 @@ const UsersPage: React.FC = () => {
 
                         <div className="">
                             <label htmlFor="email" className="block text-blue  font-medium">
-                                E-mail:
+                                E-mail
                             </label>
                             <input
                                 type="email"
@@ -640,8 +670,8 @@ const UsersPage: React.FC = () => {
                         </div>
 
                         <div className="">
-                            <label htmlFor="estabelecimento" className="block text-blue  font-medium">
-                                Estabelecimentos:
+                            <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                                Estabelecimento
                             </label>
                             <Dropdown
                                 value={selectedEstablishments}
@@ -649,14 +679,15 @@ const UsersPage: React.FC = () => {
                                 options={establishments}
                                 optionLabel="nome"
                                 filter
-                                placeholder="Selecione um Estabelecimento"
-                                className="w-full border text-black" />
+                                className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]"
+                            />
                         </div>
+
 
                         <div className="grid grid-cols-3 gap-2">
                             <div className="">
                                 <label htmlFor="login" className="block text-blue  font-medium">
-                                    Login:
+                                    Login
                                 </label>
                                 <input
                                     type="text"
@@ -669,7 +700,7 @@ const UsersPage: React.FC = () => {
                             </div>
                             <div className="">
                                 <label htmlFor="grupo" className="block text-blue  font-medium">
-                                    Grupo de Permissões:
+                                    Grupo de Permissões
                                 </label>
                                 <Dropdown
                                     value={selectedGroupPermissions}
@@ -677,13 +708,12 @@ const UsersPage: React.FC = () => {
                                     options={groupPermissions}
                                     optionLabel="nome"
                                     filter
-                                    placeholder="Selecione um grupo"
-                                    className="w-full border text-black" />
+                                    className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]" />
                             </div>
 
                             <div className="">
                                 <label htmlFor="situacao" className="block text-blue  font-medium">
-                                    Situação:
+                                    Situação
                                 </label>
                                 <Dropdown
                                     id="situacao"
@@ -694,8 +724,7 @@ const UsersPage: React.FC = () => {
                                         { label: 'Ativo', value: 'ATIVO' },
                                         { label: 'Inativo', value: 'DESATIVADO' }
                                     ]}
-                                    placeholder="Selecione"
-                                    className="w-full md:w-14rem"
+                                    className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]"
                                     style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
                         </div>
@@ -774,14 +803,16 @@ const UsersPage: React.FC = () => {
 
 
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-3xl">
                     <div className="flex justify-between ">
                         <div>
-                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Usuários</h2>
+                            <h2 className="text-blue500 text-3xl font-bold mb-3 pl-3 drop-shadow-[2px_2px_1px_rgba(0,0,0,0.2)]">
+                                Usuários
+                            </h2>
                         </div>
                         {permissions?.insercao === "SIM" && (
                             <div>
-                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                <button className="bg-green200 rounded-3xl mr-3" onClick={() => setVisible(true)}>
                                     <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                                 </button>
                             </div>
@@ -789,8 +820,9 @@ const UsersPage: React.FC = () => {
                     </div>
 
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
-                        <div className="mb-4 flex justify-end">
+                    <div className="bg-white rounded-3xl p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+
+                        <div className="mb-4 flex justify-end ">
                             <p className="text-blue font-bold text-lg">Busca:</p>
                             <InputText
                                 value={search}
@@ -809,7 +841,7 @@ const UsersPage: React.FC = () => {
                                 setFirst(e.first);
                                 setRows(e.rows);
                             }}
-                            className="w-full"
+                            className="w-full rounded-lg"
                             responsiveLayout="scroll"
                             tableStyle={{
                                 borderCollapse: 'collapse',
@@ -934,8 +966,8 @@ const UsersPage: React.FC = () => {
                                 <Column
                                     header=""
                                     body={(rowData) => (
-                                        <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                        <div className="flex gap-2 justify-center bg-yellow500 rounded-2xl w-full">
+                                            <button onClick={() => handleEdit(rowData)} className="p-2 bg-transparent">
                                                 <MdOutlineModeEditOutline className="text-white text-2xl" />
                                             </button>
                                         </div>
@@ -961,11 +993,14 @@ const UsersPage: React.FC = () => {
                                 <Column
                                     header=""
                                     body={(rowData) => (
-                                        <div className="flex gap-2 justify-center">
-                                            <button onClick={() => openDialog(rowData.cod_usuario)} className="bg-red text-black p-1 rounded">
-                                                <FaTrash className="text-white text-2xl" />
+                                        <div className="flex gap-2 justify-center bg-red400 rounded-2xl w-full">
+                                            <button onClick={() => openDialog(rowData.cod_usuario)} className="p-2 bg-transparent">
+                                                <FaBan className="text-white text-2xl" />
                                             </button>
                                         </div>
+
+
+
                                     )}
                                     className="text-black"
                                     style={{

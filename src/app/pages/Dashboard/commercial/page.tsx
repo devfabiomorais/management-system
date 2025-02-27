@@ -36,9 +36,8 @@ export default function CommercialPage() {
                 <div className="flex gap-6">
                   <div
                     onClick={checkOpenCategory}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${
-                      openedCategory ? "bg-green100" : "bg-blue"
-                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? "bg-green100" : "bg-blue"
+                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
                   >
                     <FaFolderPlus className="text-5xl" />
                     <span className="text-lg mt-2 font-bold">Cadastros</span>
@@ -46,9 +45,8 @@ export default function CommercialPage() {
 
                   <div
                     onClick={checkOpenMovements}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${
-                      openedMovements ? "bg-green100" : "bg-blue"
-                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedMovements ? "bg-green100" : "bg-blue"
+                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
                   >
                     <FaArrowsRotate className="text-5xl" />
                     <span className="text-lg mt-2 font-bold">Movimentações</span>
@@ -59,21 +57,21 @@ export default function CommercialPage() {
                   <div className="flex gap-4">
                     <div
                       onClick={() => redirect("commercial/clients")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
                     >
                       <TbUserScan className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Clientes</span>
                     </div>
                     <div
                       onClick={() => redirect("commercial/services")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
                     >
                       <TbTool className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Serviços</span>
                     </div>
                     <div
                       onClick={() => redirect("commercial/transportadoras")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
                     >
                       <TbTruck className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Transportadoras</span>
@@ -84,7 +82,7 @@ export default function CommercialPage() {
                   <div className="flex gap-4">
                     <div
                       onClick={() => redirect("commercial/orcamentos")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
                     >
                       <MdRequestQuote className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Orçamento</span>

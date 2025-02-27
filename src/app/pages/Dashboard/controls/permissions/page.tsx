@@ -192,7 +192,7 @@ const PermissionsPage: React.FC = () => {
 
     const editPermission = async () => {
         if (nomeGroup === "") {
-            setLoading(false)
+            setLoading(false);
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -208,23 +208,25 @@ const PermissionsPage: React.FC = () => {
             delecao: linha[4], // Permissão de deleção
             visualizacao: linha[5], // Permissão de visualização
         }));
-        console.log({
-            nome: nomeGroup,
-            permissoes: permissionsToSend
-        })
-        try {
-            const bodyForm = {
-                nome: nomeGroup,
-                permissoes: permissionsToSend
-            }
 
-            const response = await axios.put(`http://localhost:9009/api/groupPermission/edit/${selectedPermission}`, bodyForm, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+        const bodyForm = {
+            nome: nomeGroup, // Certifique-se de que o nome está sendo enviado corretamente
+            permissoes: permissionsToSend,
+        };
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/groupPermission/edit/${selectedPermission}`,
+                bodyForm,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
             if (response.status >= 200 && response.status < 300) {
-                setLoading(false)
+                setLoading(false);
                 clearInputs();
                 fetchPermission();
                 fetchModules();
@@ -234,7 +236,7 @@ const PermissionsPage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
-                setLoading(false)
+                setLoading(false);
                 setIsEditing(false);
                 toast.error("Erro ao editar o Grupo de Permissão.", {
                     position: "top-right",
@@ -242,11 +244,13 @@ const PermissionsPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            setLoading(false)
+            setLoading(false);
             setIsEditing(false);
             console.error("Erro ao editar os Grupos de Permissoes:", error);
         }
-    }
+    };
+
+
 
     const openDialog = (id: number) => {
         setPermissionIdToDelete(id);
@@ -259,11 +263,12 @@ const PermissionsPage: React.FC = () => {
     };
 
 
-    const filteredItens = permissionsType.filter(
-        (perm) =>
-            perm.cod_grupo.toLocaleString().includes(search) ||
-            perm.nome.toLocaleString().includes(search.toLowerCase())
+    const filteredItens = permissionsType.filter((perm) =>
+        Object.values(perm).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        )
     );
+
 
     /*const handleCheckboxChange = (rowIndex: number, colIndex: number) => {
         console.log("Alterando checkbox:", rowIndex, colIndex);

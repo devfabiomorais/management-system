@@ -32,17 +32,14 @@ export default function StockPage() {
                 <div className="justify-between flex">
                   <div
                     onClick={checkOpen}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${
-                      openedCategory ? "bg-green100" : "bg-blue"
-                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? "bg-green100" : "bg-blue"
+                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
                   >
                     <FaFolderPlus className="text-5xl " />
                     <span className="text-lg mt-2 font-bold">Cadastros</span>
                   </div>
                   <div
-                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 ${
-                      openedCategory ? "bg-green100" : "bg-blue"
-                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
                   >
                     <GoSync className="text-5xl " />
                     <span className="text-lg mt-2 font-bold">
@@ -50,9 +47,7 @@ export default function StockPage() {
                     </span>
                   </div>
                   <div
-                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 ${
-                      openedCategory ? "bg-green100" : "bg-blue"
-                    } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
                   >
                     <FaChartBar className="text-5xl " />
                     <span className="text-lg mt-2 font-bold">Dashboard</span>
@@ -84,7 +79,7 @@ export default function StockPage() {
           </div>
         </div>
       </SidebarLayout>
-      <Footer/>
+      <Footer />
     </div>
   );
 }

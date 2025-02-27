@@ -21,6 +21,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { truncate } from "fs";
 
 
 
@@ -301,6 +302,76 @@ const OrcamentosPage: React.FC = () => {
       console.error("Erro ao carregar clientes:", error);
     }
   };
+
+  const [clientInfo, setClientInfo] = useState({
+    cod_cliente: 0,
+    nome: "",
+    logradouro: "",
+    cidade: "",
+    bairro: "",
+    estado: "",
+    complemento: "",
+    numero: "",
+    cep: "",
+    email: "",
+    telefone: "",
+    celular: "",
+    situacao: "",
+    tipo: "",
+  });
+
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = clients.find(
+      (client) => client.cod_cliente === Number(e.target.value)
+    );
+
+    setSelectedClient(selected || null); // Atualiza o estado de selectedClient
+
+    if (selected) {
+      setIsDisabled(true);
+      setUsarEndereco("usar");
+      setClientInfo({
+        cod_cliente: selected.cod_cliente || 0,
+        nome: selected.nome || "",
+        logradouro: selected.logradouro || "",
+        cidade: selected.cidade || "",
+        bairro: selected.bairro || "",
+        estado: selected.estado || "",
+        complemento: selected.complemento || "",
+        numero: String(selected.numero || ""),  // Certifique-se de que o número seja uma string
+        cep: selected.cep || "",
+        email: selected.email || "",
+        telefone: selected.telefone || "",
+        celular: selected.celular || "",
+        situacao: selected.situacao || "",
+        tipo: selected.tipo || "",
+      });
+      // Atualizando formValuesClients corretamente com os dados do cliente
+      setFormValuesClients((prevValues) => ({
+        ...prevValues,
+        logradouro: selected.logradouro || '',
+        cidade: selected.cidade || '',
+        bairro: selected.bairro || '',
+        estado: selected.estado || '',
+        complemento: selected.complemento || '',
+        numero: String(selected.numero || ''),  // Garanta que seja uma string, se necessário
+        cep: selected.cep || '',
+      }));
+
+      // Atualizando formValues com o cod_cliente e os dados do cliente
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        cod_cliente: selected.cod_cliente,
+        logradouro: selected.logradouro || '',
+        cidade: selected.cidade || '',
+        bairro: selected.bairro || '',
+        estado: selected.estado || '',
+        complemento: selected.complemento || '',
+        numero: selected.numero ? Number(selected.numero) : 0,  // Convertendo para number
+        cep: selected.cep || '',
+      }));
+    }
+  };
   // #endregion
 
 
@@ -337,12 +408,193 @@ const OrcamentosPage: React.FC = () => {
 
 
 
+  // #region PRODUTOS  
+  const [produtos, setProd] = useState<Produto[]>([]);
+  const [produtosSelecionados, setProdSelecionados] = useState<Produto[]>([]);
+  const [selectedProd, setSelectedProd] = useState<Produto | null>(null);
+  const [formValuesProd, setFormValuesProd] = useState<Produto>({
+    id: 0, // Inicializando com um id padrão (pode ser 0 ou um valor único)
+    cod_item: "",
+    descricao: "",
+    valor_custo: "",
+    valor_venda: "",
+    cod_produto: "0",
+    quantidade: 0,
+    descontoUnitProdtipo: "",
+    descontoProd: 0,
+    desconto: 0,
+    valor_total: "",
+    valor_unitario: "",
+    valor_desconto: 0,
+    tipo_juros: "Percentual",
+    tipo_desconto: "Percentual",
+  });
+  useEffect(() => {
+    setFormValuesProd((prev) => ({
+      ...prev,
+      valor_unitario: prev.valor_venda,
+    }));
+  }, [formValuesProd.valor_venda]);
+
+  const [quantidadeProd, setQuantidadeProd] = useState(1);
+  const [descontoProd, setDescontoProd] = useState<number>(0);
+  const [descontoUnitProd, setDescontoUnitProd] = useState('Percentual'); // '%' ou 'R$'
+  const [valorTotalProd, setValorTotalProd] = useState(0);
+
+  //produtos-handles
+  const handleRemoveLinhaProd = (id: number) => {
+    setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
+  };
+  const handleAdicionarLinha = () => {
+    if (!selectedProd || !quantidadeProd) {
+      alert("Após selecionar um produto, insira a quantidade.");
+      return;
+    }
+    // Garante que tenha um produto e quantidade antes de adicionar
+
+    const novoProduto: Produto = {
+      id: Date.now(),  // Usando Date.now() para criar um identificador único
+      cod_item: selectedProd.cod_item,
+      descricao: selectedProd.descricao,
+      valor_venda: selectedProd.valor_venda,
+      quantidade: quantidadeProd,
+      descontoUnitProdtipo: descontoUnitProd,
+      descontoProd: descontoProd,
+      valor_total: valorTotalProd.toString(),
+      tipo_juros: "Percentual",
+      cod_produto: selectedProd.cod_item,
+      desconto: 0,
+      valor_custo: selectedProd.valor_custo,
+      valor_unitario: selectedProd.valor_venda,
+      valor_desconto: Number(descontoProd) || 0,
+      tipo_desconto: "Percentual",
+    };
+
+    // Adiciona o novo produto à lista de selecionados
+    setProdSelecionados((prev) => [...prev, novoProduto]);
+
+    // Reseta os estados para permitir a seleção de um novo produto
+    setSelectedProd(null); // Permite escolher um novo produto
+    setQuantidadeProd(0);
+    setDescontoProd(0);
+    setDescontoUnitProd('%prod');
+    setValorTotalProd(0);
+
+    // Reseta os valores do formValuesProd
+    setFormValuesProd({
+      id: 0, // Adicionando o campo id
+      cod_item: "",
+      descricao: "",
+      valor_venda: "",
+      valor_custo: "",
+      cod_produto: "",
+      quantidade: 0,
+      valor_total: "",
+      descontoUnitProdtipo: "",
+      descontoProd: 0,
+      desconto: 0,
+      tipo_juros: "Percentual",
+      valor_unitario: "",
+      valor_desconto: 0,
+      tipo_desconto: "Percentual",
+    });
+  };
+  const handleQuantidadeProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    setQuantidadeProd(value);
+  };
+
+  const handleDescontoProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
+    let numericValue = Number(value);
+
+    const maxValue = descontoUnitProd === "Percentual" ? 100 : quantidadeProd * Number(selectedProd?.valor_venda ?? 0);
+
+    if (numericValue > maxValue) {
+      numericValue = maxValue; // Limita ao máximo permitido
+    } else if (numericValue < 0 || isNaN(numericValue)) {
+      numericValue = 0; // Evita valores negativos ou inválidos
+    }
+
+    setDescontoProd(numericValue);
+  };
+
+
+
+
+
+  const handleDescontoUnitProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newValue = e.target.value === "%prod" ? "Percentual" : "Reais";
+    setDescontoUnitProd(newValue);
+  };
+
+  const [totalProdutosSomados, setTotalProdutosSomados] = useState(0);
+
+  useEffect(() => {
+    const total = produtosSelecionados.reduce((acc, produto) => acc + parseFloat(produto.valor_total || "0"), 0);
+    setTotalProdutosSomados(total);
+  }, [produtosSelecionados]); // Executa toda vez que produtosSelecionados mudar
+
+
+  //autopreenchimento de campos ao selecionar algo PRODUTOS
+  useEffect(() => {
+    if (selectedProd) {
+      console.log('selectedProd mudou:', selectedProd);
+      setFormValuesProd((prevValues) => ({
+        ...prevValues,
+        cod_item: selectedProd.cod_item || '',
+        descricao: selectedProd.descricao || '',
+        valor_venda: selectedProd.valor_venda || '',
+        valor_custo: selectedProd.valor_custo || '',
+      }));
+
+      let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
+      if (descontoUnitProd === 'Percentual') {
+        total -= total * (descontoProd / 100);
+      } else {
+        total -= descontoProd;
+      }
+      setValorTotalProd(parseFloat(total.toFixed(2)));
+    }
+  }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
+
+  const fetchProd = async () => {
+    clearInputs();
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/itens", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data.items);
+      setProd(response.data.items);
+      setFormValuesProd((prevValues) => ({
+        ...prevValues,
+        cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
+      }));
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar produtos:", error);
+    }
+  };
+  // #endregion
+
+
+
+
+
 
   // #region SERVIÇOS
-  const calcularTotalServicos = () => {
+  const [servicosSelecionados, setServicosSelecionados] = useState<Servico[]>([]);
+  const [totalServicosSomados, setTotalServicosSomados] = useState(0);
+
+  useEffect(() => {
     const total = servicosSelecionados.reduce((acc, servico) => acc + parseFloat(servico.valor_total || "0"), 0);
-    return total;
-  };
+    setTotalServicosSomados(total);
+  }, [servicosSelecionados]); // Executa toda vez que servicosSelecionados mudar
+
 
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
@@ -372,14 +624,26 @@ const OrcamentosPage: React.FC = () => {
     setQuantidadeServ(value);
   };
   const handleDescontoServChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setDescontoServ(value);
+    let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
+    let numericValue = Number(value);
+
+    const maxValue = descontoUnit === "Percentual" ? 100 : quantidadeServ * Number(selectedServico?.valor_venda ?? 0);
+
+    if (numericValue > maxValue) {
+      numericValue = maxValue; // Limita ao máximo permitido
+    } else if (numericValue < 0 || isNaN(numericValue)) {
+      numericValue = 0; // Evita valores negativos ou inválidos
+    }
+
+    setDescontoServ(numericValue);
   };
+
+
   const handleDescontoUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value === "%" ? "Percentual" : "Reais";
     setDescontoUnit(newValue);
   };
-  const [servicosSelecionados, setServicosSelecionados] = useState<Servico[]>([]);
+
 
   const handleAdicionarServico = () => {
     if (!selectedServico || !quantidadeServ) {
@@ -520,7 +784,7 @@ const OrcamentosPage: React.FC = () => {
       } else {
         total -= descontoServ;
       }
-      setValorTotalServ(total);
+      setValorTotalServ(parseFloat(total.toFixed(2)));
     }
   }, [selectedServico, quantidadeServ, descontoServ, descontoUnit]);
   const fetchServicos = async () => {
@@ -547,160 +811,6 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-  // #region PRODUTOS  
-  const [produtos, setProd] = useState<Produto[]>([]);
-  const [produtosSelecionados, setProdSelecionados] = useState<Produto[]>([]);
-  const [selectedProd, setSelectedProd] = useState<Produto | null>(null);
-  const [formValuesProd, setFormValuesProd] = useState<Produto>({
-    id: 0, // Inicializando com um id padrão (pode ser 0 ou um valor único)
-    cod_item: "",
-    descricao: "",
-    valor_custo: "",
-    valor_venda: "",
-    cod_produto: "0",
-    quantidade: 0,
-    descontoUnitProdtipo: "",
-    descontoProd: 0,
-    desconto: 0,
-    valor_total: "",
-    valor_unitario: "",
-    valor_desconto: 0,
-    tipo_juros: "Percentual",
-    tipo_desconto: "Percentual",
-  });
-  useEffect(() => {
-    setFormValuesProd((prev) => ({
-      ...prev,
-      valor_unitario: prev.valor_venda,
-    }));
-  }, [formValuesProd.valor_venda]);
-
-  const [quantidadeProd, setQuantidadeProd] = useState(1);
-  const [descontoProd, setDescontoProd] = useState(0);
-  const [descontoUnitProd, setDescontoUnitProd] = useState('Percentual'); // '%' ou 'R$'
-  const [valorTotalProd, setValorTotalProd] = useState(0);
-
-  //produtos-handles
-  const handleRemoveLinhaProd = (id: number) => {
-    setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
-  };
-  const handleAdicionarLinha = () => {
-    if (!selectedProd || !quantidadeProd) {
-      alert("Após selecionar um produto, insira a quantidade.");
-      return;
-    }
-    // Garante que tenha um produto e quantidade antes de adicionar
-
-    const novoProduto: Produto = {
-      id: Date.now(),  // Usando Date.now() para criar um identificador único
-      cod_item: selectedProd.cod_item,
-      descricao: selectedProd.descricao,
-      valor_venda: selectedProd.valor_venda,
-      quantidade: quantidadeProd,
-      descontoUnitProdtipo: descontoUnitProd,
-      descontoProd: descontoProd,
-      valor_total: valorTotalProd.toString(),
-      tipo_juros: "Percentual",
-      cod_produto: selectedProd.cod_item,
-      desconto: 0,
-      valor_custo: selectedProd.valor_custo,
-      valor_unitario: selectedProd.valor_venda,
-      valor_desconto: Number(descontoProd) || 0,
-      tipo_desconto: "Percentual",
-    };
-
-    // Adiciona o novo produto à lista de selecionados
-    setProdSelecionados((prev) => [...prev, novoProduto]);
-
-    // Reseta os estados para permitir a seleção de um novo produto
-    setSelectedProd(null); // Permite escolher um novo produto
-    setQuantidadeProd(0);
-    setDescontoProd(0);
-    setDescontoUnitProd('%prod');
-    setValorTotalProd(0);
-
-    // Reseta os valores do formValuesProd
-    setFormValuesProd({
-      id: 0, // Adicionando o campo id
-      cod_item: "",
-      descricao: "",
-      valor_venda: "",
-      valor_custo: "",
-      cod_produto: "",
-      quantidade: 0,
-      valor_total: "",
-      descontoUnitProdtipo: "",
-      descontoProd: 0,
-      desconto: 0,
-      tipo_juros: "Percentual",
-      valor_unitario: "",
-      valor_desconto: 0,
-      tipo_desconto: "Percentual",
-    });
-  };
-  const handleQuantidadeProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setQuantidadeProd(value);
-  };
-  const handleDescontoProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setDescontoProd(value);
-  };
-  const handleDescontoUnitProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value === "%prod" ? "Percentual" : "Reais";
-    setDescontoUnitProd(newValue);
-  };
-
-  const calcularTotalProdutos = () => {
-    const total = produtosSelecionados.reduce((acc, produto) => acc + parseFloat(produto.valor_total || "0"), 0);
-    return total;
-  };
-
-  //autopreenchimento de campos ao selecionar algo PRODUTOS
-  useEffect(() => {
-    if (selectedProd) {
-      console.log('selectedProd mudou:', selectedProd);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: selectedProd.cod_item || '',
-        descricao: selectedProd.descricao || '',
-        valor_venda: selectedProd.valor_venda || '',
-        valor_custo: selectedProd.valor_custo || '',
-      }));
-
-      let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
-      if (descontoUnitProd === 'Percentual') {
-        total -= total * (descontoProd / 100);
-      } else {
-        total -= descontoProd;
-      }
-      setValorTotalProd(total);
-    }
-  }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
-  const fetchProd = async () => {
-    clearInputs();
-    setLoading(true);
-    try {
-      const response = await axios.get("http://localhost:9009/api/itens", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(response.data.items);
-      setProd(response.data.items);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
-      }));
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar produtos:", error);
-    }
-  };
-  // #endregion
-
-
 
 
   // #region TOTAL
@@ -708,13 +818,11 @@ const OrcamentosPage: React.FC = () => {
   const [descontoUnitTotal, setDescontoUnitTotal] = useState('%');
   const [produtosTotal, setProdutosTotal] = useState(0);
   const [servicosTotal, setServicosTotal] = useState(0);
-  const [valorTotalTotal, setValorTotalTotal] = useState(0);
   const [frete, setFrete] = useState(0.0);
+  const [valorTotalTotal, setValorTotalTotal] = useState(0);
 
-  const calcularTotal = () => {
-    let totalProdutos = calcularTotalProdutos();
-    let totalServicos = calcularTotalServicos();
-    let total = totalProdutos + totalServicos + frete;
+  useEffect(() => {
+    let total = totalProdutosSomados + totalServicosSomados + frete;
 
     // Aplicando o desconto, se houver
     if (descontoUnitTotal === '%') {
@@ -724,26 +832,38 @@ const OrcamentosPage: React.FC = () => {
     }
 
     setValorTotalTotal(total);
-  };
+  }, [totalProdutosSomados, totalServicosSomados, frete, descontoTotal, descontoUnitTotal]); // Executa sempre que algum desses valores mudar
 
-  // Função para recalcular o valor total de produtos, serviços e descontos
-  useEffect(() => {
-    calcularTotal();
-  }, [produtosTotal,
-    servicosTotal,
-    descontoTotal,
-    descontoUnitTotal,
-    produtosSelecionados,
-    servicosSelecionados,
-    frete
-  ]);  // Dependências que devem disparar o cálculo
+
+
+  // useEffect(() => {
+  //   calcularTotal();
+  // }, [produtosTotal,
+  //   servicosTotal,
+  //   descontoTotal,
+  //   descontoUnitTotal,
+  //   produtosSelecionados,
+  //   servicosSelecionados,
+  //   frete
+  // ]);
 
 
 
   const handleDescontoTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === "" ? 0 : Number(e.target.value);  // Se vazio, o valor é 0
-    setDescontoTotal(value);
+    let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
+    let numericValue = Number(value);
+
+    const maxValue = descontoUnitTotal === "%" ? 100 : (totalProdutosSomados + totalServicosSomados);
+
+    if (numericValue > maxValue) {
+      numericValue = maxValue; // Limita ao máximo permitido
+    } else if (numericValue < 0 || isNaN(numericValue)) {
+      numericValue = 0; // Evita valores negativos ou inválidos
+    }
+
+    setDescontoTotal(numericValue);
   };
+
 
   const handleDescontoUnitTotalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDescontoUnitTotal(e.target.value);
@@ -980,9 +1100,12 @@ const OrcamentosPage: React.FC = () => {
           },
         }
       );
-      console.log(response.data.orcamentos);
-      setOrcamentos(response.data.orcamentos);
 
+      // Tras somente os orçamentos que NÃO têm situacao "Cancelado"
+      const orcamentosFiltrados = response.data.orcamentos.filter(
+        (orcamento: any) => orcamento.situacao !== "Cancelado"
+      );
+      setOrcamentos(orcamentosFiltrados);
 
       setLoading(false);
     } catch (error) {
@@ -1025,7 +1148,7 @@ const OrcamentosPage: React.FC = () => {
       nf_compra: "",
       cod_transportadora: 0,
       frete: 0,
-      endereco_cliente: "Sim",
+      endereco_cliente: "naoUsar",
       logradouro: "",
       cidade: "",
       bairro: "",
@@ -1126,7 +1249,7 @@ const OrcamentosPage: React.FC = () => {
       dbs_servicos_orcamento: [],
     });
   };
-  const [isDisabled, setIsDisabled] = useState(false);
+
   const openDialog = (id: number) => {
     setOrcamentoIdToDelete(id);
     setModalDeleteVisible(true);
@@ -1478,47 +1601,12 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-
-
   // #region FUNÇÕES HANDLES
   const handleChangeCanal = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCanal(e.target.value);
   };
 
-  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = clients.find(
-      (client) => client.cod_cliente === Number(e.target.value)
-    );
 
-    setSelectedClient(selected || null); // Atualiza o estado de selectedClient
-
-    if (selected) {
-      // Atualizando formValuesClients corretamente com os dados do cliente
-      setFormValuesClients((prevValues) => ({
-        ...prevValues,
-        logradouro: selected.logradouro || '',
-        cidade: selected.cidade || '',
-        bairro: selected.bairro || '',
-        estado: selected.estado || '',
-        complemento: selected.complemento || '',
-        numero: String(selected.numero || ''),  // Garanta que seja uma string, se necessário
-        cep: selected.cep || '',
-      }));
-
-      // Atualizando formValues com o cod_cliente e os dados do cliente
-      setFormValues((prevValues) => ({
-        ...prevValues,
-        cod_cliente: selected.cod_cliente,
-        logradouro: selected.logradouro || '',
-        cidade: selected.cidade || '',
-        bairro: selected.bairro || '',
-        estado: selected.estado || '',
-        complemento: selected.complemento || '',
-        numero: selected.numero ? Number(selected.numero) : 0,  // Convertendo para number
-        cep: selected.cep || '',
-      }));
-    }
-  };
 
 
 
@@ -1563,28 +1651,92 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // #endregion
+
+  // #region ENDEREÇO
+
+  const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormValues({ ...formValues, [name]: value });
+
+    // Remove qualquer caractere não numérico
+    const numericValue = value.replace(/[^0-9]/g, '');
+
+    // Formata o CEP com o formato 'XXXXX-XXX'
+    const formattedValue = numericValue.replace(
+      /(\d{5})(\d{0,3})/,
+      (match, p1, p2) => `${p1}-${p2}`
+    );
+
+    // Atualiza o estado com o valor formatado
+    setFormValuesClients({
+      ...formValuesClients,
+      [name]: formattedValue, // Atualiza o campo de CEP com a formatação
+    });
   };
+
+  const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    if (!/[0-9]/.test(char)) {
+      e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
+    }
+  };
+
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Atualiza o estado de forma correta
+    setFormValuesClients((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+
+  const [usarEndereco, setUsarEndereco] = useState("naoUsar");
+  const [isDisabled, setIsDisabled] = useState(false);
+
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
 
+
     if (value === "usar") {
-      setIsDisabled(false);
+      setIsDisabled(true);
+      setUsarEndereco("usar");
+
+      // Se o cliente já estiver selecionado, restaura os dados de endereço
       setFormValues((prevValues) => ({
         ...prevValues,
         endereco_cliente: "Sim",
-        logradouro: formValuesClients?.logradouro || "",
-        cidade: formValuesClients?.cidade || "",
-        bairro: formValuesClients?.bairro || "",
-        estado: formValuesClients?.estado || "",
-        complemento: formValuesClients?.complemento || "",
-        numero: Number(formValuesClients?.numero) || 0,
-        cep: formValuesClients?.cep || "",
+        logradouro: clientInfo.logradouro || "",
+        cidade: clientInfo.cidade || "",
+        bairro: clientInfo.bairro || "",
+        estado: clientInfo.estado || "",
+        complemento: clientInfo.complemento || "",
+        numero: Number(clientInfo.numero) || 0,
+        cep: clientInfo.cep || "",
       }));
+      //SE VOLTAR PARA A OPÇÃO SIM, PREENCHE OS CAMPOS DENOVO
+      setFormValuesClients({
+        cod_cliente: clientInfo.cod_cliente || 0,
+        nome: clientInfo.nome || "",
+        logradouro: clientInfo.logradouro || "",
+        cidade: clientInfo.cidade || "",
+        bairro: clientInfo.bairro || "",
+        estado: clientInfo.estado || "",
+        complemento: clientInfo.complemento || "",
+        numero: clientInfo.numero || "",
+        cep: clientInfo.cep || "",
+        email: clientInfo.email || "",
+        telefone: clientInfo.telefone || "",
+        celular: clientInfo.celular || "",
+        situacao: clientInfo.situacao || "",
+        tipo: clientInfo.tipo || "",
+      });
+
     } else {
-      setIsDisabled(true);
+      setIsDisabled(false);
+      setUsarEndereco("naoUsar");
       setFormValuesClients({
         cod_cliente: 0,
         nome: "",
@@ -1616,8 +1768,42 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (usarEndereco === "usar" && clientInfo.cod_cliente !== 0) {
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        endereco_cliente: "Sim",
+        logradouro: clientInfo.logradouro || "",
+        cidade: clientInfo.cidade || "",
+        bairro: clientInfo.bairro || "",
+        estado: clientInfo.estado || "",
+        complemento: clientInfo.complemento || "",
+        numero: Number(clientInfo.numero) || 0,
+        cep: clientInfo.cep || "",
+      }));
+
+      setFormValuesClients({
+        cod_cliente: clientInfo.cod_cliente || 0,
+        nome: clientInfo.nome || "",
+        logradouro: clientInfo.logradouro || "",
+        cidade: clientInfo.cidade || "",
+        bairro: clientInfo.bairro || "",
+        estado: clientInfo.estado || "",
+        complemento: clientInfo.complemento || "",
+        numero: clientInfo.numero || "",
+        cep: clientInfo.cep || "",
+        email: clientInfo.email || "",
+        telefone: clientInfo.telefone || "",
+        celular: clientInfo.celular || "",
+        situacao: clientInfo.situacao || "",
+        tipo: clientInfo.tipo || "",
+      });
+    }
+  }, [clientInfo, usarEndereco]); // Quando clientInfo ou usarEndereco mudar, o efeito será executado
 
   // #endregion
+
+
 
 
 
@@ -1749,7 +1935,7 @@ const OrcamentosPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este orcamento?</p>
+            <p>Tem certeza que deseja cancelar este orçamento?</p>
           </Dialog>
           {
             //#endregion
@@ -2107,7 +2293,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL PRINCIPAL
           }
           <Dialog
-            header={isEditing ? "Editar orcamento" : "Novo Orçamento"}
+            header={isEditing ? "Editar Orçamento" : "Novo Orçamento"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -2390,7 +2576,12 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       disabled
                       className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                      value={formValuesProd.valor_venda}
+                      value={new Intl.NumberFormat('pt-BR', {
+                        style: 'decimal',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }).format(Number(formValuesProd.valor_venda ? formValuesProd.valor_venda : 0))}
+
                     />
                   </div>
                   <div>
@@ -2401,10 +2592,13 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         id="descontoProd"
                         name="descontoProd"
-                        type="text"
+                        type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
                         value={descontoProd}
                         onChange={handleDescontoProdChange}
+                        step="0.01"
+                        min={0}
+                        max={descontoUnitProd === "Percentual" ? 100 : quantidadeProd * Number(selectedProd?.valor_venda ?? 0)}
                       />
                       <select
                         id="descontoUnitProd"
@@ -2413,7 +2607,6 @@ const OrcamentosPage: React.FC = () => {
                         onChange={handleDescontoUnitProdChange}
                         onMouseDown={(e) => {
                           e.preventDefault(); // Impede a abertura do select padrão
-
                           setDescontoUnitProd((prev) => (prev === "Percentual" ? "Reais" : "Percentual"));
                         }}
                         className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
@@ -2445,10 +2638,10 @@ const OrcamentosPage: React.FC = () => {
                         <option value="%prod">&nbsp;%</option>
                         <option value="R$prod">&nbsp;R$</option>
                       </select>
-
-
                     </div>
                   </div>
+
+
 
                   <div className="flex flex-col items-start gap-1">
                     <label htmlFor="vl_total_prod" className="block text-blue font-medium">
@@ -2461,7 +2654,11 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         disabled
                         className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                        value={valorTotalProd}
+                        value={`R$ ${new Intl.NumberFormat('pt-BR', {
+                          style: 'decimal',
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        }).format(Number(valorTotalProd ? valorTotalProd : 0))}`}
                       />
                       <button
                         className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center ml-2 h-8"
@@ -2622,7 +2819,11 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       disabled
                       className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                      value={formValuesServico.valor_venda}
+                      value={new Intl.NumberFormat('pt-BR', {
+                        style: 'decimal',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }).format(Number(formValuesServico.valor_venda ? formValuesServico.valor_venda : 0))}
                     />
                   </div>
                   <div className="relative">
@@ -2633,10 +2834,13 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         id="descontoServ"
                         name="descontoServ"
-                        type="text"
+                        type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
                         value={descontoServ}
                         onChange={handleDescontoServChange}
+                        step="0.01"
+                        min={0}
+                        max={descontoUnit === "Percentual" ? 100 : quantidadeServ * Number(selectedServico?.valor_venda ?? 0)}
                       />
                       <select
                         id="descontoUnit"
@@ -2692,7 +2896,11 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         disabled
                         className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
-                        value={valorTotalServ}
+                        value={`R$ ${new Intl.NumberFormat('pt-BR', {
+                          style: 'decimal',
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        }).format(Number(valorTotalServ ? valorTotalServ : 0))}`}
                       />
                       <button
                         className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center h-8 w-8"
@@ -2894,9 +3102,10 @@ const OrcamentosPage: React.FC = () => {
                       name="usarEnd"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       onChange={handleSelectChange}
+                      value={usarEndereco}
                     >
+                      <option defaultValue="naoUsar">NÃO</option>
                       <option value="usar">SIM</option>
-                      <option value="naoUsar">NÃO</option>
                     </select>
                   </div>
                   <div>
@@ -2905,13 +3114,17 @@ const OrcamentosPage: React.FC = () => {
                     </label>
                     <input
                       id="CEP"
-                      name="CEP"
+                      name="cep" // Alterado de "CEP" para "cep" para garantir que o nome do campo corresponda ao estado
                       type="text"
-                      value={formValuesClients.cep}
+                      value={formValuesClients.cep || ""} // Garante que o valor seja atualizado corretamente
+                      onChange={handleCepInputChange}
+                      onKeyPress={handleCepKeyPress}
+                      maxLength={9}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
                     />
                   </div>
+
                   <div className="col-span-2">
                     <label htmlFor="logradouro" className="block text-blue font-medium">
                       Logradouro
@@ -2921,16 +3134,12 @@ const OrcamentosPage: React.FC = () => {
                       name="logradouro"
                       type="text"
                       value={formValuesClients.logradouro}
+                      onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
-                      onChange={(e) => {
-                        setFormValuesClients((prev) => ({
-                          ...prev,
-                          logradouro: e.target.value,
-                        }));
-                      }}
                     />
                   </div>
+
                 </div>
                 <div className="grid grid-cols-4 gap-2 mt-2">
                   <div>
@@ -2942,6 +3151,7 @@ const OrcamentosPage: React.FC = () => {
                       name="numero"
                       type="text"
                       value={formValuesClients.numero}
+                      onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
                     />
@@ -2955,8 +3165,10 @@ const OrcamentosPage: React.FC = () => {
                       name="estado"
                       type="text"
                       value={formValuesClients.estado}
+                      onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
+                      maxLength={2}
                     />
                   </div>
                   <div>
@@ -2968,6 +3180,7 @@ const OrcamentosPage: React.FC = () => {
                       name="bairro"
                       type="text"
                       value={formValuesClients.bairro}
+                      onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
                     />
@@ -2981,6 +3194,7 @@ const OrcamentosPage: React.FC = () => {
                       name="cidade"
                       type="text"
                       value={formValuesClients.cidade}
+                      onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
                       disabled={isDisabled}
                     />
@@ -3010,8 +3224,8 @@ const OrcamentosPage: React.FC = () => {
                       name="produtos"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={calcularTotalProdutos()}  // Passando o valor total calculado
-                      disabled  // Tornando o input apenas leitura, já que é o valor total
+                      value={`R$ ${totalProdutosSomados}`}
+                      disabled  // Tornando o input apenas leitura
                     />
                   </div>
 
@@ -3024,7 +3238,7 @@ const OrcamentosPage: React.FC = () => {
                       name="servicos"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={calcularTotalServicos()}
+                      value={`R$ ${totalServicosSomados}`}
                       disabled
                     />
                   </div>
@@ -3036,10 +3250,13 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         id="descontoTotal"
                         name="descontoTotal"
-                        type="text"
+                        type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
                         value={descontoTotal}
                         onChange={handleDescontoTotalChange}
+                        step="0.01"
+                        min={0}
+                        max={descontoUnitTotal == "%" ? 100 : (totalProdutosSomados + totalServicosSomados)}
                       />
                       <select
                         id="descontoUnitTotal"
@@ -3094,7 +3311,7 @@ const OrcamentosPage: React.FC = () => {
                     </label>
                     <input
                       id="vl_total_total"
-                      value={valorTotalTotal}
+                      value={`R$ ${valorTotalTotal}`}
                       name="vl_total_total"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
@@ -3546,8 +3763,11 @@ const OrcamentosPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="cod_cliente"
                   header="Cliente"
+                  body={(rowData) => {
+                    const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
+                    return cliente ? cliente.nome : "Não encontrado";
+                  }}
                   style={{
                     width: "20%",
                     textAlign: "center",
@@ -3564,6 +3784,7 @@ const OrcamentosPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+
                 <Column
                   field="valor_total"
                   header="Valor"

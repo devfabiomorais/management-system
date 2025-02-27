@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { createContext, useState, useContext, useEffect, ReactNode } from "react";
 
 interface TokenContextType {
@@ -13,14 +13,21 @@ interface TokenProviderProps {
 }
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    // Recupera o token do localStorage no carregamento inicial
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("@Birigui:token");
+    }
+    return null;
+  });
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("@Birigui:token");
-    if (storedToken) {
-      setToken(storedToken); 
+    if (token) {
+      localStorage.setItem("@Birigui:token", token);
+    } else {
+      localStorage.removeItem("@Birigui:token");
     }
-  }, []);
+  }, [token]);
 
   return (
     <TokenContext.Provider value={{ token, setToken }}>

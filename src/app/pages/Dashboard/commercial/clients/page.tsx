@@ -55,8 +55,11 @@ const ClientsPage: React.FC = () => {
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const filteredClients = clients.filter((client) =>
-    client.nome.toLowerCase().includes(search.toLowerCase())
+    Object.values(client).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    )
   );
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -92,8 +95,8 @@ const ClientsPage: React.FC = () => {
       email: "",
       telefone: "",
       celular: "",
-      situacao: "",
-      tipo: "",
+      situacao: "default",
+      tipo: "default",
     });
   };
 
@@ -514,7 +517,7 @@ const ClientsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome Completo:
+                    Nome Completo
                   </label>
                   <input
                     type="text"
@@ -524,23 +527,23 @@ const ClientsPage: React.FC = () => {
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o nome completo"
                   />
                 </div>
                 <div>
                   <label htmlFor="tipo" className="block text-blue font-medium">
-                    Tipo:
+                    Tipo
                   </label>
                   <select
                     id="tipo"
                     name="tipo"
                     value={formValues.tipo}
+                    defaultValue={"default"}
                     onChange={(e) =>
                       setFormValues({ ...formValues, tipo: e.target.value })
                     }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   >
-                    <option value="">Selecione</option>
+                    <option value="default" disabled>Selecione</option>
                     <option value="Pessoa_F_sica">Pessoa Física</option>
                     <option value="Pessoa_Jur_dica">Pessoa Jurídica</option>
                     <option value="Estrangeiro">Pessoa Estrangeira</option>
@@ -553,7 +556,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="email"
                     className="block text-blue font-medium"
                   >
-                    E-mail:
+                    E-mail
                   </label>
                   <input
                     type="email"
@@ -562,7 +565,6 @@ const ClientsPage: React.FC = () => {
                     value={formValues.email}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o e-mail"
                   />
                 </div>
                 <div>
@@ -570,7 +572,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="telefone"
                     className="block text-blue font-medium"
                   >
-                    Telefone:
+                    Telefone
                   </label>
                   <input
                     type="text"
@@ -580,7 +582,6 @@ const ClientsPage: React.FC = () => {
                     onChange={handleNumericInputChange} // Permite apenas números
                     onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o telefone"
                     maxLength={15}
                   />
                 </div>
@@ -591,7 +592,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="celular"
                     className="block text-blue font-medium"
                   >
-                    Celular:
+                    Celular
                   </label>
                   <input
                     type="text"
@@ -601,7 +602,6 @@ const ClientsPage: React.FC = () => {
                     onChange={handleNumericInputChange} // Permite apenas números
                     onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o celular"
                     maxLength={15}
                   />
                 </div>
@@ -610,18 +610,19 @@ const ClientsPage: React.FC = () => {
                     htmlFor="situacao"
                     className="block text-blue font-medium"
                   >
-                    Situação:
+                    Situação
                   </label>
                   <select
                     id="situacao"
                     name="situacao"
                     value={formValues.situacao}
+                    defaultValue={"default"}
                     onChange={(e) =>
                       setFormValues({ ...formValues, situacao: e.target.value })
                     }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   >
-                    <option value="">Selecione</option>
+                    <option value="default">Selecione</option>
                     <option value="ATIVO">Ativo</option>
                     <option value="DESATIVADO">Inativo</option>
                   </select>
@@ -630,7 +631,7 @@ const ClientsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="cep" className="block text-blue font-medium">
-                    CEP:
+                    CEP
                   </label>
                   <input
                     type="text"
@@ -640,7 +641,6 @@ const ClientsPage: React.FC = () => {
                     onChange={handleCepInputChange} // Formata o CEP enquanto digita
                     onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o CEP"
                     maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
                   />
                 </div>
@@ -649,7 +649,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="logradouro"
                     className="block text-blue font-medium"
                   >
-                    Logradouro:
+                    Logradouro
                   </label>
                   <input
                     type="text"
@@ -658,7 +658,6 @@ const ClientsPage: React.FC = () => {
                     value={formValues.logradouro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o logradouro"
                   />
                 </div>
               </div>
@@ -668,7 +667,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="numero"
                     className="block text-blue font-medium"
                   >
-                    Número:
+                    Número
                   </label>
                   <input
                     type="text"
@@ -677,7 +676,6 @@ const ClientsPage: React.FC = () => {
                     value={formValues.numero}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Número"
                   />
                 </div>
                 <div>
@@ -685,7 +683,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="estado"
                     className="block text-blue font-medium"
                   >
-                    Estado (sigla):
+                    Estado (sigla)
                   </label>
                   <input
                     type="text"
@@ -694,7 +692,6 @@ const ClientsPage: React.FC = () => {
                     value={formValues.estado}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Estado"
                   />
                 </div>
                 <div>
@@ -702,7 +699,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="bairro"
                     className="block text-blue font-medium"
                   >
-                    Bairro:
+                    Bairro
                   </label>
                   <input
                     type="text"
@@ -711,7 +708,6 @@ const ClientsPage: React.FC = () => {
                     value={formValues.bairro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite o bairro"
                   />
                 </div>
                 <div>
@@ -719,7 +715,7 @@ const ClientsPage: React.FC = () => {
                     htmlFor="cidade"
                     className="block text-blue font-medium"
                   >
-                    Cidade:
+                    Cidade
                   </label>
                   <input
                     type="text"
@@ -729,14 +725,13 @@ const ClientsPage: React.FC = () => {
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    placeholder="Digite a cidade"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="flex justify-center items-center mt-16">
+              <div className="flex grid-cols-3 gap-8">
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -744,7 +739,7 @@ const ClientsPage: React.FC = () => {
                   style={{
                     backgroundColor: "#dc3545",
                     border: "1px solid #dc3545",
-                    padding: "0.5rem 1.5rem",
+                    padding: "0.5rem 3.2rem",
                     fontSize: "14px",
                     fontWeight: "bold",
                     display: "flex",
@@ -799,7 +794,7 @@ const ClientsPage: React.FC = () => {
                     style={{
                       backgroundColor: "#28a745",
                       border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
+                      padding: "0.5rem 5.5rem",
                       fontSize: "14px",
                       fontWeight: "bold",
                       display: "flex",
@@ -887,7 +882,7 @@ const ClientsPage: React.FC = () => {
                   field="nome"
                   header="Nome Completo"
                   style={{
-                    width: "1%",
+                    width: "20%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1018,7 +1013,7 @@ const ClientsPage: React.FC = () => {
                   field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
-                    width: "1%",
+                    width: "10%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
