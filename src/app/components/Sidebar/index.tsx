@@ -14,14 +14,18 @@ interface SidebarLayoutProps {
 
 const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activePath, setActivePath] = useState("");
+  const [activePath, setActivePath] = useState<string>("");  // Active path is stored here
   const [userGroupId, setUserGroupId] = useState<number>(0);
 
   useEffect(() => {
     const groupId = parseInt(localStorage.getItem("@Birigui:cod_grupo") || "0");
     setUserGroupId(groupId);
 
-    setActivePath(window.location.pathname);
+    // Verificar se há um botão ativo no localStorage
+    const savedActivePath = localStorage.getItem("activeButton");
+    if (savedActivePath) {
+      setActivePath(savedActivePath);
+    }
   }, []);
 
   const navItems = [
@@ -53,6 +57,12 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const handleButtonClick = (href: string) => {
+    // Salvar o botão ativo no localStorage
+    localStorage.setItem("activeButton", href);
+    setActivePath(href); // Atualizar o estado local
+  };
+
   return (
     <div className="flex bg-gray-200 max-h-full">
       <div className="flex-1 flex flex-col">
@@ -66,7 +76,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           <img src={Logo.src} alt="Logo" className="w-14 h-14" />
         </header>
 
-        <div className="flex ">
+        <div className="flex">
           {isSidebarOpen && (
             <aside className="w-40 text-white flex flex-col">
               <nav className="flex flex-col flex-1 items-start space-y-4 pt-5 mt-4 pl-5">
@@ -77,9 +87,10 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                         key={item.label}
                         href={item.href}
                         className={`flex flex-col items-center justify-center w-28 h-24 rounded-lg transform transition-transform duration-50 ${activePath === item.href
-                          ? "bg-green100 cursor-default scale-125"
-                          : "bg-blue hover:bg-blue600 hover:scale-125"
+                          ? "bg-green100 cursor-default scale-125"  // Active button styles
+                          : "bg-blue hover:bg-blue600 hover:scale-125 hover:z-10"
                           }`}
+                        onClick={() => handleButtonClick(item.href)}  // Handle button click and save to localStorage
                       >
                         {item.icon}
                         <span className="text-sm">{item.label}</span>

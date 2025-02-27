@@ -3,6 +3,7 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { redirect } from "next/navigation";
 import { InputText } from "primereact/inputtext";
 import { Paginator } from "primereact/paginator";
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
@@ -590,7 +591,7 @@ const UsersPage: React.FC = () => {
     }
 
     return (
-        <><SidebarLayout>
+        <SidebarLayout>
             <div className="flex justify-center">
 
                 {loading && (
@@ -600,7 +601,8 @@ const UsersPage: React.FC = () => {
                             loading={loading}
                             size={30}
                             aria-label="Loading Spinner"
-                            data-testid="loader" />
+                            data-testid="loader"
+                        />
                     </div>
                 )}
 
@@ -812,9 +814,14 @@ const UsersPage: React.FC = () => {
                         </div>
                         {permissions?.insercao === "SIM" && (
                             <div>
-                                <button className="bg-green200 rounded-3xl mr-3" onClick={() => setVisible(true)}>
+                                <button
+                                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
+                                    onClick={() => setVisible(true)}
+                                >
                                     <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                                 </button>
+
+
                             </div>
                         )}
                     </div>
@@ -837,6 +844,7 @@ const UsersPage: React.FC = () => {
                             paginator={true}
                             rows={rows}
                             rowsPerPageOptions={[5, 10]}
+                            rowClassName={(data) => 'hover:bg-gray-200'}
                             onPage={(e) => {
                                 setFirst(e.first);
                                 setRows(e.rows);
@@ -967,10 +975,14 @@ const UsersPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center bg-yellow500 rounded-2xl w-full">
-                                            <button onClick={() => handleEdit(rowData)} className="p-2 bg-transparent">
+                                            <button
+                                                onClick={() => handleEdit(rowData)}
+                                                className="p-2 bg-transparent transform transition-all duration-50 hover:scale-125 hover:bg-yellow700 rounded-2xl"
+                                            >
                                                 <MdOutlineModeEditOutline className="text-white text-2xl" />
                                             </button>
                                         </div>
+
                                     )}
                                     className="text-black"
                                     style={{
@@ -994,10 +1006,14 @@ const UsersPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center bg-red400 rounded-2xl w-full">
-                                            <button onClick={() => openDialog(rowData.cod_usuario)} className="p-2 bg-transparent">
+                                            <button
+                                                onClick={() => openDialog(rowData.cod_usuario)}
+                                                className="p-2 bg-transparent transform transition-all duration-50 hover:scale-125 hover:bg-red600 rounded-2xl"
+                                            >
                                                 <FaBan className="text-white text-2xl" />
                                             </button>
                                         </div>
+
 
 
 
@@ -1034,7 +1050,8 @@ const UsersPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout><Footer /></>
+            <Footer />
+        </SidebarLayout >
     );
 };
 

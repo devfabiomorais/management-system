@@ -956,24 +956,17 @@ const OrcamentosPage: React.FC = () => {
   const handleAdicionarMultiplasParcelas = () => {
     if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) return;
 
-    const novasParcelas: Pagamento[] = Array.from({ length: quantidadeParcelas }, (_, i) => {
-      const dataInicial = new Date(data_parcela + 'T00:00:00');
-      const dataParcelaAtual = new Date(dataInicial);
-      dataParcelaAtual.setMonth(dataInicial.getMonth() + i);
-
-      return {
-        id: Date.now() + i, // Garantindo IDs únicos
-        cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
-        nome: selectedFormaPagamento.nome,
-        formaPagamento: selectedFormaPagamento,
-        parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
-        valorParcela,
-        juros,
-        tipo_juros: "Percentual",
-        data_parcela: dataParcelaAtual.toISOString().split('T')[0], // Formatando para "yyyy-MM-dd"
-      };
-    });
-
+    const novasParcelas: Pagamento[] = Array.from({ length: quantidadeParcelas }, (_, i) => ({
+      id: Date.now() + i, // Garantindo IDs únicos
+      cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
+      nome: selectedFormaPagamento.nome,
+      formaPagamento: selectedFormaPagamento,
+      parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
+      valorParcela,
+      juros,
+      tipo_juros: "Percentual",
+      data_parcela,
+    }));
 
     setPagamentos((prev) => [...prev, ...novasParcelas]);
     setSelectedFormaPagamento(null);
