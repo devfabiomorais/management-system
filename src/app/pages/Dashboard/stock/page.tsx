@@ -9,12 +9,19 @@ import { GoSync } from "react-icons/go";
 import { FaChartBar } from "react-icons/fa";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
+import loadingGif from "../../../assets/imgs/loading.gif";
 
 export default function StockPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
+  const [loadingButton, setLoadingButton] = useState<string | null>(null);
 
   const checkOpen = () => {
     setOpenedCategory(!openedCategory);
+  };
+
+  const handleRedirect = (path: string) => {
+    setLoadingButton(path);
+    redirect(path);
   };
 
   return (
@@ -58,19 +65,43 @@ export default function StockPage() {
 
                 {openedCategory && (
                   <div className="flex gap-4">
-                    <div onClick={() => redirect("stock/unMedida")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200">
+                    <div
+                      onClick={() => handleRedirect("stock/unMedida")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
                       <IoMdAddCircle className="text-5xl" />
                       <span className="text-sm mt-3 font-bold text-wrap">
                         Unidade de Medida
                       </span>
+                      {loadingButton === "stock/unMedida" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
-                    <div onClick={() => redirect("stock/family")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200">
+                    <div
+                      onClick={() => handleRedirect("stock/family")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
                       <FaSitemap className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Famílias</span>
+                      {loadingButton === "stock/family" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
-                    <div onClick={() => redirect("stock/itens")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200">
+                    <div
+                      onClick={() => handleRedirect("stock/itens")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
                       <AiFillGold className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Itens</span>
+                      {loadingButton === "stock/itens" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

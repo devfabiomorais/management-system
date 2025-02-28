@@ -1,30 +1,39 @@
-"use client"
+"use client";
 import React, { useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { FaCubes, FaLock, FaStore } from "react-icons/fa";
 import { FaUsers, FaFolderPlus } from "react-icons/fa6";
 import { redirect } from "next/navigation";
-import { TokenProvider } from "@/app/hook/accessToken";
 import Footer from "@/app/components/Footer";
+import loadingGif from "../../../assets/imgs/loading.gif";
 
 export default function ControlsPage() {
     const [openedCategory, setOpenedCategory] = useState(false);
+    const [loadingButton, setLoadingButton] = useState<string | null>(null);
 
     const checkOpen = () => {
         setOpenedCategory(!openedCategory);
     };
 
+    const handleRedirect = (path: string) => {
+        setLoadingButton(path);
+        redirect(path);
+    };
+
     return (
-        <div className="">
+        <div>
             <SidebarLayout>
-                <div className="flex justify-center  h-screen">
+                <div className="flex justify-center h-screen">
                     <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
                         <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Controles</h2>
 
-                        <div className="bg-white rounded-lg p-8 pt-14 shadow-md w-full  justify-center flex" style={{ height: "95%" }}>
+                        <div className="bg-white rounded-lg p-8 pt-14 shadow-md w-full flex justify-center" style={{ height: "95%" }}>
                             <div className="flex flex-col items-center">
-                                <div onClick={checkOpen} className={`flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? 'bg-green100' : 'bg-blue'} cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}>
-                                    <FaFolderPlus className="text-5xl " />
+                                <div
+                                    onClick={checkOpen}
+                                    className={`relative flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? 'bg-green100' : 'bg-blue'} cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
+                                >
+                                    <FaFolderPlus className="text-5xl" />
                                     <span className="text-lg mt-2 font-bold">Cadastros</span>
                                 </div>
 
@@ -32,22 +41,27 @@ export default function ControlsPage() {
 
                                 {openedCategory && (
                                     <div className="flex gap-4">
-                                        <div onClick={() => redirect("controls/users")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200">
-                                            <FaUsers className="text-5xl" />
-                                            <span className="text-sm mt-3 font-bold">Usuários</span>
-                                        </div>
-                                        <div onClick={() => redirect("controls/modules")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200">
-                                            <FaCubes className="text-5xl" />
-                                            <span className="text-sm mt-3 font-bold">Módulos</span>
-                                        </div>
-                                        <div onClick={() => redirect("controls/permissions")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200">
-                                            <FaLock className="text-5xl" />
-                                            <span className="text-sm mt-3 font-bold">Permissões</span>
-                                        </div>
-                                        <div onClick={() => redirect("controls/establishments")} className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200">
-                                            <FaStore className="text-5xl" />
-                                            <span className="text-sm mt-3 font-bold">Estabelecimentos</span>
-                                        </div>
+                                        {[
+                                            { path: "controls/users", icon: <FaUsers className="text-5xl" />, label: "Usuários" },
+                                            { path: "controls/modules", icon: <FaCubes className="text-5xl" />, label: "Módulos" },
+                                            { path: "controls/permissions", icon: <FaLock className="text-5xl" />, label: "Permissões" },
+                                            { path: "controls/establishments", icon: <FaStore className="text-5xl" />, label: "Estabelecimentos" }
+                                        ].map((item) => (
+                                            <div
+                                                key={item.path}
+                                                onClick={() => handleRedirect(item.path)}
+                                                className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
+                                            >
+                                                {item.icon}
+                                                <span className="text-sm mt-3 font-bold">{item.label}</span>
+
+                                                {loadingButton === item.path && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                                                        <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -57,6 +71,5 @@ export default function ControlsPage() {
             </SidebarLayout>
             <Footer />
         </div>
-
     );
 }

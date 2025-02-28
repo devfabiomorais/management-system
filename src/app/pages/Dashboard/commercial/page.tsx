@@ -1,16 +1,17 @@
-"use client"
+"use client";
 import React, { useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
-import { FaCubes, FaLock, FaStore, FaTools } from "react-icons/fa";
-import { FaFolderPlus, FaArrowsRotate } from "react-icons/fa6";
-import { TbHammer, TbTool, TbTruck, TbUserScan } from "react-icons/tb";
+import { FaArrowsRotate, FaFolderPlus } from "react-icons/fa6";
+import { TbTool, TbTruck, TbUserScan } from "react-icons/tb";
+import { MdRequestQuote } from "react-icons/md";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
-import { MdRequestQuote } from "react-icons/md";
+import loadingGif from "../../../assets/imgs/loading.gif";
 
 export default function CommercialPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
   const [openedMovements, setOpenedMovements] = useState(false);
+  const [loadingButton, setLoadingButton] = useState<string | null>(null);
 
   const checkOpenCategory = () => {
     setOpenedCategory(true);
@@ -22,70 +23,70 @@ export default function CommercialPage() {
     setOpenedCategory(false);
   };
 
+  const handleRedirect = (path: string) => {
+    setLoadingButton(path);
+    redirect(path);
+  };
+
   return (
-    <div className="">
+    <div>
       <SidebarLayout>
         <div className="flex justify-center h-screen">
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
             <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Comercial</h2>
             <div
-              className="bg-white rounded-lg p-8 pt-14 shadow-md w-full justify-center flex"
+              className="bg-white rounded-lg p-8 pt-14 shadow-md w-full flex justify-center"
               style={{ height: "95%" }}
             >
               <div className="flex flex-col items-center">
                 <div className="flex gap-6">
-                  <div
-                    onClick={checkOpenCategory}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? "bg-green100" : "bg-blue"
-                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
-                  >
-                    <FaFolderPlus className="text-5xl" />
-                    <span className="text-lg mt-2 font-bold">Cadastros</span>
-                  </div>
-
-                  <div
-                    onClick={checkOpenMovements}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedMovements ? "bg-green100" : "bg-blue"
-                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
-                  >
-                    <FaArrowsRotate className="text-5xl" />
-                    <span className="text-lg mt-2 font-bold">Movimentações</span>
-                  </div>
+                  {[{ label: "Cadastros", state: openedCategory, action: checkOpenCategory, icon: <FaFolderPlus className="text-5xl" /> },
+                  { label: "Movimentações", state: openedMovements, action: checkOpenMovements, icon: <FaArrowsRotate className="text-5xl" /> }].map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={item.action}
+                      className={`flex flex-col justify-center items-center w-40 h-40 ${item.state ? "bg-green100" : "bg-blue"} cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200`}
+                    >
+                      {item.icon}
+                      <span className="text-lg mt-2 font-bold">{item.label}</span>
+                    </div>
+                  ))}
                 </div>
                 <hr className="w-full border-t border-gray-300 my-6" />
                 {openedCategory && (
                   <div className="flex gap-4">
-                    <div
-                      onClick={() => redirect("commercial/clients")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
-                    >
-                      <TbUserScan className="text-5xl" />
-                      <span className="text-sm mt-3 font-bold">Clientes</span>
-                    </div>
-                    <div
-                      onClick={() => redirect("commercial/services")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
-                    >
-                      <TbTool className="text-5xl" />
-                      <span className="text-sm mt-3 font-bold">Serviços</span>
-                    </div>
-                    <div
-                      onClick={() => redirect("commercial/transportadoras")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
-                    >
-                      <TbTruck className="text-5xl" />
-                      <span className="text-sm mt-3 font-bold">Transportadoras</span>
-                    </div>
+                    {[{ path: "commercial/clients", icon: <TbUserScan className="text-5xl" />, label: "Clientes" },
+                    { path: "commercial/services", icon: <TbTool className="text-5xl" />, label: "Serviços" },
+                    { path: "commercial/transportadoras", icon: <TbTruck className="text-5xl" />, label: "Transportadoras" }].map((item) => (
+                      <div
+                        key={item.path}
+                        onClick={() => handleRedirect(item.path)}
+                        className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
+                      >
+                        {item.icon}
+                        <span className="text-sm mt-3 font-bold">{item.label}</span>
+                        {loadingButton === item.path && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                            <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
                 {openedMovements && (
                   <div className="flex gap-4">
                     <div
-                      onClick={() => redirect("commercial/orcamentos")}
-                      className="flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
+                      onClick={() => handleRedirect("commercial/orcamentos")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
                     >
                       <MdRequestQuote className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Orçamento</span>
+                      {loadingButton === "commercial/orcamentos" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

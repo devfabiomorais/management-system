@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { FaHome, FaDolly, FaTags, FaCogs } from "react-icons/fa";
 import { FaHandHoldingDollar, FaSackDollar } from "react-icons/fa6";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
 import Logo from "../../assets/imgs/logoConviver.png";
+import loadingGif from "../../assets/imgs/loading.gif";
 import useUserPermissions from "../../hook/useUserPermissions";
 
 interface SidebarLayoutProps {
@@ -14,14 +16,15 @@ interface SidebarLayoutProps {
 
 const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activePath, setActivePath] = useState<string>("");  // Active path is stored here
+  const [activePath, setActivePath] = useState<string>("");
   const [userGroupId, setUserGroupId] = useState<number>(0);
+  const [loadingButton, setLoadingButton] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const groupId = parseInt(localStorage.getItem("@Birigui:cod_grupo") || "0");
     setUserGroupId(groupId);
 
-    // Verificar se há um botão ativo no localStorage
     const savedActivePath = localStorage.getItem("activeButton");
     if (savedActivePath) {
       setActivePath(savedActivePath);
@@ -40,7 +43,6 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   const useModulePermissions = () => {
     return navItems.map((item) => {
       const permissions = useUserPermissions(userGroupId, item.module);
-
       return {
         ...item,
         canView: permissions?.hasViewPermission(),
@@ -58,9 +60,10 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   };
 
   const handleButtonClick = (href: string) => {
-    // Salvar o botão ativo no localStorage
+    setLoadingButton(href); // Ativa o loading no botão específico
     localStorage.setItem("activeButton", href);
-    setActivePath(href); // Atualizar o estado local
+    setActivePath(href);
+    router.push(href);
   };
 
   return (
@@ -83,18 +86,29 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                 {permissions.map(
                   (item) =>
                     item.canView && (
-                      <a
-                        key={item.label}
-                        href={item.href}
-                        className={`flex flex-col items-center justify-center w-28 h-24 rounded-lg transform transition-transform duration-50 ${activePath === item.href
-                          ? "bg-green100 cursor-default scale-125"  // Active button styles
-                          : "bg-blue hover:bg-blue600 hover:scale-125 hover:z-10"
-                          }`}
-                        onClick={() => handleButtonClick(item.href)}  // Handle button click and save to localStorage
-                      >
-                        {item.icon}
-                        <span className="text-sm">{item.label}</span>
-                      </a>
+                      <div className="relative" key={item.label}>
+                        <a
+                          href={item.href}
+                          className={`flex flex-col items-center justify-center w-28 h-24 rounded-lg transform transition-transform duration-50 ${activePath === item.href
+                            ? "bg-green100 cursor-default scale-125"
+                            : "bg-blue hover:bg-blue600 hover:scale-125 hover:z-10"
+                            }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleButtonClick(item.href);
+                          }}
+                        >
+                          {item.icon}
+                          <span className="text-sm">{item.label}</span>
+                        </a>
+
+                        {/* GIF de carregamento sobre o botão clicado */}
+                        {loadingButton === item.href && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                            <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                          </div>
+                        )}
+                      </div>
                     )
                 )}
               </nav>
