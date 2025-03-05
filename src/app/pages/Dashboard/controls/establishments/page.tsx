@@ -10,7 +10,7 @@ import 'primeicons/primeicons.css';
 import { Dialog } from 'primereact/dialog';
 import { IoAddCircleOutline } from "react-icons/io5";
 import { Paginator } from "primereact/paginator";
-import { FaTrash } from "react-icons/fa";
+import { FaBan, FaTrash } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -31,6 +31,7 @@ interface Establishment {
     cidade: string;
     complemento: string;
     estado: string;
+    situacao?: string;
 }
 
 const EstablishmentsPage: React.FC = () => {
@@ -95,11 +96,18 @@ const EstablishmentsPage: React.FC = () => {
         { sigla: "SE", nome: "Sergipe" },
         { sigla: "TO", nome: "Tocantins" },
     ];
-    const filteredEstablishments = establishments.filter((establishment) =>
-        Object.values(establishment).some((value) =>
+    const filteredEstablishments = establishments.filter((establishment) => {
+        // Apenas ATIVO aparecem
+        if (establishment.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(establishment).some((value) =>
             String(value).toLowerCase().includes(search.toLowerCase())
-        )
-    );
+        );
+    });
+
 
 
 
@@ -146,7 +154,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -224,7 +232,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -283,7 +291,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -329,7 +337,7 @@ const EstablishmentsPage: React.FC = () => {
         setLoading(true)
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -354,11 +362,48 @@ const EstablishmentsPage: React.FC = () => {
         setEstabilishmentIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (estabilishmentIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/estabilishment/cancel/${estabilishmentIdToDelete}`,
+                {}, // Enviar um corpo vazio, caso necessário para o endpoint
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchEstabilishments(); // Atualizar a lista de estabelecimentos
+                setModalDeleteVisible(false);
+                toast.success("Estabelecimento cancelado com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar estabelecimento.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao cancelar estabelecimento:", error);
+            toast.error("Erro ao cancelar estabelecimento. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
     const handleDelete = async () => {
         if (estabilishmentIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -448,7 +493,7 @@ const EstablishmentsPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -702,7 +747,8 @@ const EstablishmentsPage: React.FC = () => {
                         </div>
                         {permissions?.insercao === "SIM" && (
                             <div>
-                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                <button className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
+                                    onClick={() => setVisible(true)}>
                                     <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                                 </button>
                             </div>
@@ -723,6 +769,7 @@ const EstablishmentsPage: React.FC = () => {
                             paginator={true}
                             rows={rows}
                             rowsPerPageOptions={[5, 10]}
+                            rowClassName={(data) => 'hover:bg-gray-200'}
                             onPage={(e) => {
                                 setFirst(e.first);
                                 setRows(e.rows);
@@ -856,12 +903,29 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            <Column field="situacao" header="Situação" style={{
+                                width: "0%",
+                                textAlign: "center",
+                                border: "1px solid #ccc",
+                            }}
+                                headerStyle={{
+                                    fontSize: "1.2rem",
+                                    color: "#1B405D",
+                                    fontWeight: "bold",
+                                    border: "1px solid #ccc",
+                                    textAlign: "center",
+                                    backgroundColor: "#D9D9D980",
+                                    verticalAlign: "middle",
+                                    padding: "10px",
+                                }} />
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                            <button onClick={() => handleEdit(rowData)}
+                                                className="bg-yellow p-2 transform transition-all duration-50  rounded-2xl hover:scale-125 hover:bg-yellow700"
+                                            >
                                                 <MdOutlineModeEditOutline className="text-white text-2xl" />
                                             </button>
 
@@ -889,8 +953,10 @@ const EstablishmentsPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => openDialog(rowData.cod_estabelecimento)} className="bg-red text-black p-1 rounded">
-                                                <FaTrash className="text-white text-2xl" />
+                                            <button onClick={() => openDialog(rowData.cod_estabelecimento)}
+                                                className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
+                                            >
+                                                <FaBan className="text-white text-2xl" />
                                             </button>
                                         </div>
                                     )}

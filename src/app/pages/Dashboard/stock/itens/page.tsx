@@ -115,11 +115,18 @@ const ItensPage: React.FC = () => {
 
 
 
-    const filteredItens = itens.filter((item) =>
-        Object.values(item).some((value) =>
+    const filteredItens = itens.filter((item) => {
+        // Apenas ATIVO aparecem
+        if (item.situacao !== 'ATIVO') {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(item).some((value) =>
             String(value).toLowerCase().includes(search.toLowerCase())
-        )
-    );
+        );
+    });
+
 
 
     const clearInputs = () => {
@@ -150,7 +157,7 @@ const ItensPage: React.FC = () => {
         clearInputs()
         setLoading(true)
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/itens", {
+            const response = await axios.get("http://localhost:9009/api/itens", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -179,7 +186,7 @@ const ItensPage: React.FC = () => {
     const handleDelete = async () => {
         if (itensIdToDelete === null) return;
         try {
-            await axios.put(`https://api-birigui-teste.comviver.cloud/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
+            await axios.put(`http://localhost:9009/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -198,6 +205,43 @@ const ItensPage: React.FC = () => {
             });
         }
     };
+
+    const handleCancelar = async () => {
+        if (itensIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/itens/edit/${itensIdToDelete}`,
+                { situacao: "DESATIVADO" }, // Enviar o corpo com a atualização
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchItens(); // Atualizar a lista de itens
+                setModalDeleteVisible(false);
+                toast.success("Item desativado com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao desativar item.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao desativar item:", error);
+            toast.error("Erro ao desativar item. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
 
 
 
@@ -274,7 +318,7 @@ const ItensPage: React.FC = () => {
                 formData.append("anexo", file);
             }
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/itens/edit/${selectedItem?.cod_item}`,
+                `http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`,
                 formData,
                 {
                     headers: {
@@ -373,7 +417,7 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -492,7 +536,7 @@ const ItensPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -529,7 +573,7 @@ const ItensPage: React.FC = () => {
         console.log(itens);
         try {
             // Requisição para obter as unidades de medida
-            const unitResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+            const unitResponse = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -537,14 +581,14 @@ const ItensPage: React.FC = () => {
             setUnits(unitResponse.data.units);
 
             // Requisição para obter as famílias de itens
-            const familyResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+            const familyResponse = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
             setFamilies(familyResponse.data.families);
 
-            const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -610,7 +654,7 @@ const ItensPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -627,7 +671,7 @@ const ItensPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+            const response = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -643,7 +687,7 @@ const ItensPage: React.FC = () => {
     const fetchFamilias = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -690,7 +734,7 @@ const ItensPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -933,7 +977,7 @@ const ItensPage: React.FC = () => {
 
                         {permissions?.insercao === "SIM" && (
                             <div>
-                                <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
+                                <button className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none" onClick={() => setVisible(true)}>
                                     <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                                 </button>
                             </div>
@@ -956,6 +1000,8 @@ const ItensPage: React.FC = () => {
                             paginator={true}
                             rows={rows}
                             rowsPerPageOptions={[5, 10]}
+                            rowClassName={(data) => 'hover:bg-gray-200'}
+
                             onPage={(e) => {
                                 setFirst(e.first);
                                 setRows(e.rows);
@@ -1044,6 +1090,25 @@ const ItensPage: React.FC = () => {
                                     padding: "10px",
                                 }} />
                             <Column
+                                field="situacao"
+                                header="Situação"
+                                className="text-black"
+                                style={{
+                                    width: "1%",
+                                    textAlign: "center",
+                                    border: "1px solid #ccc",
+                                }}
+                                headerStyle={{
+                                    fontSize: "1.2rem",
+                                    color: "#1B405D",
+                                    fontWeight: "bold",
+                                    border: "1px solid #ccc",
+                                    textAlign: "center",
+                                    backgroundColor: "#D9D9D980",
+                                    verticalAlign: "middle",
+                                    padding: "10px",
+                                }} />
+                            <Column
                                 field="dt_hr_criacao"
                                 header="DT Cadastro"
                                 className="text-black"
@@ -1081,7 +1146,7 @@ const ItensPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                            <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
                                                 <MdOutlineModeEditOutline className="text-white text-2xl" />
                                             </button>
 
@@ -1109,7 +1174,7 @@ const ItensPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => openDialog(rowData.cod_item)} className="bg-red text-black p-1 rounded">
+                                            <button onClick={() => openDialog(rowData.cod_item)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
                                                 <FaTrash className="text-white text-2xl" />
                                             </button>
                                         </div>

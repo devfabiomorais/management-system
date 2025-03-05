@@ -10,7 +10,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
-import { FaTrash } from "react-icons/fa";
+import { FaBan, FaTrash } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { RiListView } from "react-icons/ri";
@@ -21,8 +21,10 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { debug } from "console";
 
 interface PermissionType {
+    situacao?: string;
     cod_permissao_grupo: number;
     dbs_modulos?: {
         cod_modulo: number;
@@ -32,6 +34,7 @@ interface PermissionType {
     dbs_grupos?: {
         cod_grupo: number;
         nome: string;
+        situacao?: string;
     }
     cod_grupo: number;
     cod_modulo: number;
@@ -76,6 +79,17 @@ const PermissionsPage: React.FC = () => {
         setNomeGroup("")
     }
 
+    const clearCheckboxes = () => {
+        const updatedLinhas = linhas.map((linha: (boolean | string | number)[]) =>
+            linha.map((coluna: boolean | string | number) =>
+                typeof coluna === "boolean" ? false : coluna
+            )
+        );
+        setLinhas(updatedLinhas);
+    };
+
+
+
 
     const fetchModules = async () => {
         try {
@@ -106,29 +120,24 @@ const PermissionsPage: React.FC = () => {
 
     const fetchPermission = async () => {
         try {
-
             const response = await axios.get("http://localhost:9009/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.permissions);
 
             const uniqueGroups: PermissionType[] = [];
-            const seenGroupNames = new Set();
+            const seenGroupNames = new Set<string>();
 
             response.data.permissions.forEach((permission: PermissionType) => {
-                // Verifica o nome do grupo no campo `dbs_grupos`
                 const groupName = permission.dbs_grupos?.nome;
-
-                // Adiciona ao conjunto apenas se o nome do grupo for único
                 if (groupName && !seenGroupNames.has(groupName)) {
                     seenGroupNames.add(groupName);
                     uniqueGroups.push(permission);
                 }
             });
 
-            setPermissionsType(uniqueGroups);
+            setPermissionsType(uniqueGroups);  // Atualiza o estado com grupos únicos
         } catch (error) {
             console.error("Erro ao carregar módulos:", error);
         }
@@ -136,7 +145,7 @@ const PermissionsPage: React.FC = () => {
 
     const createPermission = async () => {
         if (nomeGroup === "") {
-            setLoading(false)
+            setLoading(false);
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -144,51 +153,70 @@ const PermissionsPage: React.FC = () => {
             return;
         }
 
-        const permissionsToSend = linhas.map((linha) => ({
-            cod_modulo: linha[1], // ID do módulo
-            descricao: linha[0], // Nome do módulo
-            insercao: linha[2], // Permissão de inserção
-            edicao: linha[3], // Permissão de edição
-            delecao: linha[4], // Permissão de deleção
-            visualizacao: linha[5], // Permissão de visualização
-        }));
+        // Verifica se o nome já existe na lista carregada
+        const nomeJaExiste = permissionsType.some((perm) =>
+            perm.dbs_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
+        );
 
+        if (nomeJaExiste) {
+            setLoading(false);
+            toast.info("Este nome já existe, escolha outro!", {
+                position: "top-right",
+                autoClose: 3000,
+                progressStyle: { background: "yellow" }, // Cor do progresso
+                icon: <span>⚠️</span>, // Ícone de alerta
+            });
+            return;
+        }
+
+
+        const permissionsToSend = linhas.map((linha) => ({
+            cod_modulo: linha[1],
+            descricao: linha[0],
+            insercao: linha[2],
+            edicao: linha[3],
+            delecao: linha[4],
+            visualizacao: linha[5],
+        }));
 
         try {
             const bodyForm = {
                 nome: nomeGroup,
-                permissoes: permissionsToSend
-            }
-            console.log({
-                nome: nomeGroup,
-                permissoes: permissionsToSend
-            })
+                permissoes: permissionsToSend,
+            };
 
             const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
+
             if (response.status >= 200 && response.status < 300) {
-                setLoading(false)
+                setLoading(false);
                 clearInputs();
-                fetchPermission();
+                fetchPermission();  // Recarrega a lista de permissões após salvar
                 toast.success("Grupo de Permissão salvo com sucesso!", {
                     position: "top-right",
                     autoClose: 3000,
                 });
             } else {
-                setLoading(false)
+                setLoading(false);
                 toast.error("Erro ao salvar o Grupo de Permissão.", {
                     position: "top-right",
                     autoClose: 3000,
                 });
             }
         } catch (error) {
-            setLoading(false)
-            console.error("Erro ao salvar os Grupo de Permissão:", error);
+            setLoading(false);
+            console.error("Erro ao salvar o Grupo de Permissão:", error);
+            toast.error("Erro ao salvar o Grupo de Permissão. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
         }
-    }
+    };
+
+
 
     const editPermission = async () => {
         if (nomeGroup === "") {
@@ -263,11 +291,18 @@ const PermissionsPage: React.FC = () => {
     };
 
 
-    const filteredItens = permissionsType.filter((perm) =>
-        Object.values(perm).some((value) =>
+    const filteredItens = permissionsType.filter((perm) => {
+        // Apenas itens ATIVOS aparecem
+        if (perm.dbs_grupos?.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(perm).some((value) =>
             String(value).toLowerCase().includes(search.toLowerCase())
-        )
-    );
+        );
+    });
+
 
 
     /*const handleCheckboxChange = (rowIndex: number, colIndex: number) => {
@@ -310,6 +345,54 @@ const PermissionsPage: React.FC = () => {
             </div>
         </label>
     );*/
+
+    const handleCancel = async () => {
+        if (!permissionIdToDelete) return;
+
+        // Verifica se o token existe
+        if (!token) {
+            toast.error("Erro de autenticação: Token ausente.");
+            return;
+        }
+
+        try {
+            await axios.put(
+                `http://localhost:9009/api/groupPermission/cancel/${permissionIdToDelete}`,
+                {}, // Segundo argumento vazio pois PUT espera um body antes dos headers
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            toast.success("Grupo cancelado com sucesso!", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+
+            fetchPermission();
+            fetchModules();
+            setModalDeleteVisible(false);
+        } catch (error) {
+            console.error("Erro ao cancelar grupo:", error);
+
+            // Verifica se o erro foi de autorização
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                toast.error("Sessão expirada. Faça login novamente.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar grupo. Tente novamente.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        }
+    };
+
+
 
 
     const handleDelete = async () => {
@@ -376,7 +459,7 @@ const PermissionsPage: React.FC = () => {
 
             // Atualizar estados
             setLinhas(formattedData);
-            setSelectedPermission(perm.cod_permissao_grupo);
+            setSelectedPermission(perm.cod_grupo);
             setIsEditing(true);
         } catch (error) {
             console.error("Erro ao carregar módulos ou permissões:", error);
@@ -412,7 +495,7 @@ const PermissionsPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancel}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -447,6 +530,7 @@ const PermissionsPage: React.FC = () => {
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
@@ -500,9 +584,11 @@ const PermissionsPage: React.FC = () => {
                                         <Column
                                             header=""
                                             body={(rowData) => (
-                                                <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
+                                                    <button onClick={() => handleEdit(rowData)}
+                                                        className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
+                                                    >
+                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
                                                     </button>
 
                                                 </div>
@@ -528,9 +614,14 @@ const PermissionsPage: React.FC = () => {
                                         <Column
                                             header=""
                                             body={(rowData) => (
-                                                <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => openDialog(rowData.cod_permissao_grupo)} className="bg-red text-black p-1 rounded">
-                                                        <FaTrash className="text-white text-2xl" />
+                                                <div className="bg-red400 flex gap-2 justify-center rounded-2xl w-full">
+                                                    <button onClick={() => {
+                                                        openDialog(rowData.cod_permissao_grupo);
+                                                        setPermissionIdToDelete(rowData.cod_permissao_grupo);
+                                                    }}
+                                                        className="hover:bg-red600 hover:scale-125 p-2 bg-transparent transform transition-all duration-50  rounded-2xl"
+                                                    >
+                                                        <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                                     </button>
                                                 </div>
                                             )}
@@ -572,7 +663,9 @@ const PermissionsPage: React.FC = () => {
 
 
                                     <div className="overflow-x-auto mt-5">
-                                        <table className="table-auto border-collapse border border-gray-300 w-full">
+                                        <table className="table-auto border-collapse border border-gray-300 w-full hover:bg-gray-50"
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             <thead className="bg-gray-100">
                                                 <tr>
                                                     <th className="border text-blue border-gray-300 px-4 py-2 text-left">Módulo</th>
@@ -585,13 +678,16 @@ const PermissionsPage: React.FC = () => {
                                             <tbody>
                                                 {linhas.map((linha, index) => (
                                                     <tr key={index}>
-                                                        <td className="border text-black border-gray-300 px-4 py-2 text-left">
+                                                        <td className="border text-black border-gray-300 px-4 py-2 text-left hover:bg-gray-200"
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
                                                             {linha[0]}
                                                         </td>
                                                         {linha.slice(2).map((coluna: any, colIndex: any) => (
                                                             <td
                                                                 key={colIndex}
-                                                                className="border text-black border-gray-300 px-4 py-2 text-center"
+                                                                className="border text-black border-gray-300 px-4 py-2 text-center hover:bg-gray-200"
+                                                                style={{ cursor: 'pointer' }}
                                                             >
                                                                 {typeof coluna === "boolean" ? (
                                                                     <input
@@ -601,7 +697,9 @@ const PermissionsPage: React.FC = () => {
                                                                             const updatedLinhas = [...linhas];
                                                                             updatedLinhas[index][colIndex + 2] = e.target.checked;
                                                                             setLinhas(updatedLinhas);
-                                                                        }} />
+                                                                        }}
+                                                                        className="w-6 h-6"
+                                                                    />
                                                                 ) : (
                                                                     coluna
                                                                 )}
@@ -618,34 +716,85 @@ const PermissionsPage: React.FC = () => {
                                     <div className="flex justify-end mt-5">
                                         {(permissions?.insercao)?.toString() === "SIM" && (
                                             <>
-                                                {!isEditing && (<Button
-                                                    label="Salvar Permissão"
-                                                    className="text-white"
-                                                    icon="pi pi-check"
-                                                    onClick={() => createPermission()}
-                                                    style={{
-                                                        backgroundColor: '#28a745',
-                                                        border: '1px solid #28a745',
-                                                        padding: '0.5rem 1.5rem',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }} />)}
-                                                {isEditing && (<Button
-                                                    label="Salvar Permissão"
-                                                    className="text-white"
-                                                    icon="pi pi-check"
-                                                    onClick={() => editPermission()}
-                                                    style={{
-                                                        backgroundColor: '#28a745',
-                                                        border: '1px solid #28a745',
-                                                        padding: '0.5rem 1.5rem',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }} />)}
+                                                {!isEditing && (
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            label="Limpar"
+                                                            className="text-white !bg-pink-500 border-pink-900 transition-all duration-200 !hover:bg-pink-700 hover:scale-125"
+                                                            icon="pi pi-eraser"
+                                                            onClick={() => {
+                                                                clearInputs();
+                                                                setIsEditing(false);
+                                                                clearCheckboxes();
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: '#dc3545',
+                                                                border: '1px solid #dc3545',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+
+                                                        <Button
+                                                            label="Salvar Permissão"
+                                                            className="text-white hover:bg-green-500 !bg-green-500 transition-all hover:scale-125 duration-50"
+                                                            icon="pi pi-check"
+                                                            onClick={() => createPermission()}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }} />
+                                                    </div>
+
+                                                )}
+                                                {isEditing && (
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            label="Cancelar"
+                                                            className="text-white bg-red400 border-red600 transition-all duration-200 hover:bg-red600 hover:scale-125"
+                                                            icon="pi pi-times"
+                                                            onClick={() => {
+                                                                clearInputs();
+                                                                setIsEditing(false);
+                                                                clearCheckboxes();
+                                                            }}
+                                                            style={{
+                                                                backgroundColor: '#dc3545',
+                                                                border: '1px solid #dc3545',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+
+                                                        <Button
+                                                            label="Salvar Edição"
+                                                            className="text-white bg-green-500 border-green700 transition-all duration-200 hover:bg-green-600 hover:scale-125"
+                                                            icon="pi pi-check"
+                                                            onClick={() => editPermission()}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+
                                             </>)}
 
                                     </div>

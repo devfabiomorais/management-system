@@ -28,6 +28,7 @@ interface Servico {
   valor_custo?: string;
   comissao?: string;
   dtCadastro?: string;
+  situacao?: string;
 }
 
 const ServicosPage: React.FC = () => {
@@ -45,11 +46,17 @@ const ServicosPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredServicos = servicos.filter((servico) =>
-    Object.values(servico).some((value) =>
+  const filteredServicos = servicos.filter((servico) => {
+    // Apenas ATIVO aparecem
+    if (servico.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Função de busca
+    return Object.values(servico).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+    );
+  });
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [servicoIdToDelete, setServicoIdToDelete] = useState<number | null>(null);
@@ -324,6 +331,43 @@ const ServicosPage: React.FC = () => {
     setServicoIdToDelete(null);
   };
 
+  const handleCancelar = async () => {
+    if (servicoIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/servicos/cancel/${servicoIdToDelete}`,
+        {}, // Enviar um corpo vazio, caso necessário para o endpoint
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchServicos(); // Atualizar a lista de serviços
+        setModalDeleteVisible(false);
+        toast.success("Serviço cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar serviço.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao cancelar serviço:", error);
+      toast.error("Erro ao cancelar serviço. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
   const handleDelete = async () => {
     if (servicoIdToDelete === null) return;
 
@@ -430,7 +474,7 @@ const ServicosPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleDelete}
+                  onClick={handleCancelar}
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
@@ -452,7 +496,7 @@ const ServicosPage: React.FC = () => {
             onHide={() => closeModal()}
           >
             <div className="p-fluid grid gap-2 mt-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
                     Nome
@@ -467,7 +511,7 @@ const ServicosPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label htmlFor="cod_servico" className="block text-blue font-medium">
                     Código
                   </label>
@@ -479,7 +523,7 @@ const ServicosPage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
-                </div>
+                </div> */}
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -631,7 +675,7 @@ const ServicosPage: React.FC = () => {
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className="bg-green200 rounded mr-3"
+                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
@@ -663,6 +707,8 @@ const ServicosPage: React.FC = () => {
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
+
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -828,7 +874,7 @@ const ServicosPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleEdit(rowData)}
-                          className="bg-yellow p-1 rounded"
+                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline className="text-white text-2xl" />
                         </button>
@@ -859,7 +905,7 @@ const ServicosPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => openDialog(rowData.cod_servico)}
-                          className="bg-red text-black p-1 rounded"
+                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
                           <FaTrash className="text-white text-2xl" />
                         </button>

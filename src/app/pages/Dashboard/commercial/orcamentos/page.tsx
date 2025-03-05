@@ -89,9 +89,9 @@ interface Orcamento {
   desconto_total: number;
   valor_total: number;
   situacao?: string;
-  dbs_pagamentos_orcamento: [];
-  dbs_produtos_orcamento: [];
-  dbs_servicos_orcamento: [];
+  dbs_pagamentos_orcamento: any[];
+  dbs_produtos_orcamento: any[];
+  dbs_servicos_orcamento: any[];
 }
 
 interface Client {
@@ -120,6 +120,7 @@ interface CentroCusto {
 }
 
 interface Servico {
+  dbs_servicos: any;
   id: number;
   cod_servico: number;
   nome?: string;
@@ -579,6 +580,9 @@ const OrcamentosPage: React.FC = () => {
       console.error("Erro ao carregar produtos:", error);
     }
   };
+
+
+
   // #endregion
 
 
@@ -613,6 +617,7 @@ const OrcamentosPage: React.FC = () => {
     tipo_juros: "Percentual",
     tipo_desconto: "Percentual",
     valor_total: "",
+    dbs_servicos: [],
   });
   const [quantidadeServ, setQuantidadeServ] = useState(1);
   const [descontoServ, setDescontoServ] = useState(0);
@@ -666,6 +671,7 @@ const OrcamentosPage: React.FC = () => {
       tipo_juros: "Percentual",
       tipo_desconto: "Percentual",
       valor_unitario: selectedServico.valor_venda,
+      dbs_servicos: selectedServico.dbs_servicos,
     };
 
     // Adiciona o novo serviço à lista de serviços selecionados
@@ -687,6 +693,7 @@ const OrcamentosPage: React.FC = () => {
       valor_venda: "",
       valor_custo: "",
       comissao: "",
+      dbs_servicos: [],
     });
   };
 
@@ -1025,6 +1032,10 @@ const OrcamentosPage: React.FC = () => {
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const filteredOrcamentos = orcamentos.filter((orcamento) => {
+    if (orcamento.situacao !== 'Pendente') {
+      return false;
+    }
+
     switch (searchField) {
       case "cod_usuario":
         return (
@@ -1063,7 +1074,7 @@ const OrcamentosPage: React.FC = () => {
     frota: "",
     nf_compra: "",
     cod_transportadora: selectedTransportadora?.cod_transportadora || 0,
-    frete: frete || 0,
+    frete: 0,
     endereco_cliente: "Sim",
     logradouro: formValuesClients?.logradouro || "",
     cidade: "",
@@ -1108,11 +1119,8 @@ const OrcamentosPage: React.FC = () => {
         }
       );
 
-      // Tras somente os orçamentos que NÃO têm situacao "Cancelado"
-      const orcamentosFiltrados = response.data.orcamentos.filter(
-        (orcamento: any) => orcamento.situacao !== "Cancelado"
-      );
-      setOrcamentos(orcamentosFiltrados);
+      // Tras somente os orçamentos que NÃO têm situacao "Cancelado"      
+      setOrcamentos(response.data.orcamentos);
 
       setLoading(false);
     } catch (error) {
@@ -1195,6 +1203,7 @@ const OrcamentosPage: React.FC = () => {
     setProdSelecionados([]);
     setServicosSelecionados([]);
     setPagamentos([]);
+    setFrete(0);
   };
   const clearInputsProd = () => {
     setFormValues({
@@ -1208,7 +1217,7 @@ const OrcamentosPage: React.FC = () => {
       frota: "",
       nf_compra: "",
       cod_transportadora: 0,
-      frete: 0.0,
+      frete: 0,
       endereco_cliente: "Sim",
       logradouro: "",
       cidade: "",
@@ -1238,7 +1247,7 @@ const OrcamentosPage: React.FC = () => {
       frota: "",
       nf_compra: "",
       cod_transportadora: 0,
-      frete: 0.0,
+      frete: 0,
       endereco_cliente: "Sim",
       logradouro: "",
       cidade: "",
@@ -1249,8 +1258,8 @@ const OrcamentosPage: React.FC = () => {
       cep: "",
       observacoes_gerais: "",
       observacoes_internas: "",
-      desconto_total: 0.0,
-      valor_total: 0.0,
+      desconto_total: 0,
+      valor_total: 0,
       dbs_pagamentos_orcamento: [],
       dbs_produtos_orcamento: [],
       dbs_servicos_orcamento: [],
@@ -1272,10 +1281,6 @@ const OrcamentosPage: React.FC = () => {
 
   // #region FUNÇÕES BOTÕES
   const handleSaveEdit = async () => {
-    setItemEditDisabled(true);
-    setLoading(true);
-    setIsEditing(false);
-
     try {
       const requiredFields = [
         "cod_responsavel",
@@ -1296,10 +1301,12 @@ const OrcamentosPage: React.FC = () => {
         "cep"
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
+      const isEmptyField = requiredFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(formValues, field) &&
+        (formValues[field as keyof typeof formValues] === "" ||
+          formValues[field as keyof typeof formValues] === null ||
+          formValues[field as keyof typeof formValues] === undefined)
+      );
 
       if (isEmptyField) {
         setItemEditDisabled(false);
@@ -1312,24 +1319,31 @@ const OrcamentosPage: React.FC = () => {
       }
 
       // Função para formatar a data no formato yyyy-MM-dd
-      const formatDate = (date: string) => {
+      const formatDate = (date?: string | Date) => {
+        if (!date) return "";
         const formattedDate = new Date(date);
-        return formattedDate.toISOString().split("T")[0]; // Formato yyyy-MM-dd
+
+        // Verifica se a data é válida antes de formatar
+        if (isNaN(formattedDate.getTime())) return "";
+
+        return formattedDate.toISOString().split("T")[0]; // Retorna no formato YYYY-MM-DD
       };
 
       const updatedFormValues = {
         ...formValues,
-        data_venda: formValues.data_venda ? formatDate(formValues.data_venda) : "",
-        prazo: formValues.prazo ? formatDate(formValues.prazo) : "",
+        data_venda: formatDate(formValues.data_venda),
+        prazo: formatDate(formValues.prazo),
         produtos: produtosSelecionados.map((produto) => ({
           ...produto,
+          valor_venda: produto.valor_unitario
         })),
         servicos: servicosSelecionados.map((servico) => ({
           ...servico,
+          valor_venda: servico.valor_unitario
         })),
         parcelas: pagamentos.map((parcela) => ({
           ...parcela,
-          data_parcela: parcela.data_parcela ? formatDate(parcela.data_parcela) : ""
+          data_parcela: formatDate(parcela.data_parcela)
         })),
         situacao: "Pendente",
       };
@@ -1345,6 +1359,7 @@ const OrcamentosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
+        setIsEditing(false);
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
@@ -1362,13 +1377,19 @@ const OrcamentosPage: React.FC = () => {
           autoClose: 3000,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       setItemEditDisabled(false);
       setLoading(false);
+
       console.error("Erro ao salvar orçamento:", error);
+
+      const errorMessage = error.response?.data?.message || "Erro ao salvar orçamento.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
-
 
 
   const handleSave = async () => {
@@ -1447,15 +1468,27 @@ const OrcamentosPage: React.FC = () => {
     setLoading(true);
 
     try {
+      // Função para formatar datas corretamente antes do envio
+      const formatDate = (date?: string) => {
+        if (!date) return "";
+        const formattedDate = new Date(date);
+        return isNaN(formattedDate.getTime()) ? "" : formattedDate.toISOString().split("T")[0];
+      };
+
       const updatedFormValues = {
         ...formValues,
-        situacao: "Pendente", // Adiciona o campo situacao antes de enviar
-        parcelas: pagamentos,
+        data_venda: formatDate(formValues.data_venda),
+        prazo: formatDate(formValues.prazo),
+        situacao: "Pendente",
+        parcelas: pagamentos.map((parcela) => ({
+          ...parcela,
+          data_parcela: formatDate(parcela.data_parcela),
+        })),
         produtos: produtosSelecionados,
         servicos: servicosSelecionados,
       };
 
-      // Lista apenas com os campos obrigatórios
+      // Lista de campos obrigatórios
       const requiredFields = [
         "cod_responsavel",
         "cod_cliente",
@@ -1492,7 +1525,7 @@ const OrcamentosPage: React.FC = () => {
 
       const response = await axios.post(
         "http://localhost:9009/api/orcamentos/register",
-        updatedFormValues,  // Envia o objeto atualizado com 'situacao'
+        updatedFormValues,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1511,22 +1544,39 @@ const OrcamentosPage: React.FC = () => {
         });
         setVisible(false);
       } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar orçamentos.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        throw new Error("Erro ao salvar orçamento.");
       }
-    } catch (error) {
+    } catch (error: any) {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar orçamentos:", error);
+
+      console.error("Erro ao salvar orçamento:", error);
+
+      const errorMessage = error.response?.data?.message || "Erro ao salvar orçamento.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
+  useEffect(() => {
+    console.log("Produtos selecionados atualizados:", produtosSelecionados);
+  }, [produtosSelecionados]);
 
-  const handleEdit = (orcamento: Orcamento) => {
+  useEffect(() => {
+    console.log("Serviços selecionados atualizados:", servicosSelecionados);
+  }, [servicosSelecionados]);
+
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (orcamento: Orcamento, visualizar: boolean) => {
+    setVisualizar(visualizar)
     console.log("Orçamento recebido para edição:", orcamento);
+
+    console.log("Produtos recebidos:", orcamento.dbs_produtos_orcamento);
+    console.log("Serviços recebidos:", orcamento.dbs_servicos_orcamento);
+    console.log("Pagamentos recebidos:", orcamento.dbs_pagamentos_orcamento);
+
 
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
@@ -1537,9 +1587,9 @@ const OrcamentosPage: React.FC = () => {
     setSelectedTransportadora(transportadoras.find(t => t.cod_transportadora === orcamento.cod_transportadora) || null);
     setSelectedCentroCusto(centrosCusto.find(cc => cc.cod_centro_custo === orcamento.cod_centro_custo) || null);
 
-    setProdSelecionados(orcamento.dbs_produtos_orcamento || []);
-    setServicosSelecionados(orcamento.dbs_servicos_orcamento || []);
-    setPagamentos(orcamento.dbs_pagamentos_orcamento || []);
+    setProdSelecionados(orcamento.dbs_produtos_orcamento ? orcamento.dbs_produtos_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_orcamento })) : []);
+    setServicosSelecionados(orcamento.dbs_servicos_orcamento ? orcamento.dbs_servicos_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_orcamento })) : []);
+    setPagamentos(orcamento.dbs_pagamentos_orcamento ? orcamento.dbs_pagamentos_orcamento.map((pagamento) => ({ ...pagamento, id: pagamento.cod_pag_orcamento })) : []);
 
     setIsEditing(true);
     setVisible(true); // Abre o modal
@@ -1823,12 +1873,10 @@ const OrcamentosPage: React.FC = () => {
   };
   const closeModalProd = () => {
     clearInputsProd();
-    setIsEditingProd(false);
     setVisibleProd(false);
   };
   const closeModalServ = () => {
     clearInputsServ();
-    setIsEditingServ(false);
     setVisibleServ(false);
   };
   // #endregion
@@ -1978,7 +2026,7 @@ const OrcamentosPage: React.FC = () => {
                       id="codigoProd"
                       name="codigoProd"
                       disabled
-                      className="bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8 w-full !important"
+                      className="border border-gray-400 !bg-gray-400 pl-1 rounded-sm h-8 w-full !important"
                     />
                   </div>
                   <div className="col-span-2">
@@ -2047,23 +2095,26 @@ const OrcamentosPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-3 gap-3 w-full">
-                <Button
-                  label="Sair Sem Salvar"
-                  className="text-white"
-                  icon="pi pi-times"
-                  style={{
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.75rem 2rem",  // Tamanho aumentado
-                    fontSize: "16px",  // Tamanho aumentado
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  onClick={() => closeModalProd()}
-                />
-                {!isEditing && (
+              <div className="grid grid-cols-2 gap-3 w-full">
+                {!visualizando && (
+                  <Button
+                    label="Sair Sem Salvar"
+                    className="text-white"
+                    icon="pi pi-times"
+                    style={{
+                      backgroundColor: "#dc3545",
+                      border: "1px solid #dc3545",
+                      padding: "0.75rem 2rem",  // Tamanho aumentado
+                      fontSize: "16px",  // Tamanho aumentado
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onClick={() => closeModalProd()}
+                  />
+                )}
+
+                {!isEditing && !visualizando && (
                   <>
                     <Button
                       label="Salvar e Voltar à Listagem"
@@ -2100,7 +2151,7 @@ const OrcamentosPage: React.FC = () => {
                   </>
                 )}
 
-                {isEditing && (
+                {isEditing && !visualizando && (
                   <Button
                     label="Salvar"
                     className="text-white"
@@ -2270,22 +2321,36 @@ const OrcamentosPage: React.FC = () => {
                 )}
 
                 {isEditing && (
-                  <Button
-                    label="Salvar"
+                  <><Button
+                    label="Sair Sem Salvar"
                     className="text-white"
-                    icon="pi pi-check"
-                    onClick={handleSaveEdit}
-                    disabled={itemEditDisabled}
+                    icon="pi pi-times"
                     style={{
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
+                      backgroundColor: "#dc3545",
+                      border: "1px solid #dc3545",
+                      padding: "0.75rem 2rem", // Tamanho aumentado
+                      fontSize: "16px", // Tamanho aumentado
                       fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",
                     }}
-                  />
+                    onClick={() => closeModalServ()} />
+                    <Button
+                      label="Salvar"
+                      className="text-white"
+                      icon="pi pi-check"
+                      onClick={handleSaveEdit}
+                      disabled={itemEditDisabled}
+                      style={{
+                        backgroundColor: "#28a745",
+                        border: "1px solid #28a745",
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                      }} /></>
+
                 )}
               </div>
             </div>
@@ -2300,7 +2365,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL PRINCIPAL
           }
           <Dialog
-            header={isEditing ? "Editar Orçamento" : "Novo Orçamento"}
+            header={visualizando ? "Visualizando Orçamento" : (isEditing ? "Editar Orçamento" : "Novo Orçamento")}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -2345,6 +2410,7 @@ const OrcamentosPage: React.FC = () => {
                       value={selectedClient ? selectedClient.cod_cliente : ""}
                       onChange={handleClientChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                     >
                       <option value="" disabled>
                         Selecione
@@ -2367,6 +2433,7 @@ const OrcamentosPage: React.FC = () => {
                       name="responsavel"
                       className="border border-gray-400 pl-1 rounded-sm h-8 w-full"
                       value={selectedUser?.cod_usuario || ""}
+                      disabled={visualizando}
                       onChange={(e) => {
                         const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
                         setSelectedUser(user || null);
@@ -2409,6 +2476,7 @@ const OrcamentosPage: React.FC = () => {
                       name="canal_venda"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       value={formValues.canal_venda}
+                      disabled={visualizando}
                       onChange={(e) => {
                         setFormValues((prev) => ({
                           ...prev,
@@ -2436,7 +2504,11 @@ const OrcamentosPage: React.FC = () => {
                       id="data_venda"
                       name="data_venda"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={formValues.data_venda || ""}
+                      disabled={visualizando}
+                      value={!isEditing ?
+                        formValues.data_venda :
+                        new Date(formValues.data_venda).toISOString().split("T")[0]}
+
                       onChange={(e) => {
                         const value = e.target.value;  // O valor já estará no formato correto
                         setFormValues((prevValues) => ({
@@ -2457,7 +2529,12 @@ const OrcamentosPage: React.FC = () => {
                       id="prazo_entrega"
                       name="prazo_entrega"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={formValues.prazo || ""}
+                      disabled={visualizando}
+                      value={!isEditing ?
+                        formValues.prazo :
+                        (formValues.prazo ? new Date(formValues.prazo).toISOString().split("T")[0] : "")}
+
+
                       onChange={(e) => {
                         const value = e.target.value;  // O valor já estará no formato correto
                         setFormValues((prevValues) => ({
@@ -2477,6 +2554,7 @@ const OrcamentosPage: React.FC = () => {
                       id="centrosCusto"
                       name="centrosCusto"
                       value={selectedCentroCusto ? selectedCentroCusto.cod_centro_custo : ''}
+                      disabled={visualizando}
                       onChange={(e) => {
                         const selected = centrosCusto.find(
                           (est) => est.cod_centro_custo === Number(e.target.value)
@@ -2519,12 +2597,13 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Produtos</h3>
                   <button
-                    className="bg-green200 rounded"
+                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
                     onClick={() => setVisibleProd(true)}
+                    disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
                   >
                     <IoAddCircleOutline
-                      style={{ fontSize: "1.5rem" }}
+                      style={{ fontSize: "2rem" }}
                       className="text-white text-center"
                     />
                   </button>
@@ -2541,6 +2620,7 @@ const OrcamentosPage: React.FC = () => {
                       id="produto"
                       name="produto"
                       value={selectedProd ? selectedProd.cod_item : ''}
+                      disabled={visualizando}
                       onChange={handleProdChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     >
@@ -2569,6 +2649,7 @@ const OrcamentosPage: React.FC = () => {
                       min="1"
                       defaultValue="1"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                       value={quantidadeProd}
                       onChange={handleQuantidadeProdChange}
                     />
@@ -2601,6 +2682,7 @@ const OrcamentosPage: React.FC = () => {
                         name="descontoProd"
                         type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
+                        disabled={visualizando}
                         value={descontoProd}
                         onChange={handleDescontoProdChange}
                         step="0.01"
@@ -2611,6 +2693,7 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoUnitProd"
                         name="descontoUnitProd"
                         value={descontoUnitProd === "Percentual" ? "%prod" : "R$prod"} // Exibe % ou R$
+                        disabled={visualizando}
                         onChange={handleDescontoUnitProdChange}
                         onMouseDown={(e) => {
                           e.preventDefault(); // Impede a abertura do select padrão
@@ -2668,7 +2751,8 @@ const OrcamentosPage: React.FC = () => {
                         }).format(Number(valorTotalProd ? valorTotalProd : 0))}`}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center ml-2 h-8"
+                        className="bg-green-200 border border-green-700 rounded-2xl p-1 hover:bg-green-300 duration-50 hover:scale-125 flex items-center justify-center ml-2 h-8"
+                        disabled={visualizando}
                         onClick={handleAdicionarLinha}
                       >
                         <FaPlus className="text-green-700 text-xl" />
@@ -2679,14 +2763,17 @@ const OrcamentosPage: React.FC = () => {
 
                 <br></br>
 
-                {/* Linhas adicionadas */}
+                {/* Linhas adicionadas de produtos */}
                 {produtosSelecionados.map((produto, index) => (
                   <div key={`${produto.cod_item}-${index}`} className="grid grid-cols-5 gap-2">
                     <div>
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.descricao}
+                        value={!isEditing ?
+                          produto.descricao :
+                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.descricao : produto.descricao)
+                        }
                         disabled
                       />
                     </div>
@@ -2703,7 +2790,10 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.valor_venda}
+                        value={!isEditing ?
+                          produto.valor_venda :
+                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.valor_venda : produto.valor_venda)
+                        }
                         disabled
                       />
                     </div>
@@ -2711,7 +2801,7 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.descontoProd}
+                        value={!isEditing ? produto.descontoProd : produto.valor_desconto}
                         disabled
                       />
                       <select
@@ -2737,7 +2827,7 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
+                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
                         onClick={() => handleRemoveLinhaProd(produto.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
@@ -2762,12 +2852,13 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
-                    className="bg-green200 rounded"
+                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
                     onClick={() => setVisibleServ(true)}
+                    disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
                   >
                     <IoAddCircleOutline
-                      style={{ fontSize: "1.5rem" }}
+                      style={{ fontSize: "2rem" }}
                       className="text-white text-center"
                     />
                   </button>
@@ -2783,6 +2874,7 @@ const OrcamentosPage: React.FC = () => {
                     <select
                       id="servico"
                       name="servico"
+                      disabled={visualizando}
                       value={selectedServico ? selectedServico.cod_servico : ''}
                       onChange={handleServicoChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -2812,6 +2904,7 @@ const OrcamentosPage: React.FC = () => {
                       min="1"
                       defaultValue="1"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                       value={quantidadeServ}
                       onChange={handleQuantidadeServChange}
                     />
@@ -2844,6 +2937,7 @@ const OrcamentosPage: React.FC = () => {
                         type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
                         value={descontoServ}
+                        disabled={visualizando}
                         onChange={handleDescontoServChange}
                         step="0.01"
                         min={0}
@@ -2853,6 +2947,7 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoUnit"
                         name="descontoUnit"
                         value={descontoUnit === "Percentual" ? "%" : "R$"}
+                        disabled={visualizando}
                         onChange={handleDescontoUnitChange}
                         onMouseDown={(e) => {
                           e.preventDefault(); // Evita abrir o select padrão
@@ -2910,7 +3005,7 @@ const OrcamentosPage: React.FC = () => {
                         }).format(Number(valorTotalServ ? valorTotalServ : 0))}`}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center h-8 w-8"
+                        className="bg-green-200 border border-green-700 rounded-2xl hover:bg-green-400 duration-50 hover:scale-125 p-1 flex items-center justify-center h-8 w-8"
                         onClick={handleAdicionarServico}
                       >
                         <FaPlus className="text-green-700 text-xl" />
@@ -2930,7 +3025,7 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.nome}
+                        value={!isEditing ? servico.nome : (servico.dbs_servicos?.descricao ?? servico.nome)}
                       />
                     </div>
                     <div>
@@ -2946,16 +3041,42 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.valor_venda}
+                        value={!isEditing
+                          ? servico.valor_venda
+                          : (servico.dbs_servicos?.valor_venda ?? servico.valor_venda)
+                        }
+
                       />
                     </div>
-                    <div>
+                    {/* <div>
                       <input
                         type="text"
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={servico.descontoProd}
+                        value={!isEditing ? servico.descontoProd : servico.valor_desconto}
                       />
+                    </div> */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        value={!isEditing ? servico.descontoProd : (servico.valor_desconto ? servico.valor_desconto : servico.descontoProd)}
+                        disabled
+                      />
+                      <select
+                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-200 px-1"
+                        style={{
+                          WebkitAppearance: "none",
+                          MozAppearance: "none",
+                          appearance: "none",
+                          color: "gray",
+                        }}
+                        value={servico.descontoUnitProdtipo}
+                        disabled
+                      >
+                        <option value="%prod">&nbsp;&nbsp;&nbsp;%</option>
+                        <option value="R$prod">&nbsp;&nbsp;R$</option>
+                      </select>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -2965,7 +3086,7 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
+                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
                         onClick={() => handleRemoveLinhaServico(servico.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
@@ -2998,6 +3119,7 @@ const OrcamentosPage: React.FC = () => {
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       type="text"
                       value={formValues.frota} // Mantém o valor sincronizado com formValues
+                      disabled={visualizando}
                       onChange={(e) => {
                         setFormValues((prev) => ({
                           ...prev,
@@ -3016,6 +3138,7 @@ const OrcamentosPage: React.FC = () => {
                       id="nf-compra"
                       name="nf-compra"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                       value={formValues.nf_compra}
                       onChange={(e) => {
                         setFormValues((prev) => ({
@@ -3034,6 +3157,7 @@ const OrcamentosPage: React.FC = () => {
                       id="transportadora"
                       name="transportadora"
                       value={selectedTransportadora ? selectedTransportadora.cod_transportadora : ''}
+                      disabled={visualizando}
                       onChange={(e) => {
                         const selected = transportadoras.find(
                           (est) => est.cod_transportadora === Number(e.target.value)
@@ -3069,7 +3193,8 @@ const OrcamentosPage: React.FC = () => {
                       type="number"
                       min={0}
                       defaultValue={0}
-                      value={frete}
+                      value={!isEditing ? frete : formValues.frete}
+                      disabled={visualizando}
                       onChange={(e) => {
                         const newFrete = parseFloat(e.target.value) || 0;
                         setFrete(newFrete);
@@ -3109,6 +3234,7 @@ const OrcamentosPage: React.FC = () => {
                       name="usarEnd"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       onChange={handleSelectChange}
+                      disabled={visualizando}
                       value={usarEndereco}
                     >
                       <option defaultValue="naoUsar">NÃO</option>
@@ -3231,8 +3357,9 @@ const OrcamentosPage: React.FC = () => {
                       name="produtos"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={`R$ ${totalProdutosSomados}`}
-                      disabled  // Tornando o input apenas leitura
+                      value={`R$ ${totalProdutosSomados.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
+                      step="0.001"
+                      disabled
                     />
                   </div>
 
@@ -3245,7 +3372,8 @@ const OrcamentosPage: React.FC = () => {
                       name="servicos"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      value={`R$ ${totalServicosSomados}`}
+                      value={`R$ ${totalServicosSomados.toFixed(3)}`}
+                      step="0.001"
                       disabled
                     />
                   </div>
@@ -3259,6 +3387,7 @@ const OrcamentosPage: React.FC = () => {
                         name="descontoTotal"
                         type="number"
                         className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
+                        disabled={visualizando}
                         value={descontoTotal}
                         onChange={handleDescontoTotalChange}
                         step="0.01"
@@ -3269,6 +3398,7 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoUnitTotal"
                         name="descontoUnitTotal"
                         value={descontoUnitTotal}
+                        disabled={visualizando}
                         onChange={handleDescontoUnitTotalChange}
                         onMouseDown={(e) => {
                           e.preventDefault(); // Impede a abertura do select
@@ -3318,7 +3448,11 @@ const OrcamentosPage: React.FC = () => {
                     </label>
                     <input
                       id="vl_total_total"
-                      value={`R$ ${valorTotalTotal}`}
+                      value={!isEditing
+                        ? `R$ ${Number(valorTotalTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : `R$ ${(Number(valorTotalTotal) + Number(formValues.frete || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
+
                       name="vl_total_total"
                       type="text"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
@@ -3346,10 +3480,20 @@ const OrcamentosPage: React.FC = () => {
                       id="restanteAserPago"
                       name="restanteAserPago"
                       type="number"
-                      className={`w-full border ${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'}  pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}
-                      value={restanteAserPago}
                       disabled
+                      className={`w-full border ${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'}  pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}
+                      value={!isEditing
+                        ? restanteAserPago
+                        : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos))
+                      }
                     />
+                    {/* <span>
+                      R$ {!isEditing
+                        ? Number(restanteAserPago).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      }
+                    </span> */}
+
                   </div>
 
                 </div>
@@ -3363,6 +3507,7 @@ const OrcamentosPage: React.FC = () => {
                       id="pagamento"
                       name="pagamento"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                       value={selectedFormaPagamento?.cod_forma_pagamento || ""}
                       onChange={(e) => {
                         const selected = formasPagamento.find(f => f.cod_forma_pagamento === Number(e.target.value));
@@ -3407,6 +3552,7 @@ const OrcamentosPage: React.FC = () => {
                       name="valorParcela"
                       type="number"
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      disabled={visualizando}
                       value={valorParcela}
                       onChange={(e) => setvalorParcela(Number(e.target.value))}
                     />
@@ -3422,6 +3568,7 @@ const OrcamentosPage: React.FC = () => {
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8"
                       placeholder="R$"
                       value={juros}
+                      disabled={visualizando}
                       onChange={(e) => setJuros(Number(e.target.value))}
                       step="0.01"
                     />
@@ -3438,11 +3585,12 @@ const OrcamentosPage: React.FC = () => {
                         name="data_parcela"
                         type="date"
                         className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                        disabled={visualizando}
                         value={data_parcela}
                         onChange={(e) => setDataParcela(e.target.value)}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded p-1 flex items-center justify-center h-8"
+                        className="bg-green-200 border border-green-700 hover:bg-green-400 hover:scale-125 transition-all rounded-2xl p-1 flex items-center justify-center h-8"
                         onClick={handleAdicionarPagamento}
                       >
                         <FaPlus className="text-green-700 text-xl" />
@@ -3457,13 +3605,13 @@ const OrcamentosPage: React.FC = () => {
                         onChange={(e) => setQuantidadeParcelas(Number(e.target.value))}
                         min={1}
                         max={24}
-                        className="w-10 h-5 text-center border border-gray-400 rounded-sm"
+                        className="w-10 h-6 text-center border border-gray-400 rounded-sm"
                       />
                       <button
                         onClick={handleAdicionarMultiplasParcelas}
-                        className="bg-blue300 border border-blue500 rounded p-1 flex items-center justify-center h-5 w-7.5 ml-[4px]"
+                        className="bg-blue200 border border-blue500 hover:bg-blue400 hover:scale-125 transition-all duration-50 rounded-2xl p-1 flex items-center justify-center h-7 w-7 ml-[6px]"
                       >
-                        <FaPlus className="text-white text-xl h-4" />
+                        <FaPlus className="text-gray-100 text-xl h-4" />
                       </button>
                     </div>
                   </div>
@@ -3478,7 +3626,7 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.nome}
+                        value={!isEditing ? pagamento.nome : pagamento.cod_forma_pagamento}
                         disabled
                         readOnly
                       />
@@ -3498,7 +3646,7 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.valorParcela}
+                        value={pagamento.valorParcela ? pagamento.valorParcela * (1 + (pagamento.juros ? pagamento.juros / 100 : 0)) : 0}
                         disabled
                         readOnly
                       />
@@ -3519,12 +3667,21 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.data_parcela
-                          ? new Date(pagamento.data_parcela + 'T00:00:00').toLocaleDateString("pt-BR") // Força a data para o formato local sem interferir no fuso horário
-                          : ""}
+                        value={
+                          pagamento.data_parcela
+                            ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
+                            : ""
+                        }
+                      // value={
+                      //   pagamento.data_parcela
+                      //     ? isEditing
+                      //       ? new Date(pagamento.data_parcela).toISOString().split("T")[0] // Formato YYYY-MM-DD para inputs do tipo date
+                      //       : new Date(pagamento.data_parcela).toLocaleDateString("pt-BR") // Formato DD/MM/YYYY para exibição
+                      //     : ""
+                      // }
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center"
+                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
                         onClick={() => handleRemovePagamento(pagamento.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
@@ -3603,23 +3760,26 @@ const OrcamentosPage: React.FC = () => {
               // #region botoes
             }
             <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-3 gap-3 w-full">
-                <Button
-                  label="Sair Sem Salvar"
-                  className="text-white"
-                  icon="pi pi-times"
-                  style={{
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.75rem 2rem",  // Tamanho aumentado
-                    fontSize: "16px",  // Tamanho aumentado
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  onClick={() => closeModal()}
-                />
-                {!isEditing && (
+              <div className={`grid ${isEditing ? "grid-cols-2" : "grid-cols-3"} gap-3 w-full`}>
+                {!visualizando && (
+                  <Button
+                    label="Sair Sem Salvar"
+                    className="text-white"
+                    icon="pi pi-times"
+                    style={{
+                      backgroundColor: "#dc3545",
+                      border: "1px solid #dc3545",
+                      padding: "0.75rem 2rem",  // Tamanho aumentado
+                      fontSize: "16px",  // Tamanho aumentado
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onClick={() => closeModal()}
+                  />
+                )}
+
+                {!isEditing && !visualizando && (
                   <>
                     <Button
                       label="Salvar e Voltar à Listagem"
@@ -3656,7 +3816,7 @@ const OrcamentosPage: React.FC = () => {
                   </>
                 )}
 
-                {isEditing && (
+                {isEditing && !visualizando && (
                   <Button
                     label="Salvar"
                     className="text-white"
@@ -3698,7 +3858,7 @@ const OrcamentosPage: React.FC = () => {
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className="bg-green200 rounded mr-3"
+                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
@@ -3741,6 +3901,8 @@ const OrcamentosPage: React.FC = () => {
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
+
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -3795,7 +3957,6 @@ const OrcamentosPage: React.FC = () => {
                 />
 
                 <Column
-                  field="valor_total"
                   header="Valor"
                   style={{
                     width: "10%",
@@ -3812,6 +3973,12 @@ const OrcamentosPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
+                  body={(rowData) =>
+                    rowData.valor_total
+                      ? Number(rowData.valor_total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                      : "R$ 0,00"
+                  }
+
                 />
                 <Column
                   field="situacao"
@@ -3861,7 +4028,7 @@ const OrcamentosPage: React.FC = () => {
 
                 <Column
                   field="dtCadastro"
-                  header="DT Cadastro"
+                  header="Data Cadastro"
                   style={{
                     width: "20%",
                     textAlign: "center",
@@ -3889,10 +4056,6 @@ const OrcamentosPage: React.FC = () => {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          hour12: true,
                         }).format(date);
                         return <span>{formattedDate}</span>;
                       } else {
@@ -3904,13 +4067,14 @@ const OrcamentosPage: React.FC = () => {
                   }}
                 />
 
+
                 <Column
                   header=""
                   body={(rowData) => (
                     <div className="flex gap-2 justify-center">
                       <button
-                        onClick={() => handleEdit(rowData)}
-                        className="bg-blue300 p-1 rounded hover:bg-blue400 transition-all duration-200 w-8 h-8 flex items-center justify-center"
+                        onClick={() => handleEdit(rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
                         title="Visualizar"
                       >
                         <MdVisibility className="text-white text-2xl" />
@@ -3941,8 +4105,8 @@ const OrcamentosPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => console.log(rowData)} //arrumar aqui
-                          className="bg-yellow p-1 rounded"
+                          onClick={() => handleEdit(rowData, false)}
+                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                           title="Editar"
                         >
                           <MdOutlineModeEditOutline className="text-white text-2xl" />
@@ -3974,7 +4138,7 @@ const OrcamentosPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => openDialog(rowData.cod_orcamento)}
-                          className="bg-red text-black p-1 rounded"
+                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                           title="Cancelar"
                         >
                           <FaBan className="text-white text-2xl" />

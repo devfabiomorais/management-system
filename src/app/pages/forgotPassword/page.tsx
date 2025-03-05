@@ -22,12 +22,12 @@ export default function ForgotPassword() {
   const [code, setCode] = useState(Array(6).fill(""));
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true)
     console.log("Senha:", email);
 
-    if(email === ''){
+    if (email === '') {
       setLoading(false)
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
@@ -41,8 +41,8 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/sendCode", payload);
-      
+      const response = await axios.post("http://localhost:9009/api/users/sendCode", payload);
+
       if (response.status === 200) {
         setLoading(false)
         localStorage.setItem("@Birigui:id", response.data.id)
@@ -99,11 +99,11 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleSubmitCode = async(e: React.FormEvent) => {
+  const handleSubmitCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true)
     const codeDigit = code.join("")
-    if(codeDigit === ''){
+    if (codeDigit === '') {
       setLoading(false)
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
@@ -118,8 +118,8 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/checkCode", payload);
-      
+      const response = await axios.post("http://localhost:9009/api/users/checkCode", payload);
+
       if (response.status === 200) {
         setLoading(false)
         setStepPass(2)
@@ -142,10 +142,10 @@ export default function ForgotPassword() {
   };
 
 
-  const handleSubmitNewPass = async(e: React.FormEvent) => {
+  const handleSubmitNewPass = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true)
-    if(newPass === "" && newPass1 == ""){
+    if (newPass === "" && newPass1 == "") {
       setLoading(false)
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
@@ -154,7 +154,7 @@ export default function ForgotPassword() {
       return;
     }
 
-    if(newPass.length < 6 && newPass1.length < 6){
+    if (newPass.length < 6 && newPass1.length < 6) {
       setLoading(false)
       toast.info("A nova senha deve ter mais de 6 digitos", {
         position: "top-right",
@@ -163,7 +163,7 @@ export default function ForgotPassword() {
       return;
     }
 
-    if(newPass !== newPass1){
+    if (newPass !== newPass1) {
       setLoading(false)
       toast.info("As senhas devem ser iguais", {
         position: "top-right",
@@ -171,16 +171,16 @@ export default function ForgotPassword() {
       });
       return;
     }
-    
+
     const payload = {
       newPassword: newPass,
     };
 
     try {
-      const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/changePassword/${idUser}`, payload);
+      const response = await axios.put(`http://localhost:9009/api/users/changePassword/${idUser}`, payload);
       if (response.status === 200) {
         setLoading(false)
-        window.location.href="/"
+        window.location.href = "/"
       }
     } catch (err: any) {
       if (err.response) {
@@ -201,17 +201,17 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex flex-col justify-between min-h-screen bg-gray-200">
-    {loading && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <BeatLoader
-        color={color}
-        loading={loading}
-        size={30}
-        aria-label="Loading Spinner"
-        data-testid="loader"
-      />
-    </div>
-  )}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <BeatLoader
+            color={color}
+            loading={loading}
+            size={30}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        </div>
+      )}
       <div className="flex justify-center items-center flex-grow">
         {stepPass === 0 && (
           <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
@@ -226,7 +226,7 @@ export default function ForgotPassword() {
               <h2 className="text-2xl text-white">Esqueci a Senha</h2>
             </div>
 
-            <form  className="space-y-4">
+            <form className="space-y-4">
               {/*<div>
                 <label
                   htmlFor="login"
@@ -312,7 +312,7 @@ export default function ForgotPassword() {
 
               <div className="pt-5 flex justify-center">
                 <button
-                onClick={handleSubmitCode}
+                  onClick={handleSubmitCode}
                   type="button"
                   className="w-3/4 py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition"
                 >

@@ -24,6 +24,7 @@ interface CentroCusto {
   cod_centro_custo: number;
   nome: string;
   descricao?: string;
+  situacao?: string;
 }
 
 const CentrosCustoPage: React.FC = () => {
@@ -41,11 +42,18 @@ const CentrosCustoPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredCentrosCusto = centrosCusto.filter((centroCusto) =>
-    Object.values(centroCusto).some((value) =>
+  const filteredCentrosCusto = centrosCusto.filter((centroCusto) => {
+    // Apenas ATIVO aparecem
+    if (centroCusto.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Lógica de busca
+    return Object.values(centroCusto).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+    );
+  });
+
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [centrosCustoIdToDelete, setCentroCustoIdToDelete] = useState<number | null>(null);
@@ -300,6 +308,43 @@ const CentrosCustoPage: React.FC = () => {
     setCentroCustoIdToDelete(null);
   };
 
+  const handleCancelar = async () => {
+    if (centrosCustoIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchCentrosCusto(); // Aqui é necessário chamar a função que irá atualizar a lista de centros de custo
+        setModalDeleteVisible(false);
+        toast.success("Centro de custo cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar centro de custo.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao excluir centro de custo:", error);
+      toast.error("Erro ao excluir centro de custo. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
   const handleDelete = async () => {
     if (centrosCustoIdToDelete === null) return;
 
@@ -391,7 +436,7 @@ const CentrosCustoPage: React.FC = () => {
           )}
 
           <Dialog
-            header="Confirmar Exclusão"
+            header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
             style={{ width: "auto" }}
             onHide={closeDialog}
@@ -406,13 +451,13 @@ const CentrosCustoPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleDelete}
+                  onClick={handleCancelar}
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este centro de custo?</p>
+            <p>Tem certeza que deseja cancelar este centro de custo?</p>
           </Dialog>
 
           <Dialog
@@ -548,7 +593,7 @@ const CentrosCustoPage: React.FC = () => {
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className="bg-green200 rounded mr-3"
+                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
@@ -580,6 +625,8 @@ const CentrosCustoPage: React.FC = () => {
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
+
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -648,6 +695,25 @@ const CentrosCustoPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "0.5%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
@@ -655,7 +721,7 @@ const CentrosCustoPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleEdit(rowData)}
-                          className="bg-yellow p-1 rounded"
+                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline className="text-white text-2xl" />
                         </button>
@@ -686,7 +752,7 @@ const CentrosCustoPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => openDialog(rowData.cod_centro_custo)}
-                          className="bg-red text-black p-1 rounded"
+                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
                           <FaTrash className="text-white text-2xl" />
                         </button>

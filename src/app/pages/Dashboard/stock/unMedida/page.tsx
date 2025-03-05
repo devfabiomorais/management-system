@@ -24,6 +24,7 @@ interface Item {
     cod_un: number;
     descricao: string;
     un: string;
+    situacao?: string;
 }
 
 const UnMedidaPage: React.FC = () => {
@@ -47,11 +48,17 @@ const UnMedidaPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnidade, setSelectedUnidade] = useState(0);
 
-    const filteredItens = itens.filter(
-        (item) =>
-            item.un.toLowerCase().includes(search.toLowerCase()) ||
-            item.descricao.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredItens = itens.filter((item) => {
+        // Apenas ATIVO aparecem
+        if (item.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return item.un.toLowerCase().includes(search.toLowerCase()) ||
+            item.descricao.toLowerCase().includes(search.toLowerCase());
+    });
+
 
     const clearInputs = () => {
         setDescricao("")
@@ -65,7 +72,7 @@ const UnMedidaPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+            const response = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -117,7 +124,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/unMedida/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/unMedida/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -163,7 +170,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -205,11 +212,49 @@ const UnMedidaPage: React.FC = () => {
         setUnidadeIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (unidadeIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/unMedida/cancel/${unidadeIdToDelete}`,
+                {}, // Enviar um corpo vazio
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchUnits(); // Atualizar a lista de unidades
+                setModalDeleteVisible(false);
+                toast.success("Unidade removida com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao remover unidade.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao remover unidade:", error);
+            toast.error("Erro ao remover unidade. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
+
     const handleDelete = async () => {
         if (unidadeIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/unMedida/${unidadeIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/unMedida/${unidadeIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -264,7 +309,7 @@ const UnMedidaPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -299,6 +344,8 @@ const UnMedidaPage: React.FC = () => {
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
+
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
@@ -367,12 +414,31 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    <Column
+                                        field="situacao"
+                                        header="Situação"
+                                        className="text-black"
+                                        style={{
+                                            width: "1%",
+                                            textAlign: "center",
+                                            border: "1px solid #ccc",
+                                        }}
+                                        headerStyle={{
+                                            fontSize: "1.2rem",
+                                            color: "#1B405D",
+                                            fontWeight: "bold",
+                                            border: "1px solid #ccc",
+                                            textAlign: "center",
+                                            backgroundColor: "#D9D9D980",
+                                            verticalAlign: "middle",
+                                            padding: "10px",
+                                        }} />
                                     {permissions?.edicao === "SIM" && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                    <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
                                                         <MdOutlineModeEditOutline className="text-white text-2xl" />
                                                     </button>
 
@@ -401,7 +467,7 @@ const UnMedidaPage: React.FC = () => {
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => openDialog(rowData.cod_un)} className="bg-red text-black p-1 rounded">
+                                                    <button onClick={() => openDialog(rowData.cod_un)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
                                                         <FaTrash className="text-white text-2xl" />
                                                     </button>
                                                 </div>

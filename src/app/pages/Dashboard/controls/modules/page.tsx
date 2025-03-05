@@ -5,7 +5,7 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { FaTrash } from "react-icons/fa";
+import { FaBan, FaTrash } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
@@ -24,6 +24,7 @@ interface ModuleType {
     descricao: string;
     cod_modulo_pai: string;
     modulo_pai_nome?: string;
+    situacao?: string;
 }
 
 const ModulePage: React.FC = () => {
@@ -35,8 +36,8 @@ const ModulePage: React.FC = () => {
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [moduleCreateDisabled, setModuleCreateDisabled] =
-    useState(false);
-  const [moduleEditDisabled, setModuleEditDisabled] = useState(false);
+        useState(false);
+    const [moduleEditDisabled, setModuleEditDisabled] = useState(false);
     const [modules, setModules] = useState<ModuleType[]>([]);
     const [search, setSearch] = useState("");
     const [first, setFirst] = useState(0);
@@ -65,7 +66,7 @@ const ModulePage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
+            const response = await axios.get("http://localhost:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -107,7 +108,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/module/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/module/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -154,7 +155,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/module/edit/${selectedModule}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/module/edit/${selectedModule}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -196,11 +197,48 @@ const ModulePage: React.FC = () => {
         setModuleIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (moduleIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/module/cancel/${moduleIdToDelete}`,
+                {}, // Enviar um corpo vazio, caso necessário para o endpoint
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchModules(); // Atualizar a lista de módulos
+                setModalDeleteVisible(false);
+                toast.success("Módulo cancelado com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar módulo.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao cancelar módulo:", error);
+            toast.error("Erro ao cancelar módulo. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
     const handleDelete = async () => {
         if (moduleIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/module/${moduleIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/module/${moduleIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -234,10 +272,18 @@ const ModulePage: React.FC = () => {
         setIsEditing(true);
     };
 
-    const filteredItens = modules.filter(
-        (item) =>
-            item.descricao.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredItens = modules.filter((item) => {
+        // Apenas ATIVO aparecem
+        if (item.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(item).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        );
+    });
+
 
     return (
         <><SidebarLayout>
@@ -268,7 +314,7 @@ const ModulePage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -295,6 +341,9 @@ const ModulePage: React.FC = () => {
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
+
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
@@ -354,60 +403,79 @@ const ModulePage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                           {permissions?.edicao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                    <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                                </button>
+                                    <Column field="situacao" header="Situação" className="text-black"
+                                        style={{
+                                            width: "1%",
+                                            textAlign: "center",
+                                            border: "1px solid #ccc",
+                                        }}
+                                        headerStyle={{
+                                            fontSize: "1.2rem",
+                                            color: "#1B405D",
+                                            fontWeight: "bold",
+                                            border: "1px solid #ccc",
+                                            textAlign: "center",
+                                            backgroundColor: "#D9D9D980",
+                                            verticalAlign: "middle",
+                                            padding: "10px",
+                                        }} />
+                                    {permissions?.edicao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
+                                                    <button onClick={() => handleEdit(rowData)}
+                                                        className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
+                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
+                                                    </button>
 
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
-                                           {permissions?.delecao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => openDialog(rowData.cod_modulo)} className="bg-red text-black p-1 rounded">
-                                                    <FaTrash className="text-white text-2xl" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                    {permissions?.delecao === "SIM" && (
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="bg-red400 flex gap-2 justify-center rounded-2xl w-full">
+                                                    <button onClick={() => openDialog(rowData.cod_modulo)}
+                                                        className="hover:bg-red600 hover:scale-125 p-2 bg-transparent transform transition-all duration-50  rounded-2xl"
+                                                    >
+                                                        <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
                                 </DataTable>
                             </div>
@@ -447,40 +515,40 @@ const ModulePage: React.FC = () => {
                                     </select>
 
                                     <div className="flex justify-end mt-5">
-                                    {permissions?.insercao === "SIM" && (
-                                        <>
-                                        {!isEditing && (<Button
-                                            label="Salvar Módulo"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => createModulo()}
-                                            disabled={moduleCreateDisabled}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        {isEditing && (<Button
-                                            label="Salvar Módulo"
-                                            className="text-white"
-                                            icon="pi pi-check"
-                                            onClick={() => editModulo()}
-                                            disabled={moduleEditDisabled}
-                                            style={{
-                                                backgroundColor: '#28a745',
-                                                border: '1px solid #28a745',
-                                                padding: '0.5rem 1.5rem',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }} />)}
-                                        </>)}
-                                        
+                                        {permissions?.insercao === "SIM" && (
+                                            <>
+                                                {!isEditing && (<Button
+                                                    label="Salvar Módulo"
+                                                    className="text-white hover:bg-green-700 transition-all hover:scale-125 duration-50"
+                                                    icon="pi pi-check"
+                                                    onClick={() => createModulo()}
+                                                    disabled={moduleCreateDisabled}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                                {isEditing && (<Button
+                                                    label="Salvar Módulo"
+                                                    className="text-white hover:bg-green-700 transition-all hover:scale-125 duration-50"
+                                                    icon="pi pi-check"
+                                                    onClick={() => editModulo()}
+                                                    disabled={moduleEditDisabled}
+                                                    style={{
+                                                        backgroundColor: '#28a745',
+                                                        border: '1px solid #28a745',
+                                                        padding: '0.5rem 1.5rem',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                    }} />)}
+                                            </>)}
+
                                     </div>
 
                                 </div>

@@ -23,6 +23,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { handleClientScriptLoad } from "next/script";
 
 interface User {
     cod_usuario: number;
@@ -108,11 +109,18 @@ const UsersPage: React.FC = () => {
         })
     }
 
-    const filteredUsers = users.filter((user) =>
-        Object.values(user).some((value) =>
+    const filteredUsers = users.filter((user) => {
+        // Apenas usuários ATIVOS aparecem
+        if (user.situacao !== "ATIVO") {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(user).some((value) =>
             String(value).toLowerCase().includes(search.toLowerCase())
-        )
-    );
+        );
+    });
+
 
 
     const handleSaveEdit = async () => {
@@ -529,6 +537,43 @@ const UsersPage: React.FC = () => {
         setClientIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (clientIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/users/cancel/${clientIdToDelete}`,
+                {}, // Enviar um corpo vazio, caso necessário para o endpoint
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchUsers(); // Atualizar a lista de usuários
+                setModalDeleteVisible(false);
+                toast.success("Usuário cancelado com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar usuário.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao cancelar usuário:", error);
+            toast.error("Erro ao cancelar usuário. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
     const handleDelete = async () => {
 
         setLoading(true)
@@ -622,7 +667,7 @@ const UsersPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -805,10 +850,10 @@ const UsersPage: React.FC = () => {
 
 
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-3xl">
+                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
                     <div className="flex justify-between ">
                         <div>
-                            <h2 className="text-blue500 text-3xl font-bold mb-3 pl-3 drop-shadow-[2px_2px_1px_rgba(0,0,0,0.2)]">
+                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
                                 Usuários
                             </h2>
                         </div>
@@ -827,7 +872,7 @@ const UsersPage: React.FC = () => {
                     </div>
 
 
-                    <div className="bg-white rounded-3xl p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
 
                         <div className="mb-4 flex justify-end ">
                             <p className="text-blue font-bold text-lg">Busca:</p>
@@ -970,16 +1015,17 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
-                                        <div className="flex gap-2 justify-center bg-yellow500 rounded-2xl w-full">
+                                        <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
                                             <button
                                                 onClick={() => handleEdit(rowData)}
-                                                className="p-2 bg-transparent transform transition-all duration-50 hover:scale-125 hover:bg-yellow700 rounded-2xl"
+                                                className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                                             >
-                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
                                             </button>
                                         </div>
 
@@ -1005,12 +1051,12 @@ const UsersPage: React.FC = () => {
                                 <Column
                                     header=""
                                     body={(rowData) => (
-                                        <div className="flex gap-2 justify-center bg-red400 rounded-2xl w-full">
+                                        <div className="bg-red400 flex gap-2 justify-center rounded-2xl w-full">
                                             <button
                                                 onClick={() => openDialog(rowData.cod_usuario)}
-                                                className="p-2 bg-transparent transform transition-all duration-50 hover:scale-125 hover:bg-red600 rounded-2xl"
+                                                className="hover:bg-red600 hover:scale-125 p-2 bg-transparent transform transition-all duration-50  rounded-2xl"
                                             >
-                                                <FaBan className="text-white text-2xl" />
+                                                <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                             </button>
                                         </div>
 

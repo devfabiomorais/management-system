@@ -24,6 +24,7 @@ interface Item {
     cod_familia: number;
     descricao: string;
     nome: string;
+    situacao?: string;
 }
 
 const FamilyPage: React.FC = () => {
@@ -49,11 +50,18 @@ const FamilyPage: React.FC = () => {
 
 
 
-    const filteredItens = itens.filter(
-        (item) =>
-            item.nome.toLowerCase().includes(search.toLowerCase()) ||
-            item.descricao.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredItens = itens.filter((item) => {
+        // Apenas ATIVO aparecem
+        if (item.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return item.nome.toLowerCase().includes(search.toLowerCase()) ||
+            item.descricao.toLowerCase().includes(search.toLowerCase());
+    });
+
+
 
     const clearInputs = () => {
         setDescricao("")
@@ -68,7 +76,7 @@ const FamilyPage: React.FC = () => {
         setLoading(true)
 
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -120,7 +128,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/familia/itens/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/familia/itens/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -167,7 +175,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -209,11 +217,48 @@ const FamilyPage: React.FC = () => {
         setFamiliaIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (familiaIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `http://localhost:9009/api/familia/itens/cancel/${familiaIdToDelete}`,
+                {}, // Enviar um corpo vazio, caso necessário para o endpoint
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchFamilias(); // Atualizar a lista de famílias
+                setModalDeleteVisible(false);
+                toast.success("Família cancelada com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar família.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao cancelar família:", error);
+            toast.error("Erro ao cancelar família. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
     const handleDelete = async () => {
         if (familiaIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/familia/itens/${familiaIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/familia/itens/${familiaIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -268,7 +313,7 @@ const FamilyPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -299,10 +344,13 @@ const FamilyPage: React.FC = () => {
                                 </div>
 
                                 <DataTable
+
                                     value={filteredItens.slice(first, first + rows)}
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
+
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
@@ -371,12 +419,34 @@ const FamilyPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
+                                    <Column
+                                        field="situacao"
+                                        header="Situação"
+                                        className="text-black"
+                                        style={{
+                                            width: "1%",
+                                            textAlign: "center",
+                                            border: "1px solid #ccc",
+                                        }}
+                                        headerStyle={{
+                                            fontSize: "1.2rem",
+                                            color: "#1B405D",
+                                            fontWeight: "bold",
+                                            border: "1px solid #ccc",
+                                            textAlign: "center",
+                                            backgroundColor: "#D9D9D980",
+                                            verticalAlign: "middle",
+                                            padding: "10px",
+                                        }}
+                                        body={(rowData) => rowData.situacao}
+                                    />
+
                                     {permissions?.edicao === "SIM" && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
+                                                    <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
                                                         <MdOutlineModeEditOutline className="text-white text-2xl" />
                                                     </button>
 
@@ -404,7 +474,7 @@ const FamilyPage: React.FC = () => {
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => openDialog(rowData.cod_familia)} className="bg-red text-black p-1 rounded">
+                                                    <button onClick={() => openDialog(rowData.cod_familia)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
                                                         <FaTrash className="text-white text-2xl" />
                                                     </button>
                                                 </div>

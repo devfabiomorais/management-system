@@ -38,6 +38,7 @@ interface Transportadora {
   telefone: string;
   dtCadastro?: string;
   estabelecimento: number;
+  situacao?: string;
 }
 
 interface Establishment {
@@ -67,11 +68,18 @@ const TransportadorasPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredTransportadoras = transportadoras.filter((transportadora) =>
-    Object.values(transportadora).some((value) =>
+  const filteredTransportadoras = transportadoras.filter((transportadora) => {
+    // Apenas ATIVO aparecem
+    if (transportadora.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Função de busca
+    return Object.values(transportadora).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+    );
+  });
+
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [transportadoraIdToDelete, setTransportadoraIdToDelete] = useState<number | null>(null);
@@ -507,6 +515,43 @@ const TransportadorasPage: React.FC = () => {
 
   // ---------------------------------------------------------------------------------------------------------------
 
+  const handleCancelar = async () => {
+    if (transportadoraIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/transportadoras/cancel/${transportadoraIdToDelete}`,
+        {}, // Enviar um corpo vazio, caso necessário para o endpoint
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchTransportadoras(); // Atualizar a lista de transportadoras
+        setModalDeleteVisible(false);
+        toast.success("Transportadora cancelada com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar transportadora.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao cancelar transportadora:", error);
+      toast.error("Erro ao cancelar transportadora. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
   const handleDelete = async () => {
     if (transportadoraIdToDelete === null) return;
 
@@ -650,7 +695,7 @@ const TransportadorasPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleDelete}
+                  onClick={handleCancelar}
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
@@ -1000,7 +1045,7 @@ const TransportadorasPage: React.FC = () => {
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className="bg-green200 rounded mr-3"
+                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
@@ -1032,6 +1077,8 @@ const TransportadorasPage: React.FC = () => {
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
+
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -1190,6 +1237,25 @@ const TransportadorasPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
 
 
                 {permissions?.edicao === "SIM" && (
@@ -1199,7 +1265,7 @@ const TransportadorasPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleEdit(rowData)}
-                          className="bg-yellow p-1 rounded"
+                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline className="text-white text-2xl" />
                         </button>
@@ -1230,7 +1296,7 @@ const TransportadorasPage: React.FC = () => {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => openDialog(rowData.cod_transportadora)}
-                          className="bg-red text-black p-1 rounded"
+                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
                           <FaTrash className="text-white text-2xl" />
                         </button>
