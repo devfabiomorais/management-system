@@ -9,7 +9,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -192,7 +192,7 @@ const CentrosCustoPage: React.FC = () => {
   const [rowData, setRowData] = useState<CentroCusto[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const handleSaveReturn = async () => {
+  const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
     try {
@@ -216,13 +216,13 @@ const CentrosCustoPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no storedRowData
+      // Verificar se o "nome" já existe no banco de dados no storedRowData
       const nomeExists = rowData.some((item) => item.nome === formValues.nome);
 
       if (nomeExists) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Esse nome já existe, escolha outro", {
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
@@ -250,7 +250,7 @@ const CentrosCustoPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        setVisible(false);
+        setVisible(fecharTela);
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -507,61 +507,66 @@ const CentrosCustoPage: React.FC = () => {
             </div>
 
 
-            <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="flex justify-between items-center mt-16 w-full">
+              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
                   icon="pi pi-times"
                   style={{
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.5rem 1.5rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
+                    backgroundColor: '#dc3545',
+                    border: '1px solid #dc3545',
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
                   }}
                   onClick={() => closeModal()}
                 />
-                {!isEditing && (
+
+                {!isEditing ? (
                   <>
                     <Button
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturn}
+                      onClick={() => handleSaveReturn(false)}
                       disabled={itemCreateReturnDisabled}
                       style={{
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
+                        backgroundColor: '#007bff',
+                        border: '1px solid #007bff',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                     <Button
                       label="Salvar e Adicionar Outro"
                       className="text-white"
-                      icon="pi pi-check"
-                      onClick={handleSave}
                       disabled={itemCreateDisabled}
+                      icon="pi pi-check"
+                      onClick={() => handleSaveReturn(true)}
                       style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
+                        backgroundColor: '#28a745',
+                        border: '1px solid #28a745',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                   </>
-                )}
-
-                {isEditing && (
+                ) : (
                   <Button
                     label="Salvar"
                     className="text-white"
@@ -569,18 +574,21 @@ const CentrosCustoPage: React.FC = () => {
                     onClick={handleSaveEdit}
                     disabled={itemEditDisabled}
                     style={{
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
+                      backgroundColor: '#28a745',
+                      border: '1px solid #28a745',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
                     }}
                   />
                 )}
               </div>
             </div>
+
           </Dialog>
 
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
@@ -661,7 +669,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="nome"
                   header="Nome"
                   style={{
-                    width: "0.5%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -680,7 +688,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="descricao"
                   header="Descrição"
                   style={{
-                    width: "0.5%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -723,7 +731,7 @@ const CentrosCustoPage: React.FC = () => {
                           onClick={() => handleEdit(rowData)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
-                          <MdOutlineModeEditOutline className="text-white text-2xl" />
+                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -754,7 +762,7 @@ const CentrosCustoPage: React.FC = () => {
                           onClick={() => openDialog(rowData.cod_centro_custo)}
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
-                          <FaTrash className="text-white text-2xl" />
+                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                         </button>
                       </div>
                     )}

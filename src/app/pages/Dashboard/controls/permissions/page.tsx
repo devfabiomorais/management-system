@@ -62,7 +62,7 @@ const PermissionsPage: React.FC = () => {
 
     const [visible, setVisible] = useState(false);
     const [permissionsType, setPermissionsType] = useState<PermissionType[]>([]);
-    const colunas = ["Módulo", <IoAddCircleOutline className="text-3xl " />, <MdOutlineModeEditOutline className="text-2xl " />, <FaTrash className="text-2xl" />, <RiListView className="text-2xl" />];
+    const colunas = ["Módulo", <IoAddCircleOutline className="text-3xl " />, <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-2xl " />, <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />, <RiListView className="text-2xl" />];
     const [linhas, setLinhas] = useState<any[]>([]);
 
 
@@ -153,14 +153,14 @@ const PermissionsPage: React.FC = () => {
             return;
         }
 
-        // Verifica se o nome já existe na lista carregada
+        // Verifica se o nome já existe no banco de dados na lista carregada
         const nomeJaExiste = permissionsType.some((perm) =>
             perm.dbs_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
         );
 
         if (nomeJaExiste) {
             setLoading(false);
-            toast.info("Este nome já existe, escolha outro!", {
+            toast.info("Este nome já existe no banco de dados, escolha outro!!", {
                 position: "top-right",
                 autoClose: 3000,
                 progressStyle: { background: "yellow" }, // Cor do progresso
@@ -588,7 +588,7 @@ const PermissionsPage: React.FC = () => {
                                                     <button onClick={() => handleEdit(rowData)}
                                                         className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                                                     >
-                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
+                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                                     </button>
 
                                                 </div>

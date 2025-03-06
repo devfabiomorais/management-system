@@ -9,7 +9,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -277,13 +277,13 @@ const ClientsPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no storedRowData
+      // Verificar se o "nome" já existe no banco de dados no storedRowData
       const nomeExists = rowData.some((item) => item.nome === formValues.nome);
 
       if (nomeExists) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Esse nome já existe, escolha outro", {
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
@@ -774,8 +774,8 @@ const ClientsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-center items-center mt-16">
-              <div className="flex grid-cols-3 gap-8">
+            <div className="flex justify-center items-center mt-16 w-full">
+              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -788,10 +788,13 @@ const ClientsPage: React.FC = () => {
                     fontWeight: "bold",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
                   }}
                   onClick={() => closeModal()}
                 />
-                {!isEditing && (
+
+                {!isEditing ? (
                   <>
                     <Button
                       label="Salvar e Voltar à Listagem"
@@ -807,6 +810,8 @@ const ClientsPage: React.FC = () => {
                         fontWeight: "bold",
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
                       }}
                     />
                     <Button
@@ -823,12 +828,12 @@ const ClientsPage: React.FC = () => {
                         fontWeight: "bold",
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
                       }}
                     />
                   </>
-                )}
-
-                {isEditing && (
+                ) : (
                   <Button
                     label="Salvar"
                     className="text-white"
@@ -843,11 +848,14 @@ const ClientsPage: React.FC = () => {
                       fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "center",
+                      width: "100%",
                     }}
                   />
                 )}
               </div>
             </div>
+
           </Dialog>
 
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
@@ -947,7 +955,7 @@ const ClientsPage: React.FC = () => {
                   field="tipo"
                   header="Tipo"
                   style={{
-                    width: "1%",
+                    width: "11%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -983,7 +991,7 @@ const ClientsPage: React.FC = () => {
                   field="situacao"
                   header="Situação"
                   style={{
-                    width: "0%",
+                    width: "1%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1059,7 +1067,7 @@ const ClientsPage: React.FC = () => {
                   field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
-                    width: "10%",
+                    width: "12%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1081,8 +1089,6 @@ const ClientsPage: React.FC = () => {
                       year: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
                     }).format(date);
 
                     return <span>{formattedDate}</span>;
@@ -1097,7 +1103,7 @@ const ClientsPage: React.FC = () => {
                           onClick={() => handleEdit(rowData)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
-                          <MdOutlineModeEditOutline className="text-white text-2xl" />
+                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -1128,7 +1134,7 @@ const ClientsPage: React.FC = () => {
                           onClick={() => openDialog(rowData.cod_cliente)}
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
-                          <FaTrash className="text-white text-2xl" />
+                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                         </button>
                       </div>
                     )}

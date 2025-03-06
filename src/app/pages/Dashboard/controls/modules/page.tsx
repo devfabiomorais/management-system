@@ -88,34 +88,53 @@ const ModulePage: React.FC = () => {
     };
 
     const createModulo = async () => {
-        setModuleCreateDisabled(true)
+        setModuleCreateDisabled(true);
+
         if (descricao === "") {
-            setModuleCreateDisabled(false)
-            setLoading(false)
+            setModuleCreateDisabled(false);
+            setLoading(false);
             toast.info("Todos os campos devem ser preenchidos!", {
                 position: "top-right",
                 autoClose: 3000,
             });
             return;
         }
+
+        // Verifica se já existe no banco de dados um módulo com a mesma descrição
+        const moduleExists = modules.some((module) => module.descricao.toLowerCase() === descricao.toLowerCase());
+
+        if (moduleExists) {
+            setModuleCreateDisabled(false);
+            setLoading(false);
+            toast.info("já existe no banco de dados um módulo com essa descrição. Escolha outra!", {
+                position: "top-right",
+                autoClose: 3000,
+                progressStyle: { background: "yellow" },
+                icon: <span>⚠️</span>, // Icone de alerta
+            });
+            return;
+        }
+
         console.log({
             descricao: descricao,
             cod_modulo_pai: codModuloPai
-        })
+        });
+
         try {
             const bodyForm = {
                 descricao: descricao,
                 cod_modulo_pai: codModuloPai
-            }
+            };
 
             const response = await axios.post("http://localhost:9009/api/module/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
+
             if (response.status >= 200 && response.status < 300) {
-                setModuleCreateDisabled(false)
-                setLoading(false)
+                setModuleCreateDisabled(false);
+                setLoading(false);
                 clearInputs();
                 fetchModules();
                 toast.success("Módulo salvo com sucesso!", {
@@ -123,19 +142,24 @@ const ModulePage: React.FC = () => {
                     autoClose: 3000,
                 });
             } else {
-                setModuleCreateDisabled(false)
-                setLoading(false)
+                setModuleCreateDisabled(false);
+                setLoading(false);
                 toast.error("Erro ao salvar o módulo.", {
                     position: "top-right",
                     autoClose: 3000,
                 });
             }
         } catch (error) {
-            setModuleCreateDisabled(false)
-            setLoading(false)
+            setModuleCreateDisabled(false);
+            setLoading(false);
             console.error("Erro ao salvar os módulos:", error);
+            toast.error("Erro ao salvar o módulo. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
         }
-    }
+    };
+
 
     const editModulo = async () => {
         setModuleEditDisabled(true)
@@ -342,8 +366,6 @@ const ModulePage: React.FC = () => {
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
                                     rowClassName={(data) => 'hover:bg-gray-200'}
-
-                                    rowClassName={(data) => 'hover:bg-gray-200'}
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
@@ -426,7 +448,7 @@ const ModulePage: React.FC = () => {
                                                 <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
                                                     <button onClick={() => handleEdit(rowData)}
                                                         className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
-                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
+                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                                     </button>
 
                                                 </div>

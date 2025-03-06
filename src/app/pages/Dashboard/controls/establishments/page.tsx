@@ -187,7 +187,7 @@ const EstablishmentsPage: React.FC = () => {
     const [rowData, setRowData] = useState<Establishment[]>([]);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    const handleSaveReturn = async () => {
+    const handleSaveReturn = async (fecharModal: boolean) => {
         setEstabilishmentCreateReturnDisabled(true)
         setLoading(true)
         try {
@@ -216,13 +216,13 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            // Verificar se o "nome" já existe no storedRowData
+            // Verificar se o "nome" já existe no banco de dados no storedRowData
             const nomeExists = rowData.some((item) => item.nome === formValues.nome);
 
             if (nomeExists) {
                 setEstabilishmentCreateReturnDisabled(false);
                 setLoading(false);
-                toast.info("Esse nome já existe, escolha outro", {
+                toast.info("Esse nome já existe no banco de dados, escolha outro!", {
                     position: "top-right",
                     autoClose: 3000,
                     progressStyle: { background: "yellow" },
@@ -246,7 +246,7 @@ const EstablishmentsPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
-                setVisible(false);
+                setVisible(fecharModal);
             } else {
                 setEstabilishmentCreateReturnDisabled(false)
                 setLoading(false)
@@ -657,11 +657,8 @@ const EstablishmentsPage: React.FC = () => {
 
 
 
-                    <div className="flex justify-between items-center  mt-16">
-
-
-                        <div className="flex gap-3">
-
+                    <div className="flex justify-between items-center mt-16 w-full">
+                        <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
@@ -674,30 +671,38 @@ const EstablishmentsPage: React.FC = () => {
                                     fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '100%',
                                 }}
-                                onClick={() => closeModal()} />
-                            {!isEditing && (
-                                <><Button
-                                    label="Salvar e Voltar à Listagem"
-                                    className="text-white"
-                                    icon="pi pi-refresh"
-                                    onClick={handleSaveReturn}
-                                    disabled={estabilishmentCreateReturnDisabled}
-                                    style={{
-                                        backgroundColor: '#007bff',
-                                        border: '1px solid #007bff',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} />
+                                onClick={() => closeModal()}
+                            />
+
+                            {!isEditing ? (
+                                <>
+                                    <Button
+                                        label="Salvar e Voltar à Listagem"
+                                        className="text-white"
+                                        icon="pi pi-refresh"
+                                        onClick={() => handleSaveReturn(false)}
+                                        disabled={estabilishmentCreateReturnDisabled}
+                                        style={{
+                                            backgroundColor: '#007bff',
+                                            border: '1px solid #007bff',
+                                            padding: '0.5rem 1.5rem',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                        }}
+                                    />
                                     <Button
                                         label="Salvar e Adicionar Outro"
                                         className="text-white"
                                         disabled={estabilishmentCreateDisabled}
                                         icon="pi pi-check"
-                                        onClick={handleSave}
+                                        onClick={() => handleSaveReturn(true)}
                                         style={{
                                             backgroundColor: '#28a745',
                                             border: '1px solid #28a745',
@@ -706,10 +711,12 @@ const EstablishmentsPage: React.FC = () => {
                                             fontWeight: 'bold',
                                             display: 'flex',
                                             alignItems: 'center',
-                                        }} /></>
-                            )}
-
-                            {isEditing && (
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                        }}
+                                    />
+                                </>
+                            ) : (
                                 <Button
                                     label="Salvar"
                                     className="text-white"
@@ -724,11 +731,14 @@ const EstablishmentsPage: React.FC = () => {
                                         fontWeight: 'bold',
                                         display: 'flex',
                                         alignItems: 'center',
-                                    }} />
+                                        justifyContent: 'center',
+                                        width: '100%',
+                                    }}
+                                />
                             )}
                         </div>
-
                     </div>
+
                 </Dialog>
 
 
@@ -813,7 +823,7 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
-                            <Column field="cep" header="Cep" style={{
+                            <Column field="cep" header="CEP" style={{
                                 width: "0%",
                                 textAlign: "center",
                                 border: "1px solid #ccc",
@@ -926,7 +936,7 @@ const EstablishmentsPage: React.FC = () => {
                                             <button onClick={() => handleEdit(rowData)}
                                                 className="bg-yellow p-2 transform transition-all duration-50  rounded-2xl hover:scale-125 hover:bg-yellow700"
                                             >
-                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                             </button>
 
                                         </div>
@@ -956,7 +966,7 @@ const EstablishmentsPage: React.FC = () => {
                                             <button onClick={() => openDialog(rowData.cod_estabelecimento)}
                                                 className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                                             >
-                                                <FaBan className="text-white text-2xl" />
+                                                <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                             </button>
                                         </div>
                                     )}

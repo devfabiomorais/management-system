@@ -10,7 +10,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { IoAddCircleOutline } from "react-icons/io5";
 import axios from "axios";
@@ -22,6 +22,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import { useGroup } from "@/app/hook/acessGroup";
 import useUserPermissions from "@/app/hook/useUserPermissions";
+import '../../../../../../src/app/globals.css';
 
 interface Item {
     cod_item: string;
@@ -30,7 +31,7 @@ interface Item {
     dbs_unidades_medida?: {
         un?: string;
         cod_un: number;
-    };
+    } | null;
     dbs_familias?: {
         cod_familia: number;
         nome: string;
@@ -130,6 +131,7 @@ const ItensPage: React.FC = () => {
 
 
     const clearInputs = () => {
+        setFileName("");
         setFormValues({
             cod_item: "",
             descricao: "",
@@ -144,8 +146,8 @@ const ItensPage: React.FC = () => {
             situacao: "",
         })
         console.log("Form values after clear:", formValues);
-        setSelectedFamily(null)
-        setSelectedUnit(null)
+        setSelectedFamily(null);
+        setSelectedUnit(null);
         setSelectedEstablishments([]);
     }
 
@@ -252,106 +254,77 @@ const ItensPage: React.FC = () => {
     }
 
     const handleSaveEdit = async () => {
-        setIsItemEditDisabled(true)
+        setIsItemEditDisabled(true);
         setLoading(true);
         setIsEditing(false);
+
         try {
             // Verificar campos obrigatórios
-            const requiredFields = [
-                "descricao",
-                "narrativa",
-                "cod_un",
-                "situacao",
-                "cod_familia",
-            ];
+            const requiredFields = ["descricao", "narrativa", "cod_un", "situacao", "cod_familia"];
 
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
-                return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
+                return Array.isArray(value) ? value.length === 0 : !value;
             });
 
-            if (selectedEstablishments.length === 0) {
-                setIsItemEditDisabled(false)
+            if (isEmptyField) {
+                setIsItemEditDisabled(false);
                 setLoading(false);
-                toast.info("Você deve selecionar pelo menos um estabelecimento!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
+                toast.info("Todos os campos devem ser preenchidos!", { position: "top-right", autoClose: 3000 });
                 return;
             }
 
-            if (isEmptyField) {
-                setIsItemEditDisabled(false)
+            if (selectedEstablishments.length === 0) {
+                setIsItemEditDisabled(false);
                 setLoading(false);
-                toast.info("Todos os campos devem ser preenchidos!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
+                toast.info("Você deve selecionar pelo menos um estabelecimento!", { position: "top-right", autoClose: 3000 });
                 return;
             }
 
             const formData = new FormData();
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
-            formData.append("cod_item", formValues.cod_item);
-
-            // Passar cod_un e cod_familia corretamente
-            if (formValues.cod_un?.cod_un) {
-                formData.append("cod_un", formValues.cod_un.cod_un.toString());
+            if (formValues.cod_un !== null) {
+                formData.append("cod_un", formValues.cod_un.toString());
             }
-            if (formValues.cod_familia?.cod_familia) {
-                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
+            if (formValues.cod_familia !== null) {
+                formData.append("cod_familia", formValues.cod_familia.toString());
             }
-
             formData.append("situacao", formValues.situacao);
 
-            // Adicionar os estabelecimentos
-            selectedEstablishments.forEach((establishment) => {
-                if (establishment.cod_estabelecimento) {
-                    formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
-                }
+            // Enviar os estabelecimentos como um array serializado
+            formData.append("cod_estabelecimento", JSON.stringify(selectedEstablishments.map(e => e.cod_estabelecimento)));
+
+            // Adicionar arquivo de anexo, se presente
+            if (formValues.anexo) {
+                formData.append("anexo", formValues.anexo);
+            }
+
+            // Enviar requisição ao backend
+            await axios.put(`http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
-            // Enviar arquivo de anexo, se presente
-            if (formValues.anexo) {
-                const file = formValues.anexo;
-                formData.append("anexo", file);
-            }
-            const response = await axios.put(
-                `http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`,
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (response.status >= 200 && response.status < 300) {
-                setIsItemEditDisabled(false)
-                setLoading(false);
-                clearInputs();
-                fetchItens();
-                toast.success("Item atualizado com sucesso!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                setVisible(false);
-            } else {
-                setIsItemEditDisabled(false)
-                setLoading(false);
-                toast.error("Erro ao atualizar item.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            }
-        } catch (error) {
-            setIsItemEditDisabled(false)
-            setLoading(false);
+            // Sucesso
+            toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
+            clearInputs();
+            fetchItens();
+            setVisible(false);
+        } catch (error: any) {
             console.error("Erro ao atualizar item:", error);
+            toast.error(`Erro ao atualizar item: ${error.response?.data?.msg || "Erro desconhecido"}`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        } finally {
+            setIsItemEditDisabled(false);
+            setLoading(false);
         }
     };
+
 
     const handleSave = async () => {
         setItemCreateDisabled(true)
@@ -453,7 +426,7 @@ const ItensPage: React.FC = () => {
     const [rowData, setRowData] = useState<Item[]>([]);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    const handleSaveReturn = async () => {
+    const handleSaveReturn = async (fecharTela: boolean) => {
         setItemCreateDisabledReturn(true)
         setLoading(true);
         try {
@@ -520,13 +493,13 @@ const ItensPage: React.FC = () => {
                 formData.append("anexo", file);
             }
 
-            // Verificar se o "nome" já existe no storedRowData
+            // Verificar se o "nome" já existe no banco de dados no storedRowData
             const nomeExists = rowData.some((item) => item.descricao === formValues.descricao);
 
             if (nomeExists) {
                 setItemCreateDisabledReturn(false);
                 setLoading(false);
-                toast.info("Essa descrição já existe, escolha outra!", {
+                toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
                     position: "top-right",
                     autoClose: 3000,
                     progressStyle: { background: "yellow" },
@@ -552,7 +525,8 @@ const ItensPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
-                setVisible(false);
+                clearInputs();
+                setVisible(fecharTela);
             } else {
                 setItemCreateDisabledReturn(false)
                 setLoading(false);
@@ -570,78 +544,77 @@ const ItensPage: React.FC = () => {
 
 
     const handleEdit = async (itens: Item) => {
-        console.log(itens);
+        console.log("Item selecionado para edição:", itens);
+
         try {
-            // Requisição para obter as unidades de medida
-            const unitResponse = await axios.get("http://localhost:9009/api/unMedida", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            // Fazer todas as requisições simultaneamente para melhorar o desempenho
+            const [unitResponse, familyResponse, establishmentResponse] = await Promise.all([
+                axios.get("http://localhost:9009/api/unMedida", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get("http://localhost:9009/api/familia/itens/", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get("http://localhost:9009/api/estabilishment", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ]);
+
             setUnits(unitResponse.data.units);
-
-            // Requisição para obter as famílias de itens
-            const familyResponse = await axios.get("http://localhost:9009/api/familia/itens/", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
             setFamilies(familyResponse.data.families);
+            setEstablishments(establishmentResponse.data.estabelecimentos);
 
-            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            setEstablishments(estabilishmentResponse.data.estabelecimentos);
-
-            // Encontrar a unidade correspondente pelo ID
+            // Encontrar a unidade e a família correspondentes
             const selectedUnit = unitResponse.data.units.find(
                 (unit: ItemMedida) => unit.cod_un === itens.dbs_unidades_medida?.cod_un
             );
-
-            // Encontrar a família correspondente pelo ID
             const selectedFamily = familyResponse.data.families.find(
                 (family: ItemFamilia) => family.cod_familia === itens.dbs_familias?.cod_familia
             );
 
-            // Encontrar o estabelecimento correspondente pelo ID
-            const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
+            // Filtrar todos os estabelecimentos vinculados ao item
+            const selectedEstablishments = establishmentResponse.data.estabelecimentos.filter(
                 (es: Establishment) =>
                     Array.isArray(itens.dbs_estabelecimentos_item) &&
-                    itens.dbs_estabelecimentos_item.some(
-                        (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
-                    )
+                    itens.dbs_estabelecimentos_item.some((dbEs) => dbEs.cod_estabel === es.cod_estabelecimento)
             );
 
-            console.log("asads", selectedEstabilishment)
+            // Atualizar os valores do formulário
             setFormValues({
                 cod_item: itens.cod_item || "",
                 descricao: itens.descricao || "",
                 narrativa: itens.narrativa || "",
-                dbs_unidades_medida: itens.dbs_unidades_medida,
-                cod_estabelecimento: itens.cod_estabelecimento || [],
+                dbs_unidades_medida: itens.dbs_unidades_medida || null,
                 situacao: itens.situacao || "",
-                cod_un: selectedUnit ? selectedUnit.cod_un : null,
-                cod_familia: selectedFamily ? selectedFamily.cod_familia : null
+                cod_un: selectedUnit?.cod_un || null,
+                cod_familia: selectedFamily?.cod_familia || null,
+                cod_estabelecimento: selectedEstablishments.map((est: Establishment) => est.cod_estabelecimento.toString()) || [],
             });
 
-            setSelectedEstablishments(selectedEstabilishment ? [selectedEstabilishment] : []);
+
+            // Atualizar estados de seleção
+            setSelectedEstablishments(selectedEstablishments);
             setSelectedFamily(selectedFamily || null);
             setSelectedUnit(selectedUnit || null);
-
             setSelectedItem(itens);
+
+            // Exibir modal de edição
             setIsEditing(true);
             setVisible(true);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
+            toast.error("Erro ao carregar dados para edição.", { position: "top-right", autoClose: 3000 });
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            setFormValues({ ...formValues, anexo: file });
+
+    const [fileName, setFileName] = useState("");
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            const file = files[0]; // Pega o primeiro arquivo selecionado
+            setFileName(file.name); // Atualiza o nome do arquivo no estado
         }
     };
 
@@ -765,10 +738,9 @@ const ItensPage: React.FC = () => {
                                     type="text"
                                     id="code"
                                     name="descricao"
-                                    disabled
                                     value={formValues.cod_item}
                                     onChange={(e) => setFormValues({ ...formValues, cod_item: e.target.value })}
-                                    className="w-full bg-slate-600 border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
                             </div>
 
@@ -861,17 +833,47 @@ const ItensPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="">
-                                <label htmlFor="photo" className="block text-blue  font-medium">
+                            <div className="w-full">
+                                <label htmlFor="photo" className="block text-blue font-medium">
                                     Foto:
                                 </label>
+
                                 <input
                                     type="file"
                                     id="photo"
                                     name="foto"
                                     onChange={handleFileChange}
-                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-12" />
+                                    className="file-input"
+                                    style={{ display: "none" }}  // Esconde o input real
+                                />
+
+                                <label
+                                    htmlFor="photo"
+                                    className="custom-file-input w-full"
+                                    style={{
+                                        display: "inline-block",
+                                        padding: "10px 20px",
+                                        backgroundColor: "#f0f0f0",  // Cor de fundo cinza claro
+                                        color: "#1D4ED8",  // Cor do texto blue (Tailwind)
+                                        fontSize: "16px",
+                                        fontWeight: "bold",
+                                        borderRadius: "5px",
+                                        cursor: "pointer",
+                                        border: "2px solid #D1D5DB",  // Borda cinza escuro
+                                        transition: "background-color 0.3s ease",
+                                    }}
+                                >
+                                    <span>Escolher arquivo</span>
+                                </label>
+
+                                {/* Exibe o nome do arquivo selecionado, se houver */}
+                                {fileName && (
+                                    <div className="mt-2 text-blue-500">
+                                        <strong>Arquivo selecionado: </strong> {fileName}
+                                    </div>
+                                )}
                             </div>
+
                             <div className="">
                                 <label htmlFor="estabilishments" className="block text-blue  font-medium">
                                     Estabelecimentos:
@@ -894,58 +896,28 @@ const ItensPage: React.FC = () => {
 
 
 
-                    <div className="flex justify-between items-center  mt-16">
-
-
-                        <div className="flex gap-3">
-
+                    <div className="flex justify-center items-center mt-16">
+                        <div className={`grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
+                            {/* Botão Vermelho - Sempre Presente */}
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
                                 icon="pi pi-times"
                                 style={{
-                                    backgroundColor: '#dc3545',
-                                    border: '1px solid #dc3545',
-                                    padding: '0.5rem 1.5rem',
-                                    fontSize: '14px',
-                                    fontWeight: 'bold',
-                                    display: 'flex',
-                                    alignItems: 'center',
+                                    backgroundColor: "#dc3545",
+                                    border: "1px solid #dc3545",
+                                    padding: "0.5rem 1.5rem",
+                                    fontSize: "14px",
+                                    fontWeight: "bold",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                 }}
-                                onClick={() => closeModal()} />
-                            {!isEditing && (
-                                <><Button
-                                    label="Salvar e Voltar à Listagem"
-                                    className="text-white"
-                                    icon="pi pi-refresh"
-                                    onClick={handleSaveReturn}
-                                    disabled={isItemCreateDisabledReturn}
-                                    style={{
-                                        backgroundColor: '#007bff',
-                                        border: '1px solid #007bff',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} /><Button
-                                        label="Salvar e Adicionar Outro"
-                                        className="text-white"
-                                        icon="pi pi-check"
-                                        disabled={isItemCreateDisabled}
-                                        onClick={handleSave}
-                                        style={{
-                                            backgroundColor: '#28a745',
-                                            border: '1px solid #28a745',
-                                            padding: '0.5rem 1.5rem',
-                                            fontSize: '14px',
-                                            fontWeight: 'bold',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                        }} /></>
-                            )}
+                                onClick={closeModal}
+                            />
 
-                            {isEditing && (
+                            {/* Modo de Edição: Apenas Botão Verde */}
+                            {isEditing ? (
                                 <Button
                                     label="Salvar"
                                     className="text-white"
@@ -953,18 +925,58 @@ const ItensPage: React.FC = () => {
                                     onClick={handleSaveEdit}
                                     disabled={isItemEditDisabled}
                                     style={{
-                                        backgroundColor: '#28a745',
-                                        border: '1px solid #28a745',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} />
+                                        backgroundColor: "#28a745",
+                                        border: "1px solid #28a745",
+                                        padding: "0.5rem 1.5rem",
+                                        fontSize: "14px",
+                                        fontWeight: "bold",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                />
+                            ) : (
+                                // Modo de Criação: Três Botões (Vermelho, Azul, Verde)
+                                <>
+                                    <Button
+                                        label="Salvar e Voltar à Listagem"
+                                        className="text-white"
+                                        icon="pi pi-refresh"
+                                        onClick={() => handleSaveReturn(false)}
+                                        disabled={isItemCreateDisabledReturn}
+                                        style={{
+                                            backgroundColor: "#007bff",
+                                            border: "1px solid #007bff",
+                                            padding: "0.5rem 1.5rem",
+                                            fontSize: "14px",
+                                            fontWeight: "bold",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    />
+                                    <Button
+                                        label="Salvar e Adicionar Outro"
+                                        className="text-white"
+                                        icon="pi pi-check"
+                                        disabled={isItemCreateDisabled}
+                                        onClick={() => handleSaveReturn(true)}
+                                        style={{
+                                            backgroundColor: "#28a745",
+                                            border: "1px solid #28a745",
+                                            padding: "0.5rem 1.5rem",
+                                            fontSize: "14px",
+                                            fontWeight: "bold",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    />
+                                </>
                             )}
                         </div>
-
                     </div>
+
                 </Dialog>
 
 
@@ -1135,19 +1147,19 @@ const ItensPage: React.FC = () => {
                                         year: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: true,
+                                        hour12: false,  // Isso força o formato de 24 horas
                                     }).format(date);
 
                                     return <span>{formattedDate}</span>;
-                                }} />
+                                }}
+                            />
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
                                             <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
-                                                <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                             </button>
 
                                         </div>
@@ -1175,7 +1187,7 @@ const ItensPage: React.FC = () => {
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
                                             <button onClick={() => openDialog(rowData.cod_item)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
-                                                <FaTrash className="text-white text-2xl" />
+                                                <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                             </button>
                                         </div>
                                     )}

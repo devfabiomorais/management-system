@@ -10,7 +10,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -103,13 +103,13 @@ const UnMedidaPage: React.FC = () => {
             return;
         }
 
-        // Verificar se o "nome" já existe no storedRowData
+        // Verificar se o "nome" já existe no banco de dados no storedRowData
         const nomeExists = rowData.some((item) => item.un === medida);
 
         if (nomeExists) {
             setIsUnMedidaCreateDisabled(false);
             setLoading(false);
-            toast.info("Essa unidade de medida já existe, escolha outra!", {
+            toast.info("Essa unidade de medida já existe no banco de dados, escolha outra!", {
                 position: "top-right",
                 autoClose: 3000,
                 progressStyle: { background: "yellow" },
@@ -439,7 +439,7 @@ const UnMedidaPage: React.FC = () => {
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
                                                     <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
-                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
+                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                                     </button>
 
                                                 </div>
@@ -468,7 +468,7 @@ const UnMedidaPage: React.FC = () => {
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
                                                     <button onClick={() => openDialog(rowData.cod_un)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
-                                                        <FaTrash className="text-white text-2xl" />
+                                                        <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                                     </button>
                                                 </div>
                                             )}

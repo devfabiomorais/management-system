@@ -711,7 +711,7 @@ const OrcamentosPage: React.FC = () => {
       [name]: value,
     }));
   };
-  const handleSaveReturnServicos = async () => {
+  const handleSaveReturnServicos = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
     try {
@@ -757,6 +757,7 @@ const OrcamentosPage: React.FC = () => {
           autoClose: 3000,
         });
         closeModalServ();
+        setVisibleServ(fecharTela);
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -973,7 +974,7 @@ const OrcamentosPage: React.FC = () => {
         cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
         nome: selectedFormaPagamento.nome,
         formaPagamento: selectedFormaPagamento,
-        parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
+        parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existe no banco de dadosntes
         valorParcela,
         juros,
         tipo_juros: "Percentual",
@@ -1463,7 +1464,7 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
-  const handleSaveReturn = async () => {
+  const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
 
@@ -1542,7 +1543,7 @@ const OrcamentosPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        setVisible(false);
+        setVisible(fecharTela);
       } else {
         throw new Error("Erro ao salvar orçamento.");
       }
@@ -1869,6 +1870,7 @@ const OrcamentosPage: React.FC = () => {
   const closeModal = () => {
     clearInputs();
     setIsEditing(false);
+    setVisualizar(false);
     setVisible(false);
   };
   const closeModalProd = () => {
@@ -2120,7 +2122,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturn}
+                      // onClick={() => { handleSaveReturnProd(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
                         backgroundColor: "#007bff",
@@ -2136,7 +2138,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Adicionar Outro"
                       className="text-white"
                       icon="pi pi-check"
-                      onClick={handleSave}
+                      // onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
                       style={{
                         backgroundColor: "#28a745",
@@ -2289,7 +2291,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturnServicos}
+                      onClick={() => { handleSaveReturnServicos(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
                         backgroundColor: "#007bff",
@@ -2305,7 +2307,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Adicionar Outro"
                       className="text-white"
                       icon="pi pi-check"
-                      onClick={handleSaveReturnServicos}
+                      onClick={() => { handleSaveReturnServicos(false) }}
                       disabled={itemCreateDisabled}
                       style={{
                         backgroundColor: "#28a745",
@@ -2386,8 +2388,8 @@ const OrcamentosPage: React.FC = () => {
               <div className="border border-white p-2 rounded">
                 <div className="grid grid-cols-4 gap-2">
 
-                  <div>
-                    <label htmlFor="codigo" className="block text-blue font-medium mb-1">
+                  <div className="">
+                    <label htmlFor="codigo" className="block text-blue font-medium">
                       Código
                     </label>
                     <input
@@ -2396,20 +2398,20 @@ const OrcamentosPage: React.FC = () => {
                       name="codigo"
                       value={formValues.cod_orcamento}
                       disabled
-                      className="bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8 w-full !important cursor-not-allowed disabled:!bg-gray-300"
+                      className="bg-gray-300 border border-gray-400 pl-1 rounded-sm  h-[31.7px] w-full cursor-not-allowed disabled:!bg-gray-300"
                     />
                   </div>
 
                   <div className="col-span-2">
                     <label htmlFor="clients" className="block text-blue font-medium">
-                      Cliente:
+                      Cliente
                     </label>
                     <select
                       id="clients"
                       name="clients"
                       value={selectedClient ? selectedClient.cod_cliente : ""}
                       onChange={handleClientChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className={`w-full pl-1 rounded-sm h-8 ${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'}`}
                       disabled={visualizando}
                     >
                       <option value="" disabled>
@@ -2431,7 +2433,7 @@ const OrcamentosPage: React.FC = () => {
                     <select
                       id="responsavel"
                       name="responsavel"
-                      className="border border-gray-400 pl-1 rounded-sm h-8 w-full"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       value={selectedUser?.cod_usuario || ""}
                       disabled={visualizando}
                       onChange={(e) => {
@@ -2474,7 +2476,7 @@ const OrcamentosPage: React.FC = () => {
                     <select
                       id="canal_venda"
                       name="canal_venda"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       value={formValues.canal_venda}
                       disabled={visualizando}
                       onChange={(e) => {
@@ -2503,7 +2505,7 @@ const OrcamentosPage: React.FC = () => {
                       type="date"
                       id="data_venda"
                       name="data_venda"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       disabled={visualizando}
                       value={!isEditing ?
                         formValues.data_venda :
@@ -2528,7 +2530,7 @@ const OrcamentosPage: React.FC = () => {
                       type="date"
                       id="prazo_entrega"
                       name="prazo_entrega"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       disabled={visualizando}
                       value={!isEditing ?
                         formValues.prazo :
@@ -2548,7 +2550,7 @@ const OrcamentosPage: React.FC = () => {
 
                   <div>
                     <label htmlFor="centrosCusto" className="block text-blue font-medium">
-                      Centro de Custo:
+                      Centro de Custo
                     </label>
                     <select
                       id="centrosCusto"
@@ -2568,7 +2570,7 @@ const OrcamentosPage: React.FC = () => {
                           }));
                         }
                       }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                     >
                       <option value='' disabled selected>
                         Selecione
@@ -2597,7 +2599,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Produtos</h3>
                   <button
-                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
+                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
                     onClick={() => setVisibleProd(true)}
                     disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
@@ -2607,6 +2609,7 @@ const OrcamentosPage: React.FC = () => {
                       className="text-white text-center"
                     />
                   </button>
+
                 </div>
                 <div style={{ height: "16px" }}></div>
 
@@ -2614,7 +2617,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="grid grid-cols-5 gap-2">
                   <div>
                     <label htmlFor="produto" className="block text-blue font-medium">
-                      Produto:
+                      Produto
                     </label>
                     <select
                       id="produto"
@@ -2622,7 +2625,8 @@ const OrcamentosPage: React.FC = () => {
                       value={selectedProd ? selectedProd.cod_item : ''}
                       disabled={visualizando}
                       onChange={handleProdChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                     >
                       <option
                         value=''
@@ -2648,7 +2652,8 @@ const OrcamentosPage: React.FC = () => {
                       type="number"
                       min="1"
                       defaultValue="1"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                       disabled={visualizando}
                       value={quantidadeProd}
                       onChange={handleQuantidadeProdChange}
@@ -2663,7 +2668,8 @@ const OrcamentosPage: React.FC = () => {
                       name="vl_unit_prod"
                       type="text"
                       disabled
-                      className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                       value={new Intl.NumberFormat('pt-BR', {
                         style: 'decimal',
                         minimumFractionDigits: 2,
@@ -2681,7 +2687,8 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoProd"
                         name="descontoProd"
                         type="number"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
+                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                         disabled={visualizando}
                         value={descontoProd}
                         onChange={handleDescontoProdChange}
@@ -2699,7 +2706,8 @@ const OrcamentosPage: React.FC = () => {
                           e.preventDefault(); // Impede a abertura do select padrão
                           setDescontoUnitProd((prev) => (prev === "Percentual" ? "Reais" : "Percentual"));
                         }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
+                        className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1 ${visualizando ? 'hidden' : ''}`}
+
                         style={{
                           WebkitAppearance: "none",
                           MozAppearance: "none",
@@ -2743,7 +2751,8 @@ const OrcamentosPage: React.FC = () => {
                         name="vl_total_prod"
                         type="text"
                         disabled
-                        className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                         value={`R$ ${new Intl.NumberFormat('pt-BR', {
                           style: 'decimal',
                           minimumFractionDigits: 2,
@@ -2751,12 +2760,13 @@ const OrcamentosPage: React.FC = () => {
                         }).format(Number(valorTotalProd ? valorTotalProd : 0))}`}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded-2xl p-1 hover:bg-green-300 duration-50 hover:scale-125 flex items-center justify-center ml-2 h-8"
+                        className={`bg-green-200 border border-green-700 rounded-2xl p-1 hover:bg-green-300 duration-50 hover:scale-125 flex items-center justify-center ml-2 h-8 ${visualizando ? 'hidden' : ''}`}
                         disabled={visualizando}
                         onClick={handleAdicionarLinha}
                       >
                         <FaPlus className="text-green-700 text-xl" />
                       </button>
+
                     </div>
                   </div>
                 </div>
@@ -2827,11 +2837,12 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
+                        className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
                         onClick={() => handleRemoveLinhaProd(produto.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
                       </button>
+
                     </div>
 
                   </div>
@@ -2852,7 +2863,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
-                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
+                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
                     onClick={() => setVisibleServ(true)}
                     disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
@@ -2862,6 +2873,7 @@ const OrcamentosPage: React.FC = () => {
                       className="text-white text-center"
                     />
                   </button>
+
                 </div>
                 <div style={{ height: "16px" }}></div>
 
@@ -2869,7 +2881,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="grid grid-cols-5 gap-2 items-center">
                   <div>
                     <label htmlFor="servico" className="block text-blue font-medium">
-                      Serviço:
+                      Serviço
                     </label>
                     <select
                       id="servico"
@@ -2877,7 +2889,7 @@ const OrcamentosPage: React.FC = () => {
                       disabled={visualizando}
                       value={selectedServico ? selectedServico.cod_servico : ''}
                       onChange={handleServicoChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                     >
                       <option
                         value=''
@@ -2903,7 +2915,7 @@ const OrcamentosPage: React.FC = () => {
                       type="number"
                       min="1"
                       defaultValue="1"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                       disabled={visualizando}
                       value={quantidadeServ}
                       onChange={handleQuantidadeServChange}
@@ -2918,7 +2930,7 @@ const OrcamentosPage: React.FC = () => {
                       name="vl_unit_serv"
                       type="text"
                       disabled
-                      className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                       value={new Intl.NumberFormat('pt-BR', {
                         style: 'decimal',
                         minimumFractionDigits: 2,
@@ -2935,7 +2947,7 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoServ"
                         name="descontoServ"
                         type="number"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
+                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                         value={descontoServ}
                         disabled={visualizando}
                         onChange={handleDescontoServChange}
@@ -2954,7 +2966,7 @@ const OrcamentosPage: React.FC = () => {
 
                           setDescontoUnit((prev) => (prev === "Percentual" ? "Reais" : "Percentual"));
                         }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
+                        className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1 ${visualizando ? 'hidden' : ''}`}
                         style={{
                           WebkitAppearance: "none",
                           MozAppearance: "none",
@@ -2997,7 +3009,7 @@ const OrcamentosPage: React.FC = () => {
                         name="vl_total_serv"
                         type="text"
                         disabled
-                        className="w-full bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8"
+                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                         value={`R$ ${new Intl.NumberFormat('pt-BR', {
                           style: 'decimal',
                           minimumFractionDigits: 2,
@@ -3005,11 +3017,12 @@ const OrcamentosPage: React.FC = () => {
                         }).format(Number(valorTotalServ ? valorTotalServ : 0))}`}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 rounded-2xl hover:bg-green-400 duration-50 hover:scale-125 p-1 flex items-center justify-center h-8 w-8"
+                        className={`bg-green-200 border border-green-700 rounded-2xl hover:bg-green-400 duration-50 hover:scale-125 p-1 flex items-center justify-center h-8 w-8 ${visualizando ? 'hidden' : ''}`}
                         onClick={handleAdicionarServico}
                       >
                         <FaPlus className="text-green-700 text-xl" />
                       </button>
+
                     </div>
                   </div>
 
@@ -3086,11 +3099,12 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
+                        className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
                         onClick={() => handleRemoveLinhaServico(servico.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
                       </button>
+
                     </div>
 
                   </div>
@@ -3116,7 +3130,7 @@ const OrcamentosPage: React.FC = () => {
                     <input
                       id="frota"
                       name="frota"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       type="text"
                       value={formValues.frota} // Mantém o valor sincronizado com formValues
                       disabled={visualizando}
@@ -3137,7 +3151,7 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="nf-compra"
                       name="nf-compra"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       disabled={visualizando}
                       value={formValues.nf_compra}
                       onChange={(e) => {
@@ -3170,7 +3184,7 @@ const OrcamentosPage: React.FC = () => {
                           }));
                         }
                       }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                     >
                       <option value='' disabled selected>
                         Selecione
@@ -3203,7 +3217,7 @@ const OrcamentosPage: React.FC = () => {
                           frete: newFrete,
                         }));
                       }}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                     />
                   </div>
 
@@ -3232,7 +3246,7 @@ const OrcamentosPage: React.FC = () => {
                     <select
                       id="usarEnd"
                       name="usarEnd"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       onChange={handleSelectChange}
                       disabled={visualizando}
                       value={usarEndereco}
@@ -3254,7 +3268,7 @@ const OrcamentosPage: React.FC = () => {
                       onKeyPress={handleCepKeyPress}
                       maxLength={9}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                     />
                   </div>
 
@@ -3269,7 +3283,7 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.logradouro}
                       onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                     />
                   </div>
 
@@ -3286,7 +3300,7 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.numero}
                       onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                     />
                   </div>
                   <div>
@@ -3300,7 +3314,7 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.estado}
                       onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                       maxLength={2}
                     />
                   </div>
@@ -3315,7 +3329,7 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.bairro}
                       onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                     />
                   </div>
                   <div>
@@ -3329,7 +3343,7 @@ const OrcamentosPage: React.FC = () => {
                       value={formValuesClients.cidade}
                       onChange={handleInputChange}
                       className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled}
+                      disabled={isDisabled || visualizando}
                     />
                   </div>
                 </div>
@@ -3356,7 +3370,7 @@ const OrcamentosPage: React.FC = () => {
                       id="produtos"
                       name="produtos"
                       type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       value={`R$ ${totalProdutosSomados.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
                       step="0.001"
                       disabled
@@ -3371,7 +3385,7 @@ const OrcamentosPage: React.FC = () => {
                       id="servicos"
                       name="servicos"
                       type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                       value={`R$ ${totalServicosSomados.toFixed(3)}`}
                       step="0.001"
                       disabled
@@ -3386,7 +3400,7 @@ const OrcamentosPage: React.FC = () => {
                         id="descontoTotal"
                         name="descontoTotal"
                         type="number"
-                        className="w-full border border-gray-400 pl-1 pr-10 rounded-sm h-8"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                         disabled={visualizando}
                         value={descontoTotal}
                         onChange={handleDescontoTotalChange}
@@ -3455,8 +3469,8 @@ const OrcamentosPage: React.FC = () => {
 
                       name="vl_total_total"
                       type="text"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
-                      disabled // O valor total final não é editável                      
+                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                      disabled // O valor total final não é editável
                     />
                   </div>
                 </div>
@@ -3481,7 +3495,7 @@ const OrcamentosPage: React.FC = () => {
                       name="restanteAserPago"
                       type="number"
                       disabled
-                      className={`w-full border ${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'}  pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}
+                      className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
                       value={!isEditing
                         ? restanteAserPago
                         : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos))
@@ -3506,7 +3520,8 @@ const OrcamentosPage: React.FC = () => {
                     <select
                       id="pagamento"
                       name="pagamento"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
                       disabled={visualizando}
                       value={selectedFormaPagamento?.cod_forma_pagamento || ""}
                       onChange={(e) => {
@@ -3539,7 +3554,7 @@ const OrcamentosPage: React.FC = () => {
                       id="parcela"
                       name="parcela"
                       type="number"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 !bg-gray-200"
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 !bg-gray-200 ${visualizando ? 'hidden' : ''}`}
                       value={pagamentos.length > 0 ? (pagamentos[pagamentos.length - 1]?.parcela ?? 0) + 1 : 1}
                       disabled
                     />
@@ -3551,7 +3566,7 @@ const OrcamentosPage: React.FC = () => {
                       id="valorParcela"
                       name="valorParcela"
                       type="number"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                       disabled={visualizando}
                       value={valorParcela}
                       onChange={(e) => setvalorParcela(Number(e.target.value))}
@@ -3565,7 +3580,7 @@ const OrcamentosPage: React.FC = () => {
                       id="juros"
                       name="juros"
                       type="number"
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                       placeholder="R$"
                       value={juros}
                       disabled={visualizando}
@@ -3584,19 +3599,21 @@ const OrcamentosPage: React.FC = () => {
                         id="data_parcela"
                         name="data_parcela"
                         type="date"
-                        className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                        className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                         disabled={visualizando}
                         value={data_parcela}
                         onChange={(e) => setDataParcela(e.target.value)}
                       />
                       <button
-                        className="bg-green-200 border border-green-700 hover:bg-green-400 hover:scale-125 transition-all rounded-2xl p-1 flex items-center justify-center h-8"
+                        className={`bg-green-200 border border-green-700 hover:bg-green-400 hover:scale-125 transition-all rounded-2xl p-1 flex items-center justify-center h-8 ${visualizando ? 'hidden' : ''}`}
                         onClick={handleAdicionarPagamento}
+                        disabled={visualizando}
                       >
                         <FaPlus className="text-green-700 text-xl" />
                       </button>
+
                     </div>
-                    <div className="flex ml-auto items-center gap-1">
+                    <div className={`flex ml-auto items-center gap-1 ${visualizando ? 'hidden' : ''}`}>
                       <label htmlFor="quantidadeParcelas" className="text-sm">Parcelas Rápido&nbsp;</label>
                       <input
                         type="number"
@@ -3681,11 +3698,12 @@ const OrcamentosPage: React.FC = () => {
                       // }
                       />
                       <button
-                        className="bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all"
+                        className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
                         onClick={() => handleRemovePagamento(pagamento.id)}
                       >
                         <FaTimes className="text-red text-2xl" />
                       </button>
+
                     </div>
                   </div>
                 ))}
@@ -3723,7 +3741,8 @@ const OrcamentosPage: React.FC = () => {
                     id="obervacoes_gerais"
                     name="obervacoes_gerais"
                     value={formValues.observacoes_gerais || ""}
-                    className="w-full border border-gray-400 pl-1 rounded-sm h-32"
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
+
                     onChange={(e) => {
                       setFormValues((prevValues) => ({
                         ...prevValues,
@@ -3740,7 +3759,7 @@ const OrcamentosPage: React.FC = () => {
                     id="obervacoes_internas"
                     name="obervacoes_internas"
                     value={formValues.observacoes_internas || ""}
-                    className="w-full border border-gray-400 pl-1 rounded-sm h-32"
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
                     onChange={(e) => {
                       setFormValues((prevValues) => ({
                         ...prevValues,
@@ -3785,7 +3804,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturn}
+                      onClick={() => { handleSaveReturn(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
                         backgroundColor: "#007bff",
@@ -3801,7 +3820,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Adicionar Outro"
                       className="text-white"
                       icon="pi pi-check"
-                      onClick={handleSave}
+                      onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
                       style={{
                         backgroundColor: "#28a745",
@@ -3918,7 +3937,7 @@ const OrcamentosPage: React.FC = () => {
                   field="cod_orcamento"
                   header="Código"
                   style={{
-                    width: "10%",
+                    width: "0%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -3959,7 +3978,7 @@ const OrcamentosPage: React.FC = () => {
                 <Column
                   header="Valor"
                   style={{
-                    width: "10%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -3984,7 +4003,7 @@ const OrcamentosPage: React.FC = () => {
                   field="situacao"
                   header="Situação"
                   style={{
-                    width: "10%",
+                    width: "1%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -4003,7 +4022,7 @@ const OrcamentosPage: React.FC = () => {
                   field="prazo"
                   header="Prazo"
                   style={{
-                    width: "10%",
+                    width: "0%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -4028,9 +4047,9 @@ const OrcamentosPage: React.FC = () => {
 
                 <Column
                   field="dtCadastro"
-                  header="Data Cadastro"
+                  header="DT Cadastro"
                   style={{
-                    width: "20%",
+                    width: "4%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -4056,6 +4075,9 @@ const OrcamentosPage: React.FC = () => {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false, // Formato de 24 horas
                         }).format(date);
                         return <span>{formattedDate}</span>;
                       } else {
@@ -4065,6 +4087,7 @@ const OrcamentosPage: React.FC = () => {
                       return <span>Sem data</span>;
                     }
                   }}
+
                 />
 
 
@@ -4077,7 +4100,7 @@ const OrcamentosPage: React.FC = () => {
                         className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
                         title="Visualizar"
                       >
-                        <MdVisibility className="text-white text-2xl" />
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                       </button>
                     </div>
                   )}
@@ -4109,7 +4132,7 @@ const OrcamentosPage: React.FC = () => {
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                           title="Editar"
                         >
-                          <MdOutlineModeEditOutline className="text-white text-2xl" />
+                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -4141,7 +4164,7 @@ const OrcamentosPage: React.FC = () => {
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                           title="Cancelar"
                         >
-                          <FaBan className="text-white text-2xl" />
+                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}

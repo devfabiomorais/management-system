@@ -239,7 +239,7 @@ const UsersPage: React.FC = () => {
     const [rowData, setRowData] = useState<User[]>([]);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    const handleSaveReturn = async () => {
+    const handleSaveReturn = async (fecharModal: boolean) => {
         setUserCreateReturnDisabled(true);
         setLoading(true);
         try {
@@ -276,13 +276,13 @@ const UsersPage: React.FC = () => {
                 return;
             }
 
-            // Verificar se o "nome" já existe no storedRowData
+            // Verificar se o "nome" já existe no banco de dados no storedRowData
             const nomeExists = rowData.some((item) => item.usuario === formValues.usuario);
 
             if (nomeExists) {
                 setUserCreateReturnDisabled(false);
                 setLoading(false);
-                toast.info("Esse usuario já existe, escolha outro", {
+                toast.info("Esse login já existe no banco de dados, escolha outro!", {
                     position: "top-right",
                     autoClose: 3000,
                     progressStyle: { background: "yellow" },
@@ -291,6 +291,23 @@ const UsersPage: React.FC = () => {
 
                 return;
             }
+
+            // Verificar se o "email" já existe no banco de dados no storedRowData
+            const emailExists = rowData.some((item) => item.email === formValues.email);
+
+            if (emailExists) {
+                setUserCreateReturnDisabled(false);
+                setLoading(false);
+                toast.info("Esse e-mail já está em uso, escolha outro!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>,
+                });
+
+                return;
+            }
+
 
             const payload = {
                 nome: formValues.nome,
@@ -345,7 +362,7 @@ const UsersPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
-                setVisible(false);
+                setVisible(fecharModal);
             } else {
                 setUserCreateReturnDisabled(false);
                 setLoading(false);
@@ -779,8 +796,8 @@ const UsersPage: React.FC = () => {
 
 
 
-                    <div className="flex justify-between items-center  mt-16">
-                        <div className="grid grid-cols-3 gap-3">
+                    <div className="flex justify-between items-center mt-16 w-full">
+                        <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
@@ -793,41 +810,52 @@ const UsersPage: React.FC = () => {
                                     fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '100%',
                                 }}
-                                onClick={() => closeModal()} />
-                            {!isEditing && (
-                                <><Button
-                                    label="Salvar e Voltar à Listagem"
-                                    className="text-white"
-                                    icon="pi pi-refresh"
-                                    onClick={handleSaveReturn}
-                                    disabled={userCreateReturnDisabled}
-                                    style={{
-                                        backgroundColor: '#007bff',
-                                        border: '1px solid #007bff',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} /><Button
-                                        label="Salvar e Adicionar Outro"
+                                onClick={() => closeModal()}
+                            />
+
+                            {!isEditing ? (
+                                <>
+                                    <Button
+                                        label="Salvar e Voltar à Listagem"
                                         className="text-white"
-                                        icon="pi pi-check"
-                                        onClick={handleSave}
-                                        disabled={userCreateDisabled}
+                                        icon="pi pi-refresh"
+                                        onClick={() => handleSaveReturn(false)}
+                                        disabled={userCreateReturnDisabled}
                                         style={{
-                                            backgroundColor: '#28a745',
-                                            border: '1px solid #28a745',
+                                            backgroundColor: '#007bff',
+                                            border: '1px solid #007bff',
                                             padding: '0.5rem 1.5rem',
                                             fontSize: '14px',
                                             fontWeight: 'bold',
                                             display: 'flex',
                                             alignItems: 'center',
-                                        }} /></>
-                            )}
-
-                            {isEditing && (
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                        }}
+                                    />
+                                    <Button
+                                        label="Salvar e Adicionar Outro"
+                                        className="text-white"
+                                        disabled={userCreateDisabled}
+                                        icon="pi pi-check"
+                                        onClick={() => handleSaveReturn(true)}
+                                        style={{
+                                            backgroundColor: "#28a745",
+                                            border: "1px solid #28a745",
+                                            padding: "0.5rem 1.5rem",
+                                            fontSize: "14px",
+                                            fontWeight: "bold",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "100%",
+                                        }}
+                                    />
+                                </>
+                            ) : (
                                 <Button
                                     label="Salvar"
                                     className="text-white"
@@ -835,17 +863,21 @@ const UsersPage: React.FC = () => {
                                     onClick={handleSaveEdit}
                                     disabled={userEditDisabled}
                                     style={{
-                                        backgroundColor: '#28a745',
-                                        border: '1px solid #28a745',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} />
+                                        backgroundColor: "#28a745",
+                                        border: "1px solid #28a745",
+                                        padding: "0.5rem 5.5rem",
+                                        fontSize: "14px",
+                                        fontWeight: "bold",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "100%",
+                                    }}
+                                />
                             )}
                         </div>
                     </div>
+
                 </Dialog>
 
 
@@ -1025,7 +1057,7 @@ const UsersPage: React.FC = () => {
                                                 onClick={() => handleEdit(rowData)}
                                                 className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                                             >
-                                                <MdOutlineModeEditOutline style={{ fontSize: "1.1rem" }} className="text-white text-center" />
+                                                <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />
                                             </button>
                                         </div>
 

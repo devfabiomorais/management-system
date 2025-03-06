@@ -11,7 +11,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -973,7 +973,7 @@ const OrcamentosPage: React.FC = () => {
         cod_forma_pagamento: selectedFormaPagamento.cod_forma_pagamento,
         nome: selectedFormaPagamento.nome,
         formaPagamento: selectedFormaPagamento,
-        parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existentes
+        parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existe no banco de dadosntes
         valorParcela,
         juros,
         tipo_juros: "Percentual",
@@ -4026,7 +4026,7 @@ const OrcamentosPage: React.FC = () => {
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                           title="Editar"
                         >
-                          <MdOutlineModeEditOutline className="text-white text-2xl" />
+                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -4058,7 +4058,7 @@ const OrcamentosPage: React.FC = () => {
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                           title="Cancelar"
                         >
-                          <FaBan className="text-white text-2xl" />
+                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
