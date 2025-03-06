@@ -48,6 +48,7 @@ interface Item {
     dt_hr_criacao?: string;
     anexo?: File;
     situacao: string;
+    valor_custo: number;
 }
 
 interface ItemFamilia {
@@ -112,6 +113,7 @@ const ItensPage: React.FC = () => {
         cod_un: null,
         cod_familia: null,
         situacao: "",
+        valor_custo: 0,
     });
 
 
@@ -144,6 +146,7 @@ const ItensPage: React.FC = () => {
             cod_un: null,
             cod_familia: null,
             situacao: "",
+            valor_custo: 0,
         })
         console.log("Form values after clear:", formValues);
         setSelectedFamily(null);
@@ -436,6 +439,7 @@ const ItensPage: React.FC = () => {
                 "cod_un",
                 "situacao",
                 "cod_familia",
+                "valor_custo"
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -472,6 +476,7 @@ const ItensPage: React.FC = () => {
             }
 
             formData.append("situacao", formValues.situacao);
+            formData.append("valor_custo", formValues.valor_custo.toString());
 
             if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
                 formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
@@ -586,6 +591,7 @@ const ItensPage: React.FC = () => {
                 narrativa: itens.narrativa || "",
                 dbs_unidades_medida: itens.dbs_unidades_medida || null,
                 situacao: itens.situacao || "",
+                valor_custo: itens.valor_custo,
                 cod_un: selectedUnit?.cod_un || null,
                 cod_familia: selectedFamily?.cod_familia || null,
                 cod_estabelecimento: selectedEstablishments.map((est: Establishment) => est.cod_estabelecimento.toString()) || [],
@@ -773,7 +779,7 @@ const ItensPage: React.FC = () => {
                                 placeholder="" />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <div className="">
                                 <label htmlFor="un" className="block text-blue  font-medium">
                                     UN:
@@ -812,7 +818,9 @@ const ItensPage: React.FC = () => {
                                     filter
                                     className="w-full md:w-14rem" />
                             </div>
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-2">
                             <div className="">
                                 <label htmlFor="situation" className="block text-blue  font-medium">
                                     Situação:
@@ -829,6 +837,21 @@ const ItensPage: React.FC = () => {
                                     placeholder="Selecione"
                                     className="w-full md:w-14rem"
                                     style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
+                            </div>
+                            <div className="">
+                                <label htmlFor="valor_custo" className="block text-blue  font-medium">
+                                    Valor Unitário:
+                                </label>
+                                <input
+                                    id="valor_custo"
+                                    name="valor_custo"
+                                    type="number"
+                                    value={formValues.valor_custo}
+                                    onChange={(e) => setFormValues({ ...formValues, valor_custo: parseFloat(e.target.value) })}
+                                    placeholder="Selecione"
+                                    className="w-full md:w-14rem"
+                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }}
+                                />
                             </div>
                         </div>
 

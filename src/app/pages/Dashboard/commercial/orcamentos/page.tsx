@@ -1683,9 +1683,9 @@ const OrcamentosPage: React.FC = () => {
   };
   const handleProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     console.log('Produto selecionado:', e.target.value);
-    const selected = produtos.find((produto) => produto.cod_item === e.target.value);
-    console.log('Produto encontrado:', selected);
+    const selected = produtos.find((produto) => produto.cod_item == e.target.value);
     setSelectedProd(selected || null);
+    console.log('Produto encontrado:', selected);
 
     if (selected) {
       setFormValuesProd({
@@ -2599,7 +2599,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Produtos</h3>
                   <button
-                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
+                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hidden hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
                     onClick={() => setVisibleProd(true)}
                     disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
@@ -2863,7 +2863,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
-                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
+                    className={`bg-green200 rounded-2xl transform transition-all hidden duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
                     onClick={() => setVisibleServ(true)}
                     disabled={visualizando}
                     style={{ padding: "0.1rem 0.1rem" }}
