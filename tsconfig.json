@@ -37,7 +37,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/types/**/*.d.ts" // Garantir que os tipos na pasta src/types sejam incluídos
+    "src/types/**/*.d.ts" // Certificando-se de incluir os tipos da pasta src/types
   ],
   "exclude": [
     "node_modules"
