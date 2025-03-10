@@ -94,7 +94,7 @@ const PermissionsPage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/module", {
+            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -120,7 +120,7 @@ const PermissionsPage: React.FC = () => {
 
     const fetchPermission = async () => {
         try {
-            const response = await axios.get("http://localhost:9009/api/groupPermission", {
+            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -185,7 +185,7 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend,
             };
 
-            const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
+            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -244,7 +244,7 @@ const PermissionsPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/groupPermission/edit/${selectedPermission}`,
+                `https://api-birigui-teste.comviver.cloud/api/groupPermission/edit/${selectedPermission}`,
                 bodyForm,
                 {
                     headers: {
@@ -357,7 +357,7 @@ const PermissionsPage: React.FC = () => {
 
         try {
             await axios.put(
-                `http://localhost:9009/api/groupPermission/cancel/${permissionIdToDelete}`,
+                `https://api-birigui-teste.comviver.cloud/api/groupPermission/cancel/${permissionIdToDelete}`,
                 {}, // Segundo argumento vazio pois PUT espera um body antes dos headers
                 {
                     headers: {
@@ -399,7 +399,7 @@ const PermissionsPage: React.FC = () => {
         if (permissionIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/groupPermission/${permissionIdToDelete}`, {
+            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/groupPermission/${permissionIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -425,12 +425,12 @@ const PermissionsPage: React.FC = () => {
         setNomeGroup(nomeGrupo);
 
         try {
-            const responsePermissions = await axios.get("http://localhost:9009/api/groupPermission", {
+            const responsePermissions = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const responseModules = await axios.get("http://localhost:9009/api/module", {
+            const responseModules = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

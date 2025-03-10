@@ -72,7 +72,7 @@ const UnMedidaPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:9009/api/unMedida", {
+            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -124,7 +124,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.post("http://localhost:9009/api/unMedida/register", bodyForm, {
+            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/unMedida/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -170,7 +170,7 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
+            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -217,7 +217,7 @@ const UnMedidaPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/unMedida/cancel/${unidadeIdToDelete}`,
+                `https://api-birigui-teste.comviver.cloud/api/unMedida/cancel/${unidadeIdToDelete}`,
                 {}, // Enviar um corpo vazio
                 {
                     headers: {
@@ -254,7 +254,7 @@ const UnMedidaPage: React.FC = () => {
         if (unidadeIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/unMedida/${unidadeIdToDelete}`, {
+            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/unMedida/${unidadeIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

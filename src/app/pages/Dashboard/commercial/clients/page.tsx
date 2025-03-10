@@ -142,7 +142,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
+        `https://api-birigui-teste.comviver.cloud/api/clients/edit/${selectedClient?.cod_cliente}`,
         formValues,
         {
           headers: {
@@ -209,7 +209,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/clients/register",
+        "https://api-birigui-teste.comviver.cloud/api/clients/register",
         formValues,
         {
           headers: {
@@ -294,7 +294,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/clients/register",
+        "https://api-birigui-teste.comviver.cloud/api/clients/register",
         formValues,
         {
           headers: {
@@ -342,7 +342,7 @@ const ClientsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/clients",
+        "https://api-birigui-teste.comviver.cloud/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -374,7 +374,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
+        `https://api-birigui-teste.comviver.cloud/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -411,7 +411,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/clients/${clientIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/clients/${clientIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
