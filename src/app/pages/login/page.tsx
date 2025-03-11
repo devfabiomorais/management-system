@@ -34,7 +34,7 @@ export default function Login() {
     };
 
     try {
-      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/auth/login", payload);
+      const response = await axios.post("http://localhost:9009/api/auth/login", payload);
 
       if (response.status === 200) {
         setToken(response.data.token)
@@ -140,7 +140,7 @@ export default function Login() {
         </div>
       </div>
       <footer className=" text-center py-4">
-        <p className="text-blue">Copyright © Grupo ComViver 2024</p>
+        <p className="text-blue">Copyright © Grupo ComViver {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

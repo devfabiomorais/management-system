@@ -19,6 +19,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { FaBullseye } from "react-icons/fa6";
 
 interface Client {
   cod_cliente: number;
@@ -142,8 +143,8 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/clients/edit/${selectedClient?.cod_cliente}`,
-        formValues,
+        `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
+        { ...formValues, cod_cliente: selectedClient?.cod_cliente }, // Garante que cod_cliente é enviado
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -209,7 +210,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/clients/register",
         formValues,
         {
           headers: {
@@ -244,7 +245,7 @@ const ClientsPage: React.FC = () => {
   const [rowData, setRowData] = useState<Client[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const handleSaveReturn = async () => {
+  const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
     try {
@@ -279,22 +280,43 @@ const ClientsPage: React.FC = () => {
 
       // Verificar se o "nome" já existe no banco de dados no storedRowData
       const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+      const situacaoInativo = rowData.find((item) => item.nome === formValues.nome)?.situacao == "Inativo";
+      const clienteEncontrado = rowData.find((item) => item.nome === formValues.nome);
+      console.log("Cliente encontrado:", clienteEncontrado);
 
-      if (nomeExists) {
+
+
+      if (nomeExists && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+        toast.info("Esse nome já existe, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
           icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+        return;
+
+      } else if (nomeExists && situacaoInativo) {
+        setSelectedClient(clienteEncontrado ?? null);
+        handleSaveEdit();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchClients();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>, // Usa o emoji de alerta
         });
 
         return;
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/clients/register",
+        "http://localhost:9009/api/clients/register",
         formValues,
         {
           headers: {
@@ -311,7 +333,7 @@ const ClientsPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        setVisible(false);
+        setVisible(fecharTela);
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -342,7 +364,7 @@ const ClientsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/clients",
+        "http://localhost:9009/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -374,7 +396,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
+        `http://localhost:9009/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -411,7 +433,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/clients/${clientIdToDelete}`,
+        `http://localhost:9009/api/clients/${clientIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -800,7 +822,7 @@ const ClientsPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturn}
+                      onClick={() => { handleSaveReturn(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
                         backgroundColor: "#007bff",
@@ -818,7 +840,7 @@ const ClientsPage: React.FC = () => {
                       label="Salvar e Adicionar Outro"
                       className="text-white"
                       icon="pi pi-check"
-                      onClick={handleSave}
+                      onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
                       style={{
                         backgroundColor: "#28a745",

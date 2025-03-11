@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaHome, FaDolly, FaTags, FaCogs } from "react-icons/fa";
-import { FaHandHoldingDollar, FaSackDollar } from "react-icons/fa6";
+import { FaHandHoldingDollar, FaSackDollar, FaRightFromBracket } from "react-icons/fa6";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
 import Logo from "../../assets/imgs/logoConviver.png";
@@ -19,6 +19,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   const [activePath, setActivePath] = useState<string>("");
   const [userGroupId, setUserGroupId] = useState<number>(0);
   const [loadingButton, setLoadingButton] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false); // Estado para o modal
   const router = useRouter();
 
   useEffect(() => {
@@ -66,6 +67,11 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
     router.push(href);
   };
 
+  const handleLogoff = () => {
+    localStorage.removeItem("token"); // Remove o token do usuário
+    router.push("/"); // Redireciona para a tela de login
+  };
+
   return (
     <div className="flex bg-gray-200 max-h-full">
       <div className="flex-1 flex flex-col">
@@ -77,6 +83,12 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           )}
           <h1 className="text-3xl font-bold flex-1 text-start pl-5">Portal Birigui</h1>
           <img src={Logo.src} alt="Logo" className="w-14 h-14" />
+          <button
+            onClick={() => setModalOpen(true)}
+            className="bg-red-500 px-4 py-2 rounded-md flex items-center gap-2 transition-transform duration-200 hover:scale-125"
+          >
+            <FaRightFromBracket className="text-2xl text-white" />
+          </button>
         </header>
 
         <div className="flex">
@@ -102,7 +114,6 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                           <span className="text-sm">{item.label}</span>
                         </a>
 
-                        {/* GIF de carregamento sobre o botão clicado */}
                         {loadingButton === item.href && (
                           <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
                             <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
@@ -117,6 +128,19 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
           <main className="bg-gray-200 p-4 w-full">{children}</main>
         </div>
       </div>
+
+      {/* Modal de Confirmação */}
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-blue p-6 rounded-md shadow-md text-center">
+            <p className="text-lg  mb-4">Deseja realmente fazer logoff?</p>
+            <div className="flex justify-center gap-4">
+              <button onClick={handleLogoff} className="bg-red500 px-4 py-2 rounded-md text-white">Sim</button>
+              <button onClick={() => setModalOpen(false)} className="bg-green-500 px-4 py-2 rounded-md">Não</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

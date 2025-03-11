@@ -154,7 +154,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -232,7 +232,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -291,7 +291,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/estabilishment/register", formValues, {
+            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -337,7 +337,7 @@ const EstablishmentsPage: React.FC = () => {
         setLoading(true)
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -367,7 +367,7 @@ const EstablishmentsPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/estabilishment/cancel/${estabilishmentIdToDelete}`,
+                `http://localhost:9009/api/estabilishment/cancel/${estabilishmentIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -403,7 +403,7 @@ const EstablishmentsPage: React.FC = () => {
         if (estabilishmentIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

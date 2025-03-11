@@ -66,7 +66,7 @@ const ModulePage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/module", {
+            const response = await axios.get("http://localhost:9009/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -126,7 +126,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/module/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/module/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -179,7 +179,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/module/edit/${selectedModule}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/module/edit/${selectedModule}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -226,7 +226,7 @@ const ModulePage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/module/cancel/${moduleIdToDelete}`,
+                `http://localhost:9009/api/module/cancel/${moduleIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -262,7 +262,7 @@ const ModulePage: React.FC = () => {
         if (moduleIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/module/${moduleIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/module/${moduleIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

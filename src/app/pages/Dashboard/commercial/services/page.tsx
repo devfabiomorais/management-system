@@ -82,43 +82,30 @@ const ServicosPage: React.FC = () => {
     });
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (servico: any = selectedServico) => {
+    if (!servico?.cod_servico) {
+      toast.error("Serviço não selecionado ou inválido. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
+
     try {
-      const requiredFields = [
-        "nome",
-        "descricao",
-        "valor_custo",
-        "valor_venda",
-        "comissao",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/servicos/edit/${selectedServico?.cod_servico}`,
-        formValues,
+        `http://localhost:9009/api/servicos/edit/${servico.cod_servico}`,
+        { ...formValues, situacao: "Ativo", cod_servico: servico.cod_servico },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
         setItemEditDisabled(false);
         setLoading(false);
@@ -143,6 +130,8 @@ const ServicosPage: React.FC = () => {
       console.error("Erro ao salvar serviço:", error);
     }
   };
+
+
 
   const handleSave = async () => {
     setItemCreateDisabled(true);
@@ -172,7 +161,7 @@ const ServicosPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/servicos/register",
+        "http://localhost:9009/api/servicos/register",
         formValues,
         {
           headers: {
@@ -207,17 +196,14 @@ const ServicosPage: React.FC = () => {
   const [rowData, setRowData] = useState<Servico[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+
+
   const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
+
     try {
-      const requiredFields = [
-        "nome",
-        "descricao",
-        "valor_custo",
-        "valor_venda",
-        "comissao",
-      ];
+      const requiredFields = ["nome", "descricao", "valor_custo", "valor_venda", "comissao"];
 
       const isEmptyField = requiredFields.some((field) => {
         const value = formValues[field as keyof typeof formValues];
@@ -234,24 +220,43 @@ const ServicosPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no banco de dados no storedRowData
-      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+      const servicoEncontrado = rowData.find((item) => item.nome === formValues.nome);
+      const nomeExists = !!servicoEncontrado;
+      const situacaoInativo = servicoEncontrado?.situacao === "Inativo";
 
-      if (nomeExists) {
+      console.log("Servico encontrado:", servicoEncontrado);
+
+      if (nomeExists && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
-          icon: <span>⚠️</span>, // Usa o emoji de alerta
+          icon: <span>⚠️</span>,
         });
-
         return;
       }
 
+      if (nomeExists && situacaoInativo && servicoEncontrado?.cod_servico) {
+        await handleSaveEdit(servicoEncontrado); // Passa o serviço diretamente
+        fetchServicos();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
+      // Se o nome não existir, cadastra o serviço normalmente
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/servicos/register",
+        "http://localhost:9009/api/servicos/register",
         formValues,
         {
           headers: {
@@ -303,7 +308,7 @@ const ServicosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/servicos",
+        "http://localhost:9009/api/servicos",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -336,7 +341,7 @@ const ServicosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/servicos/cancel/${servicoIdToDelete}`,
+        `http://localhost:9009/api/servicos/cancel/${servicoIdToDelete}`,
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -373,7 +378,7 @@ const ServicosPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/servicos/${servicoIdToDelete}`,
+        `http://localhost:9009/api/servicos/${servicoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

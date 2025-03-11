@@ -161,7 +161,7 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
+            const response = await axios.put(`http://localhost:9009/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -196,7 +196,7 @@ const UsersPage: React.FC = () => {
 
         try {
             //if(users.cod_grupo !== null){
-            const groups = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/", {
+            const groups = await axios.get("http://localhost:9009/api/groupPermission/groups/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -205,7 +205,7 @@ const UsersPage: React.FC = () => {
                 (group: Group) => group.cod_grupo === users.cod_grupo
             );
 
-            const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment/", {
+            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -319,7 +319,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
+            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -335,7 +335,7 @@ const UsersPage: React.FC = () => {
                 };
 
                 // Chamar a API de envio de e-mail
-                const emailResponse = await axios.post("https://api-birigui-teste.comviver.cloud/api/email/send-email", emailPayload, {
+                const emailResponse = await axios.post("http://localhost:9009/api/email/send-email", emailPayload, {
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
@@ -430,7 +430,7 @@ const UsersPage: React.FC = () => {
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
+            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -476,7 +476,7 @@ const UsersPage: React.FC = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const responseUsers = await axios.get("https://api-birigui-teste.comviver.cloud/api/users/", {
+            const responseUsers = await axios.get("http://localhost:9009/api/users/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -484,7 +484,7 @@ const UsersPage: React.FC = () => {
             setRowData(responseUsers.data.users);
             setIsDataLoaded(true);
 
-            const responseGroup = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            const responseGroup = await axios.get("http://localhost:9009/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -513,7 +513,7 @@ const UsersPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -530,7 +530,7 @@ const UsersPage: React.FC = () => {
     const fetchGroupPermissions = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            const response = await axios.get("http://localhost:9009/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -559,7 +559,7 @@ const UsersPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/users/cancel/${clientIdToDelete}`,
+                `http://localhost:9009/api/users/cancel/${clientIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -595,7 +595,7 @@ const UsersPage: React.FC = () => {
 
         setLoading(true)
         try {
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
+            const response = await axios.put(`http://localhost:9009/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -624,7 +624,7 @@ const UsersPage: React.FC = () => {
         /*if (clientIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/users/${clientIdToDelete}`);
+            await axios.delete(`http://localhost:9009/api/users/${clientIdToDelete}`);
             toast.success("Usuario removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,

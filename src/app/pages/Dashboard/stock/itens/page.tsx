@@ -162,7 +162,7 @@ const ItensPage: React.FC = () => {
         clearInputs()
         setLoading(true)
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/itens", {
+            const response = await axios.get("http://localhost:9009/api/itens", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -191,7 +191,7 @@ const ItensPage: React.FC = () => {
     const handleDelete = async () => {
         if (itensIdToDelete === null) return;
         try {
-            await axios.put(`https://api-birigui-teste.comviver.cloud/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
+            await axios.put(`http://localhost:9009/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -216,7 +216,7 @@ const ItensPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/itens/edit/${itensIdToDelete}`,
+                `http://localhost:9009/api/itens/edit/${itensIdToDelete}`,
                 { situacao: "DESATIVADO" }, // Enviar o corpo com a atualização
                 {
                     headers: {
@@ -304,7 +304,7 @@ const ItensPage: React.FC = () => {
             }
 
             // Enviar requisição ao backend
-            await axios.put(`https://api-birigui-teste.comviver.cloud/api/itens/edit/${selectedItem?.cod_item}`, formData, {
+            await axios.put(`http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -393,7 +393,7 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -514,7 +514,7 @@ const ItensPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register", formData, {
+            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -554,13 +554,13 @@ const ItensPage: React.FC = () => {
         try {
             // Fazer todas as requisições simultaneamente para melhorar o desempenho
             const [unitResponse, familyResponse, establishmentResponse] = await Promise.all([
-                axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+                axios.get("http://localhost:9009/api/unMedida", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+                axios.get("http://localhost:9009/api/familia/itens/", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+                axios.get("http://localhost:9009/api/estabilishment", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
             ]);
@@ -633,7 +633,7 @@ const ItensPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get("http://localhost:9009/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -650,7 +650,7 @@ const ItensPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+            const response = await axios.get("http://localhost:9009/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -666,7 +666,7 @@ const ItensPage: React.FC = () => {
     const fetchFamilias = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

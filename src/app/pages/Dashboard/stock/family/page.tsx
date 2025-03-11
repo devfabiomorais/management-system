@@ -76,7 +76,7 @@ const FamilyPage: React.FC = () => {
         setLoading(true)
 
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -128,7 +128,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/familia/itens/register", bodyForm, {
+            const response = await axios.post("http://localhost:9009/api/familia/itens/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -175,7 +175,7 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -222,7 +222,7 @@ const FamilyPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `https://api-birigui-teste.comviver.cloud/api/familia/itens/cancel/${familiaIdToDelete}`,
+                `http://localhost:9009/api/familia/itens/cancel/${familiaIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -258,7 +258,7 @@ const FamilyPage: React.FC = () => {
         if (familiaIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/familia/itens/${familiaIdToDelete}`, {
+            await axios.delete(`http://localhost:9009/api/familia/itens/${familiaIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

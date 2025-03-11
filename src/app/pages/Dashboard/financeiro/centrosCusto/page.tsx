@@ -99,7 +99,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/centrosCusto/edit/${selectedCentroCusto?.cod_centro_custo}`,
+        `http://localhost:9009/api/centrosCusto/edit/${selectedCentroCusto?.cod_centro_custo}`,
         formValues,
         {
           headers: {
@@ -157,7 +157,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/centrosCusto/register",
+        "http://localhost:9009/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -233,7 +233,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/centrosCusto/register",
+        "http://localhost:9009/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -281,7 +281,7 @@ const CentrosCustoPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/centrosCusto",
+        "http://localhost:9009/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -313,7 +313,7 @@ const CentrosCustoPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
+        `http://localhost:9009/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
         {},
         {
           headers: {
@@ -350,7 +350,7 @@ const CentrosCustoPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/centrosCusto/${centrosCustoIdToDelete}`,
+        `http://localhost:9009/api/centrosCusto/${centrosCustoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
