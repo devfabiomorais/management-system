@@ -499,7 +499,8 @@ const ItensPage: React.FC = () => {
             }
 
             // Verificar se o "nome" já existe no banco de dados no storedRowData
-            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao);
+            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao && item.situacao === 'ATIVO');
+
 
             if (nomeExists) {
                 setItemCreateDisabledReturn(false);

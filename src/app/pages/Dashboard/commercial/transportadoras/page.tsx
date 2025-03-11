@@ -184,55 +184,36 @@ const TransportadorasPage: React.FC = () => {
 
   // ---------------------------------------------------------------------------------------------------------------
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (transportadora: any = selectedTransportadora) => {
+    if (!transportadora?.cod_transportadora) {
+      toast.error("Transportadora não selecionada ou inválida. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
+
     try {
-      const requiredFields = [
-        "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
       const response = await axios.put(
-        `http://localhost:9009/api/transportadoras/edit/${selectedTransportadora?.cod_transportadora}`,
-        formValues,
+        `http://localhost:9009/api/transportadoras/edit/${transportadora.cod_transportadora}`,
+        { ...formValues, situacao: "Ativo", cod_transportadora: transportadora.cod_transportadora },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
         fetchTransportadoras();
-        toast.success("Transportadora salvo com sucesso!", {
+        toast.success("Transportadora salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -251,6 +232,7 @@ const TransportadorasPage: React.FC = () => {
       console.error("Erro ao salvar transportadora:", error);
     }
   };
+
 
   // ---------------------------------------------------------------------------------------------------------------
 
@@ -356,6 +338,7 @@ const TransportadorasPage: React.FC = () => {
   const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
+
     try {
       const requiredFields = [
         "nome",
@@ -389,7 +372,6 @@ const TransportadorasPage: React.FC = () => {
         return;
       }
 
-      // Verifica se o código do estabelecimento é válido
       const estabelecimento = selectedEstabilishment?.cod_estabelecimento;
       if (!estabelecimento) {
         setItemCreateReturnDisabled(false);
@@ -401,33 +383,51 @@ const TransportadorasPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no banco de dados no storedRowData
-      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+      const transportadoraEncontrada = rowData.find((item) => item.nome === formValues.nome);
+      const nomeExists = !!transportadoraEncontrada;
+      const situacaoInativo = transportadoraEncontrada?.situacao === "Inativo";
 
-      if (nomeExists) {
+      console.log("Transportadora encontrada:", transportadoraEncontrada);
+
+      if (nomeExists && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
-          icon: <span>⚠️</span>, // Usa o emoji de alerta
+          icon: <span>⚠️</span>,
         });
-
         return;
       }
 
-      // Envia os dados para o backend
+      if (nomeExists && situacaoInativo && transportadoraEncontrada?.cod_transportadora) {
+        await handleSaveEdit(transportadoraEncontrada);
+        fetchTransportadoras();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
+      // Se o nome não existir, cadastra a transportadora normalmente
       const response = await axios.post(
         "http://localhost:9009/api/transportadoras/register",
         {
           ...formValues,
           dbs_estabelecimentos_transportadora: {
             create: {
-              cod_estabel: estabelecimento, // Agora usando 'cod_estabel' para o relacionamento correto
+              cod_estabel: estabelecimento,
               dbs_estabelecimentos: {
                 connect: {
-                  cod_estabelecimento: estabelecimento, // Conectando com o estabelecimento correto
+                  cod_estabelecimento: estabelecimento,
                 },
               },
             },
@@ -464,6 +464,7 @@ const TransportadorasPage: React.FC = () => {
       console.error("Erro ao salvar transportadora:", error);
     }
   };
+
 
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -1024,7 +1025,7 @@ const TransportadorasPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
+                    onClick={() => { handleSaveEdit(formValues) }}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: "#28a745",

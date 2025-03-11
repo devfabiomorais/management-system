@@ -658,7 +658,7 @@ const ServicosPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
+                    onClick={() => { handleSaveEdit(formValues) }}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: "#28a745",
