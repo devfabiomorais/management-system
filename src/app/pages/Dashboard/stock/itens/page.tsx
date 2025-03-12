@@ -256,7 +256,15 @@ const ItensPage: React.FC = () => {
         setVisible(false)
     }
 
-    const handleSaveEdit = async () => {
+    const handleSaveEdit = async (servico: any = selectedItem) => {
+        if (!servico?.cod_item) {
+            toast.error("Item não selecionado ou inválido. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
         setIsItemEditDisabled(true);
         setLoading(true);
         setIsEditing(false);
@@ -303,19 +311,37 @@ const ItensPage: React.FC = () => {
                 formData.append("anexo", formValues.anexo);
             }
 
-            // Enviar requisição ao backend
-            await axios.put(`http://localhost:9009/api/itens/edit/${selectedItem?.cod_item}`, formData, {
+            // // Verificar a situação do item antes de atualizar
+            // if (servico.situacao === "ATIVO") {
+            //     toast.info("Este item já está ativo. Não é possível reativá-lo.", {
+            //         position: "top-right",
+            //         autoClose: 3000,
+            //         progressStyle: { background: "yellow" },
+            //         icon: <span>⚠️</span>,
+            //     });
+            //     return;
+            // }
+
+            // Caso a situação seja "DESATIVADO", atualiza os dados do item
+            const response = await axios.put(`http://localhost:9009/api/itens/edit/${servico.cod_item}`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            // Sucesso
-            toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
-            clearInputs();
-            fetchItens();
-            setVisible(false);
+            if (response.status >= 200 && response.status < 300) {
+                setIsItemEditDisabled(false);
+                setLoading(false);
+                clearInputs();
+                fetchItens();
+                toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
+                setVisible(false);
+            } else {
+                setIsItemEditDisabled(false);
+                setLoading(false);
+                toast.error("Erro ao salvar item.", { position: "top-right", autoClose: 3000 });
+            }
         } catch (error: any) {
             console.error("Erro ao atualizar item:", error);
             toast.error(`Erro ao atualizar item: ${error.response?.data?.msg || "Erro desconhecido"}`, {
@@ -327,6 +353,7 @@ const ItensPage: React.FC = () => {
             setLoading(false);
         }
     };
+
 
 
     const handleSave = async () => {
@@ -430,7 +457,7 @@ const ItensPage: React.FC = () => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const handleSaveReturn = async (fecharTela: boolean) => {
-        setItemCreateDisabledReturn(true)
+        setItemCreateDisabledReturn(true);
         setLoading(true);
         try {
             const requiredFields = [
@@ -448,7 +475,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (selectedEstablishments.length === 0) {
-                setItemCreateDisabledReturn(false)
+                setItemCreateDisabledReturn(false);
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
@@ -458,7 +485,7 @@ const ItensPage: React.FC = () => {
             }
 
             if (isEmptyField) {
-                setItemCreateDisabledReturn(false)
+                setItemCreateDisabledReturn(false);
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -484,14 +511,12 @@ const ItensPage: React.FC = () => {
 
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
-                    console.log(establishment.cod_estabelecimento)
+                    console.log(establishment.cod_estabelecimento);
                     formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
                 } else {
                     console.error("Valor inválido para cod_estabelecimento:", establishment);
                 }
             });
-
-
 
             if (formValues.anexo) {
                 const file = formValues.anexo;
@@ -499,22 +524,42 @@ const ItensPage: React.FC = () => {
             }
 
             // Verificar se o "nome" já existe no banco de dados no storedRowData
-            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao && item.situacao === 'ATIVO');
-
+            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao);
 
             if (nomeExists) {
-                setItemCreateDisabledReturn(false);
-                setLoading(false);
-                toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    progressStyle: { background: "yellow" },
-                    icon: <span>⚠️</span>, // Usa o emoji de alerta
-                });
+                const itemEncontrado = rowData.find((item) => item.descricao === formValues.descricao);
+                const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
 
-                return;
+                if (situacaoAtivo) {
+                    // Caso o nome exista e a situação seja ATIVO, não permite a ação
+                    setItemCreateDisabledReturn(false);
+                    setLoading(false);
+                    toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        progressStyle: { background: "yellow" },
+                        icon: <span>⚠️</span>, // Usa o emoji de alerta
+                    });
+                    return;
+                } else {
+                    // Caso a situação seja DESATIVADO, atualiza os dados
+                    await handleSaveEdit(itemEncontrado); // Passa o serviço diretamente para atualização
+                    fetchItens();  // Recarrega os itens
+                    setItemCreateDisabledReturn(false);
+                    setLoading(false);
+                    clearInputs();
+                    setVisible(fecharTela);
+                    toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                        position: "top-right",
+                        autoClose: 10000,
+                        progressStyle: { background: "green" },
+                        icon: <span>♻️</span>, // Ícone de recarga
+                    });
+                    return;
+                }
             }
 
+            // Se o nome não existir, cadastra o item normalmente
             const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
@@ -523,7 +568,7 @@ const ItensPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
-                setItemCreateDisabledReturn(false)
+                setItemCreateDisabledReturn(false);
                 setLoading(false);
                 clearInputs();
                 fetchItens();
@@ -534,7 +579,7 @@ const ItensPage: React.FC = () => {
                 clearInputs();
                 setVisible(fecharTela);
             } else {
-                setItemCreateDisabledReturn(false)
+                setItemCreateDisabledReturn(false);
                 setLoading(false);
                 toast.error("Erro ao salvar item.", {
                     position: "top-right",
@@ -542,11 +587,12 @@ const ItensPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            setItemCreateDisabledReturn(false)
+            setItemCreateDisabledReturn(false);
             setLoading(false);
             console.error("Erro ao salvar item:", error);
         }
     };
+
 
 
     const handleEdit = async (itens: Item) => {
@@ -946,7 +992,7 @@ const ItensPage: React.FC = () => {
                                     label="Salvar"
                                     className="text-white"
                                     icon="pi pi-check"
-                                    onClick={handleSaveEdit}
+                                    onClick={() => { handleSaveEdit(formValues) }}
                                     disabled={isItemEditDisabled}
                                     style={{
                                         backgroundColor: "#28a745",
