@@ -1133,6 +1133,16 @@ const OrcamentosPage: React.FC = () => {
 
 
 
+
+  // #region FROTAS
+  const [modalFrotasVisible, setModalFrotasVisible] = useState(false);
+
+  // #endregion
+
+
+
+
+
   // #region USEEFFECT
   useEffect(() => {
     fetchTransportadoras();
@@ -2362,6 +2372,201 @@ const OrcamentosPage: React.FC = () => {
             //#endregion
           }
 
+          {
+            //#region MODAL FROTAS
+          }
+          <Dialog
+            header="Modal Frotas"
+            visible={modalFrotasVisible}
+            style={{ width: "auto" }}
+            onHide={closeDialog}
+            footer={
+              <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+
+                <div className="flex justify-between">
+                  <div>
+                    <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                      Histórico de Garantias - Frota XXXXXXX
+                    </h2>
+                  </div>
+                </div>
+
+                <div
+                  className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                  style={{ height: "95%" }}
+                >
+                  <div className="mb-4 flex justify-end">
+                    <p className="text-blue font-bold text-lg">Busca:</p>
+                    <InputText
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder=""
+                      className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                      style={{
+                        border: "1px solid #1B405D80",
+                      }}
+                    />
+                  </div>
+                  <DataTable
+                    value={filteredOrcamentos.slice(first, first + rows)}
+                    paginator={true}
+                    rows={rows}
+                    rowsPerPageOptions={[5, 10]}
+                    rowClassName={(data) => 'hover:bg-gray-200'}
+
+                    onPage={(e) => {
+                      setFirst(e.first);
+                      setRows(e.rows);
+                    }}
+                    tableStyle={{
+                      borderCollapse: "collapse",
+                      width: "100%",
+                    }}
+                    className="w-full"
+                    responsiveLayout="scroll"
+                  >
+                    <Column
+                      field="cod_orcamento"
+                      header="Código"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                    <Column
+                      header="Cliente"
+                      body={(rowData) => {
+                        const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
+                        return cliente ? cliente.nome : "Não encontrado";
+                      }}
+                      style={{
+                        width: "20%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+
+                    <Column
+                      field="dtCadastro"
+                      header="DT Cadastro"
+                      style={{
+                        width: "4%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                      body={(rowData) => {
+                        // Verifica se a data de dtCadastro está presente e é válida
+                        if (rowData.dtCadastro) {
+                          // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
+                          const date = new Date(rowData.dtCadastro);
+
+                          // Verifica se a data é válida
+                          if (!isNaN(date.getTime())) {
+                            const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false, // Formato de 24 horas
+                            }).format(date);
+                            return <span>{formattedDate}</span>;
+                          } else {
+                            return <span>Data inválida</span>;
+                          }
+                        } else {
+                          return <span>Sem data</span>;
+                        }
+                      }}
+                    />
+
+                    <Column
+                      field="prazo"
+                      header="Prazo"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                      body={(rowData) => {
+                        if (!rowData.prazo) return "-"; // Se estiver vazio, exibe '-'
+
+                        const [year, month, day] = rowData.prazo.split("T")[0].split("-");
+                        return `${day}/${month}/${year}`;
+                      }}
+                    />
+
+                    <Column
+                      field="situacao"
+                      header="Situação"
+                      style={{
+                        width: "1%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+
+                  </DataTable>
+                </div>
+              </div>
+            }
+          >
+            <p>Tem certeza que deseja cancelar este orçamento?</p>
+          </Dialog>
+          {
+            //#endregion
+          }
 
           {
             //#region MODAL PRINCIPAL
@@ -3141,6 +3346,11 @@ const OrcamentosPage: React.FC = () => {
                         }));
                       }}
                     />
+                    <button
+                      className={`bg-green-200 rounded-2xl p-1 transform transition-all duration-50 hover:scale-150 hover:bg-green-400 `}
+                      onClick={() => { setModalFrotasVisible(true) }}
+                    />
+
                   </div>
 
                   <div>

@@ -73,7 +73,7 @@ const CentrosCustoPage: React.FC = () => {
     });
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (centro: any = selectedCentroCusto) => {
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
@@ -99,8 +99,8 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/edit/${selectedCentroCusto?.cod_centro_custo}`,
-        formValues,
+        `http://localhost:9009/api/centrosCusto/edit/${centro.cod_centro_custo}`,
+        { ...formValues, situacao: "Ativo", cod_centro_custo: centro.cod_centro_custo },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -216,10 +216,11 @@ const CentrosCustoPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no banco de dados no storedRowData
-      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
+      const centroEncontrado = rowData.find((item) => item.nome === formValues.nome);
+      const nomeExists = !!centroEncontrado;
+      const situacaoInativo = centroEncontrado?.situacao === "Inativo";
 
-      if (nomeExists) {
+      if (nomeExists && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -228,7 +229,22 @@ const CentrosCustoPage: React.FC = () => {
           progressStyle: { background: "yellow" },
           icon: <span>⚠️</span>, // Usa o emoji de alerta
         });
+        return;
+      }
 
+      if (nomeExists && situacaoInativo && centroEncontrado?.cod_centro_custo) {
+        await handleSaveEdit(centroEncontrado); // Passa o serviço diretamente
+        fetchCentrosCusto();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
         return;
       }
 

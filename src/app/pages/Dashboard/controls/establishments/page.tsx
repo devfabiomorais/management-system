@@ -125,7 +125,7 @@ const EstablishmentsPage: React.FC = () => {
         })
     }
 
-    const handleSaveEdit = async () => {
+    const handleSaveEdit = async (estabelecimento: any = selectedEstabilishment) => {
         setLoading(true)
         setIsEditing(false);
         try {
@@ -154,11 +154,13 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${selectedEstabilishment?.cod_estabelecimento}`, formValues, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${estabelecimento.cod_estabelecimento}`,
+                { ...formValues, situacao: "Ativo", cod_estabelecimento: estabelecimento.cod_estabelecimento },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setEstabilishmentEditDisabled(false)
                 setLoading(false)
@@ -216,10 +218,12 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            // Verificar se o "nome" já existe no banco de dados no storedRowData
-            const nomeExists = rowData.some((item) => item.nome === formValues.nome);
 
-            if (nomeExists) {
+            const estabelecimentoEncontrado = rowData.find((item) => item.nome === formValues.nome);
+            const nomeExists = !!estabelecimentoEncontrado;
+            const situacaoInativo = estabelecimentoEncontrado?.situacao === "Inativo";
+
+            if (nomeExists && !situacaoInativo) {
                 setEstabilishmentCreateReturnDisabled(false);
                 setLoading(false);
                 toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -228,7 +232,22 @@ const EstablishmentsPage: React.FC = () => {
                     progressStyle: { background: "yellow" },
                     icon: <span>⚠️</span>, // Usa o emoji de alerta
                 });
+                return;
+            }
 
+            if (nomeExists && situacaoInativo && estabelecimentoEncontrado?.cod_estabelecimento) {
+                await handleSaveEdit(estabelecimentoEncontrado); // Passa o serviço diretamente
+                fetchEstabilishments();
+                setEstabilishmentCreateReturnDisabled(false);
+                setLoading(false);
+                clearInputs();
+                setVisible(fecharModal);
+                toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                    position: "top-right",
+                    autoClose: 10000,
+                    progressStyle: { background: "green" },
+                    icon: <span>♻️</span>,
+                });
                 return;
             }
 

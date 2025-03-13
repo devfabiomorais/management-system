@@ -103,10 +103,11 @@ const UnMedidaPage: React.FC = () => {
             return;
         }
 
-        // Verificar se o "nome" já existe no banco de dados no storedRowData
-        const nomeExists = rowData.some((item) => item.un === medida);
+        const unEncontrada = rowData.find((item) => item.un === medida);
+        const nomeExists = !!unEncontrada;
+        const situacaoInativo = unEncontrada?.situacao === "Inativo";
 
-        if (nomeExists) {
+        if (nomeExists && !situacaoInativo) {
             setIsUnMedidaCreateDisabled(false);
             setLoading(false);
             toast.info("Essa unidade de medida já existe no banco de dados, escolha outra!", {
@@ -115,7 +116,20 @@ const UnMedidaPage: React.FC = () => {
                 progressStyle: { background: "yellow" },
                 icon: <span>⚠️</span>, // Usa o emoji de alerta
             });
-
+            return;
+        }
+        if (nomeExists && situacaoInativo && unEncontrada?.cod_un) {
+            await editUnMedida(unEncontrada); // Passa o serviço diretamente
+            fetchUnits();
+            setIsUnMedidaCreateDisabled(false);
+            setLoading(false);
+            clearInputs();
+            toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                position: "top-right",
+                autoClose: 10000,
+                progressStyle: { background: "green" },
+                icon: <span>♻️</span>,
+            });
             return;
         }
 
@@ -153,8 +167,17 @@ const UnMedidaPage: React.FC = () => {
         }
     }
 
-    const editUnMedida = async () => {
+    const editUnMedida = async (un: any = selectedUnidade) => {
+        if (!un?.cod_un) {
+            toast.error("Unidade de Medida não selecionada ou inválida. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
         setIsUnMedidaEditDisabled(true)
+
         if (descricao === "" || medida === "") {
             setIsUnMedidaEditDisabled(false)
             setLoading(false)
@@ -170,11 +193,13 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${un.cod_un}`,
+                { ...bodyForm, situacao: "Ativo", cod_un: un.cod_un },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setIsUnMedidaEditDisabled(false)
                 setLoading(false)

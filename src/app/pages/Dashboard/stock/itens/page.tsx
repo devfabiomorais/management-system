@@ -279,8 +279,8 @@ const ItensPage: React.FC = () => {
             });
 
             if (isEmptyField) {
-                setIsItemEditDisabled(false);
-                setLoading(false);
+                setIsEditing(true);
+                setVisible(true);
                 toast.info("Todos os campos devem ser preenchidos!", { position: "top-right", autoClose: 3000 });
                 return;
             }

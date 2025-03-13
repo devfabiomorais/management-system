@@ -106,10 +106,12 @@ const FamilyPage: React.FC = () => {
             });
             return;
         }
-        // Verificar se o "nome" já existe no banco de dados no storedRowData
-        const nomeExists = rowData.some((item) => item.nome === nome);
 
-        if (nomeExists) {
+        const familiaEncontrada = rowData.find((item) => item.nome === nome);
+        const nomeExists = !!familiaEncontrada;
+        const situacaoInativo = familiaEncontrada?.situacao === "Inativo";
+
+        if (nomeExists && !situacaoInativo) {
             setFamilyCreateDisabled(false);
             setLoading(false);
             toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -118,7 +120,20 @@ const FamilyPage: React.FC = () => {
                 progressStyle: { background: "yellow" },
                 icon: <span>⚠️</span>, // Usa o emoji de alerta
             });
-
+            return;
+        }
+        if (nomeExists && situacaoInativo && familiaEncontrada?.cod_familia) {
+            await editItem(familiaEncontrada); // Passa o serviço diretamente
+            fetchFamilias();
+            setFamilyCreateDisabled(false);
+            setLoading(false);
+            clearInputs();
+            toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                position: "top-right",
+                autoClose: 10000,
+                progressStyle: { background: "green" },
+                icon: <span>♻️</span>,
+            });
             return;
         }
 
@@ -157,8 +172,17 @@ const FamilyPage: React.FC = () => {
         }
     }
 
-    const editItem = async () => {
+    const editItem = async (familia: any = selectedFamilia) => {
+        if (!familia?.cod_familia) {
+            toast.error("Família não selecionada ou inválida. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
         setFamilyEditDisabled(true)
+
         if (descricao === "" || nome === "") {
             setFamilyEditDisabled(false)
             setLoading(false)
@@ -175,11 +199,13 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${selectedFamilia}`, bodyForm, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${familia.cod_familia}`,
+                { ...bodyForm, situacao: "Ativo", cod_familia: familia.cod_familia },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setFamilyEditDisabled(false)
                 setLoading(false)
