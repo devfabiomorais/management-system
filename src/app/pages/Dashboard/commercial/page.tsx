@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { FaArrowsRotate, FaFolderPlus } from "react-icons/fa6";
-import { TbTool, TbTruck, TbUserScan } from "react-icons/tb";
+import { TbTool, TbTruck, TbUserScan, TbBrandKick, TbBuilding } from "react-icons/tb";
 import { MdRequestQuote } from "react-icons/md";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
@@ -57,7 +57,8 @@ export default function CommercialPage() {
                   <div className="flex gap-4">
                     {[{ path: "commercial/clients", icon: <TbUserScan className="text-5xl" />, label: "Clientes" },
                     { path: "commercial/services", icon: <TbTool className="text-5xl" />, label: "Serviços" },
-                    { path: "commercial/transportadoras", icon: <TbTruck className="text-5xl" />, label: "Transportadoras" }].map((item) => (
+                    { path: "commercial/transportadoras", icon: <TbTruck className="text-5xl" />, label: "Transportadoras" },
+                    { path: "commercial/estruturas", icon: <TbBuilding className="text-5xl" />, label: <>Estruturas de <br />&nbsp;  Orçamento</> }].map((item) => (
                       <div
                         key={item.path}
                         onClick={() => handleRedirect(item.path)}
@@ -74,6 +75,7 @@ export default function CommercialPage() {
                     ))}
                   </div>
                 )}
+
                 {openedMovements && (
                   <div className="flex gap-4">
                     <div

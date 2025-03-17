@@ -327,11 +327,33 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
+                const emailBody = `
+                            <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+                            <!-- Cabeçalho -->
+                            <div style="background-color: #f0f0f0; padding: 20px; text-align: center;">
+                                <h2 style="margin: 0; color: #1e3a5f;">Portal Birigui</h2>
+                            </div>
+
+                            <!-- Corpo -->
+                            <div style="padding: 20px; text-align: center; color: #333;">
+                                <p style="font-size: 18px;">Olá ${formValues.nome}, seja bem-vindo ao Portal Birigui!</p>
+                                <p style="font-size: 16px;">Sua senha padrão é: <strong>changeme</strong></p>
+                                <p style="font-size: 16px;">Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a></p>
+
+                            </div>
+
+                            <!-- Rodapé -->
+                            <div style="background-color: #1e3a5f; padding: 10px; text-align: center;">
+                                <p style="margin: 0; font-size: 14px; color: #f0f0f0;">Copyright Grupo ComViver</p>
+                            </div>
+                            </div>
+                        `;
+
                 // Enviar e-mail após salvar o usuário
                 const emailPayload = {
                     to: formValues.email,  // E-mail do novo usuário
                     subject: "Bem-vindo ao sistema!",  // Assunto do e-mail
-                    body: `Olá ${formValues.nome},\n\nSeu cadastro foi realizado com sucesso! Estamos felizes em tê-lo conosco.`,  // Corpo do e-mail
+                    body: emailBody // Corpo do e-mail
                 };
 
                 // Chamar a API de envio de e-mail

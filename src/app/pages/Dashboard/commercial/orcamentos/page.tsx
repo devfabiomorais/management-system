@@ -11,7 +11,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaSearch } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -22,6 +22,9 @@ import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 import { truncate } from "fs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 
 
@@ -89,6 +92,8 @@ interface Orcamento {
   desconto_total: number;
   valor_total: number;
   situacao?: string;
+  garantia?: number;
+  tipo_garantia?: string;
   dbs_pagamentos_orcamento: any[];
   dbs_produtos_orcamento: any[];
   dbs_servicos_orcamento: any[];
@@ -1061,6 +1066,17 @@ const OrcamentosPage: React.FC = () => {
     }
   });
 
+
+  const [filteredFrotas, setFilteredFrotas] = useState<Orcamento[]>([]);
+
+
+  const getFilteredFrotas = (frota: string) => {
+    return orcamentos.filter((orcamento) => {
+      // Filtra apenas orçamentos com frota correspondente ao valor de frota
+      return orcamento.frota && orcamento.frota.toString().includes(frota);
+    });
+  };
+
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
 
 
@@ -1089,6 +1105,8 @@ const OrcamentosPage: React.FC = () => {
     desconto_total: 0.0,
     valor_total: 0.0,
     situacao: "Pendente",
+    garantia: 0,
+    tipo_garantia: "",
     dbs_pagamentos_orcamento: [],
     dbs_produtos_orcamento: [],
     dbs_servicos_orcamento: [],
@@ -1129,6 +1147,612 @@ const OrcamentosPage: React.FC = () => {
       console.error("Erro ao carregar orçamentos:", error);
     }
   };
+
+  // #region PDF
+  const gerarPDF = () => {
+    const doc = new jsPDF();
+
+    // Adicionar a logo
+    const img = new Image();
+    img.src = "/logo-birigui-bgtransparent.png"; // Certifique-se de ter essa imagem na pasta 'public'    
+
+    img.onload = function () {
+      // #region cabeçalho   
+      const padding = 5; // Definindo o padding (espaço) ao redor do retângulo
+      const headerWidth = 210 - 2 * padding; // Largura do cabeçalho com padding
+      const headerHeight = 30; // Altura do cabeçalho
+
+      doc.rect(padding, padding, headerWidth, headerHeight); // Retângulo de fundo para o cabeçalho com padding
+
+      // Desenhando o retângulo com bordas nos quatro lados e padding
+      doc.setDrawColor(0, 0, 0); // Cor da borda (preto)
+      doc.setLineWidth(0.01); // Largura da borda
+      doc.rect(padding, padding, headerWidth, headerHeight, 'S'); // Borda de 4 lados com padding
+
+      // Logo à esquerda preenchendo altura do cabeçalho
+      doc.addImage(img, "PNG", 5, 6, 30, 25); // Posição e tamanho da logo
+
+      // Posições para o texto
+      const leftX = 35; // Posição à esquerda, após o logo
+
+      // Título em negrito
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("BIRIGUI SISTEMAS HIDRÁULICOS", leftX, 10); // Alinhado após o logo
+
+      // Informações abaixo do título
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      const margemDireita = 200; // Define a posição da margem direita
+
+      // Informações combinadas à esquerda
+      doc.text(`CNPJ: 52.489.657/0001-68`, leftX, 14);
+      doc.text(`Endereço: R Diogo Linares Moralles, 141, - Distrito Industrial Jorge`, leftX, 19);
+      doc.text(`ISSA JUNIOR`, leftX, 24);
+      doc.text(`Birigui-SP - CEP: 16204-436`, leftX, 29);
+
+      // Informações alinhadas à direita
+      const telefone = "(18) 2185-0801 / (18) 9 3085-3795";
+      const email = "birigui@biriguish.com.br";
+      const vendedor = `Vendedor: ${formValues.cod_responsavel}`;
+
+      // Calcula a largura do texto para alinhar corretamente
+      const telefoneWidth = doc.getTextWidth(telefone);
+      const emailWidth = doc.getTextWidth(email);
+      const vendedorWidth = doc.getTextWidth(vendedor);
+
+      doc.text(telefone, margemDireita - telefoneWidth, 14); // Alinhado à direita
+      doc.text(email, margemDireita - emailWidth, 19); // Alinhado à direita
+      doc.text(vendedor, margemDireita - vendedorWidth, 24); // Alinhado à direita
+      // #endregion
+      //--------------------------------------------------------------------------------------------------------------------
+
+
+
+      // #region orçamento
+      // Definir a posição e dimensões do retângulo
+      const textY = 45; // Posição vertical do texto
+      const paddingY = 4; // Espaço acima e abaixo do texto
+      const rectHeight = 7; // Altura do retângulo
+      const rectWidth = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectX = padding; // Posição X do retângulo, ajustado para a margem da página
+
+      // Desenhar o retângulo de fundo
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectX, textY - paddingY, rectWidth, rectHeight, "F"); // Retângulo preenchido
+
+      // // Desenhar as bordas bem finas
+      // doc.setDrawColor(0, 0, 0); // Cor da borda (preto)
+      // doc.setLineWidth(0.01); // Linha bem fina
+      // doc.rect(rectX, textY - paddingY, rectWidth, rectHeight, "S"); // Retângulo com bordas
+
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+
+      // Texto "ORÇAMENTO Nº" e data
+      const orcamentoText = `ORÇAMENTO Nº ${formValues.cod_orcamento}`;
+      const dataVendaText = new Date(formValues.data_venda).toLocaleDateString("pt-BR"); // dd/mm/aaaa
+
+      // Calcular a largura do texto "ORÇAMENTO Nº"
+      const orcamentoWidth = doc.getTextWidth(orcamentoText);
+
+      // Calcular a posição centralizada do "ORÇAMENTO Nº" (alinhado no centro do retângulo)
+      const orcamentoX = rectX + (rectWidth - orcamentoWidth) / 2; // Centraliza "ORÇAMENTO Nº"
+
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY = textY + 1; // Ajustar o Y para um pouco abaixo
+
+      // Adicionar "ORÇAMENTO Nº" centralizado
+      doc.text(orcamentoText, orcamentoX, adjustedTextY);
+
+      // Posicionar a data à extrema direita do retângulo
+      const dataVendaWidth = doc.getTextWidth(dataVendaText); // Largura da data
+      const dataVendaX = rectX + rectWidth - dataVendaWidth - 10; // Posição X da data à extrema direita, com espaçamento de 10
+
+      // Adicionar a data à extrema direita
+      doc.text(dataVendaText, dataVendaX + 9, adjustedTextY);
+      //#endregion
+      //-------------------------------------------------------------------------------------------------------------------------------------
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      doc.text('MOTOR DE RODA CASE 9900', 5, 55);
+
+      // #region previsao de entrega
+      // Definir a posição e dimensões do retângulo
+      const textY2 = 65; // Posição vertical do texto
+      const paddingY2 = 4; // Espaço acima e abaixo do texto
+      const rectHeight2 = 7; // Altura do retângulo
+      const rectWidth2 = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectX2 = padding; // Posição X do retângulo, ajustado para a margem da página
+
+      // Desenhar o retângulo de fundo
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectX2, textY2 - paddingY2, rectWidth2, rectHeight2, "F"); // Retângulo preenchido
+
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+
+      // Texto "PREVISÃO DE ENTREGA"
+      const previsaoEntregaText = `PREVISÃO DE ENTREGA: ${new Date(formValues.prazo).toLocaleDateString("pt-BR")}`;
+
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2 = textY2 + 1; // Ajustar o Y para um pouco abaixo
+
+      // Adicionar "PREVISÃO DE ENTREGA" à esquerda
+      doc.text(previsaoEntregaText, rectX2 + 1, adjustedTextY2);
+      //#endregion
+      //-------------------------------------------------------------------------------------------------------------------------
+
+
+
+      // #region frota
+      // Definições do retângulo (tabela)
+      const tableX = 5; // Posição X inicial
+      const tableY = 70; // Posição Y inicial
+      const tableWidth = 200; // Largura total da tabela
+      const tableHeight = 7; // Altura da linha da tabela
+      const column1Width = 20; // Largura da primeira coluna (FROTA)
+      const column2Width = tableWidth - column1Width; // Largura da segunda coluna (valor)
+
+      // Desenhar a borda da tabela
+      doc.setDrawColor(220, 220, 220); // Cor preta
+      doc.setLineWidth(0.1); // Linha bem fina
+      doc.rect(tableX, tableY, tableWidth, tableHeight, "S"); // Retângulo total
+
+      // Divisão entre colunas
+      doc.line(tableX + column1Width, tableY, tableX + column1Width, tableY + tableHeight); // Linha vertical
+
+      // Estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0); // Preto
+
+      // Adicionar o texto "FROTA" à esquerda
+      doc.text("FROTA:", tableX + 1, tableY + 4.5);
+
+      // Adicionar o valor da frota à direita
+      doc.setFont("helvetica", "normal"); // Texto normal
+      doc.text(`${formValues.frota}`, tableX + column1Width + 3, tableY + 4.5);
+      // #endregion
+      //--------------------------------------------------------------------------------------------------------------------
+
+
+
+      // #region dados do cliente
+      // Definir a posição e dimensões do retângulo
+      const verticalDados = 85; // Posição vertical do texto
+      const paddingDados = 4; // Espaço acima e abaixo do texto
+      const heightDados = 7; // Altura do retângulo
+      const widthDados = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectDados = padding; // Posição X do retângulo, ajustado para a margem da página
+
+      // Desenhar o retângulo de fundo
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectDados, verticalDados - paddingDados, widthDados, heightDados, "F"); // Retângulo preenchido
+
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+
+      // Texto
+      const dadosText = "DADOS DO CLIENTE";
+
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2dados = verticalDados + 1; // Ajustar o Y para um pouco abaixo
+
+      // Adicionar texto à esquerda
+      doc.text(dadosText, rectX2 + 1, adjustedTextY2dados);
+
+
+      //TABELA DADOS CLIENTE
+      // Definições da tabela
+      const tableXdados = 5; // Posição X inicial
+      const tableYdados = 88.1; // Posição Y inicial
+      const tabelaWidthdados = 210 - 2 * padding; // Largura total da tabela
+      const rowHeight = 8; // Altura de cada linha
+      const colWidth = tabelaWidthdados / 4; // Largura de cada coluna
+
+      // Desenhar a borda da tabela
+      doc.setDrawColor(220, 220, 220); // Cor preta
+      doc.setLineWidth(0.1); // Linha bem fina
+      doc.rect(tableXdados, tableYdados, tabelaWidthdados, rowHeight * 4, "S"); // Retângulo total
+
+      // Linhas horizontais (divisão das linhas)
+      for (let i = 1; i < 4; i++) {
+        doc.line(tableXdados, tableYdados + rowHeight * i, tableXdados + tabelaWidthdados, tableYdados + rowHeight * i);
+      }
+
+      // Linhas verticais (divisão das colunas)
+      for (let i = 1; i < 4; i++) {
+        if (i === 1) {
+          doc.line(tableXdados + colWidth * i - 18, tableYdados, tableXdados + colWidth * i - 18, tableYdados + rowHeight * 4);
+        } else if (i === 3) {
+          doc.line(tableXdados + colWidth * i - 16, tableYdados, tableXdados + colWidth * i - 16, tableYdados + rowHeight * 4);
+        } else {
+          doc.line(tableXdados + colWidth * i, tableYdados, tableXdados + colWidth * i, tableYdados + rowHeight * 4);
+        }
+      }
+
+      // Dados da tabela
+      const leftColumnBold = ["Razão social:", "CNPJ/CPF:", "CEP:", "Telefone:"];
+      const leftColumnNormal = [
+        selectedClient?.nome || "",
+        "XXX.XXX.XXX-XX",
+        formValuesClients.cep || "",
+        selectedClient?.telefone || ""
+      ];
+
+      const rightColumnBold = ["Nome fantasia:", "Endereço:", "Cidade/UF:", "E-mail:"];
+      const rightColumnNormal = [
+        selectedClient?.nome || "",
+        formValuesClients.logradouro || "",
+        `${formValuesClients.cidade || ""}/${formValuesClients.estado || ""}`,
+        selectedClient?.email || ""
+      ];
+
+      // Adicionar textos
+      for (let i = 0; i < 4; i++) {
+        // Primeira coluna (bold)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(leftColumnBold[i], tableXdados + 1, tableYdados + rowHeight * i + 5);
+
+        // Segunda coluna (normal)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(leftColumnNormal[i], tableXdados + colWidth - 16, tableYdados + rowHeight * i + 5);
+
+        // Terceira coluna (bold)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(rightColumnBold[i], tableXdados + colWidth * 2 + 1, tableYdados + rowHeight * i + 5);
+
+        // Quarta coluna (normal)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(rightColumnNormal[i], tableXdados + colWidth * 3 - 14, tableYdados + rowHeight * i + 5);
+      }
+
+      // #endregion
+      //----------------------------------------------------------------------------------------------------------------------
+
+
+      // Definir a posição e dimensões do retângulo
+      const verticalProdutos = 130; // Posição vertical do texto
+      const paddingProdutos = 4; // Espaço acima e abaixo do texto
+      const heightProdutos = 7; // Altura do retângulo
+      const widthProdutos = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectProdutos = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectProdutos, verticalProdutos - paddingProdutos, widthProdutos, heightProdutos, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(220, 220, 220); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectProdutos, verticalProdutos - paddingProdutos, widthProdutos, heightProdutos, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      // Texto
+      const produtosText = "PRODUTOS";
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2produtos = verticalProdutos + 1; // Ajustar o Y para um pouco abaixo
+      // Adicionar texto à esquerda
+      doc.text(produtosText, rectX2 + 1, adjustedTextY2produtos);
+
+      // Simulando produtos do orçamento
+      const produtos = produtosSelecionados.map((produto) => {
+        const quantidade = produto.quantidade ?? 0;
+        const valorUnitario = Number(produto.valor_unitario) || 0;
+
+        return [
+          produto.cod_produto, // Código
+          (produto as any).dbs_itens.descricao, // Descrição
+          (produto as any).dbs_itens.cod_un, // Unidade de medida
+          quantidade, // Quantidade
+          `R$ ${valorUnitario.toFixed(2)}`, // Valor Unitário
+          `R$ ${(quantidade * valorUnitario).toFixed(2)}` // Total
+        ];
+      });
+
+      // Calcular o total de todos os produtos
+      const totalProdutosPDF = produtosSelecionados.reduce((acc, produto) => {
+        const quantidade = produto.quantidade ?? 0;
+        const valorUnitario = Number(produto.valor_unitario) || 0;
+        return acc + (quantidade * valorUnitario);
+      }, 0);
+      // Convertendo para formato monetário
+      const totalProdutosPDFFormatted = `R$ ${totalProdutosPDF.toFixed(2)}`;
+
+      // tabela de produtos
+      const columnWidths = [15, 50, 18, 17, 50, 50]; // Exemplo de larguras de cada coluna
+      const totalWidth = columnWidths.reduce((acc, width) => acc + width, 0); // Soma todas as larguras das colunas
+
+      autoTable(doc, {
+        startY: 133, // Começar a tabela após o cabeçalho
+        head: [["#", "NOME", "CÓD UN", "QTD", "VALOR UNITÁRIO", "SUBTOTAL"]],
+        body: produtos,
+        theme: "striped",
+        styles: { fontSize: 10, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [220, 220, 220] },
+        margin: { left: 4.9 }, // Ajusta a posição da tabela horizontalmente
+        columnStyles: {
+          0: { cellWidth: columnWidths[0] },
+          1: { cellWidth: columnWidths[1] },
+          2: { cellWidth: columnWidths[2] },
+          3: { cellWidth: columnWidths[3] },
+          4: { cellWidth: columnWidths[4] },
+          5: { cellWidth: columnWidths[5] },
+        },
+        tableLineColor: [220, 220, 220], // Cor das linhas (preto)
+        tableLineWidth: 0.1, // Largura das linhas
+        tableWidth: totalWidth, // Largura da tabela de linhas
+      });
+      // Definir a posição e dimensões do retângulo
+      const verticalTotalProd = (doc as any).lastAutoTable.finalY + 3; // Posição vertical do texto
+      const paddingTotalProd = 4; // Espaço acima e abaixo do texto
+      const heightTotalProd = 7; // Altura do retângulo
+      const widthTotalProd = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectTotalProd = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectTotalProd, verticalTotalProd - paddingTotalProd, widthTotalProd, heightTotalProd, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(220, 220, 220); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectTotalProd, verticalTotalProd - paddingTotalProd, widthTotalProd, heightTotalProd, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2totalProd = verticalTotalProd + 1; // Ajustar o Y para um pouco abaixo
+      // Adicionar texto à direita
+      doc.text("Total", rectTotalProd + 1, adjustedTextY2totalProd);
+      doc.text(totalProdutosPDFFormatted, rectTotalProd + 151.5, adjustedTextY2totalProd);
+
+
+
+      // titulo serviços
+      const verticalServicos = (doc as any).lastAutoTable.finalY + 15; // Posição vertical do texto
+      const paddingServicos = 4; // Espaço acima e abaixo do texto
+      const heightServicos = 7; // Altura do retângulo
+      const widthServicos = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectServicos = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectServicos, verticalServicos - paddingServicos, widthServicos, heightServicos, "F"); // Retângulo preenchido
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      // Texto
+      const servicosText = "SERVIÇOS";
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2servicos = verticalServicos + 1; // Ajustar o Y para um pouco abaixo
+      // Adicionar texto à esquerda
+      doc.text(servicosText, rectServicos + 1, adjustedTextY2servicos);
+
+      // Simulando serviços do orçamento
+      const servicos = servicosSelecionados.map((servico) => {
+        const quantidade = servico.quantidade ?? 0;
+        const valorUnitario = Number(servico.valor_unitario) || 0;
+
+        return [
+          servico.cod_servico, // Código
+          (servico as any).descricao, // Descrição
+          quantidade, // Quantidade
+          `R$ ${valorUnitario.toFixed(2)}`, // Valor Unitário
+          `R$ ${(quantidade * valorUnitario).toFixed(2)}` // Total
+        ];
+      });
+
+      // Calcular o total de todos os serviços
+      const totalServicosPDF = servicosSelecionados.reduce((acc, servico) => {
+        const quantidade = servico.quantidade ?? 0;
+        const valorUnitario = Number(servico.valor_unitario) || 0;
+        return acc + (quantidade * valorUnitario);
+      }, 0);
+      // Convertendo para formato monetário
+      const totalServicosPDFFormatted = `R$ ${totalServicosPDF.toFixed(2)}`;
+
+
+      // tabela de serviços
+      const columnWidthsServ = [15, 68, 18, 50, 49];
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 18, // Ajustar a posição após a tabela anterior
+        head: [["#", "NOME", "QTD", "VALOR UNITÁRIO", "SUBTOTAL"]],
+        body: servicos,
+        theme: "striped",
+        styles: { fontSize: 10, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [220, 220, 220] },
+        margin: { left: 5 },
+        columnStyles: {
+          0: { cellWidth: columnWidthsServ[0] },
+          1: { cellWidth: columnWidthsServ[1] },
+          2: { cellWidth: columnWidthsServ[2] },
+          3: { cellWidth: columnWidthsServ[3] },
+          4: { cellWidth: columnWidthsServ[4] },
+        },
+        tableLineColor: [220, 220, 220], // Cor das linhas (preto)
+        tableLineWidth: 0.1, // Largura das linhas
+        tableWidth: totalWidth, // Largura da tabela de linhas
+      });
+
+      // Definir a posição e dimensões do retângulo
+      const verticalTotalServ = (doc as any).lastAutoTable.finalY + 3; // Posição vertical do texto
+      const paddingTotalServ = 4; // Espaço acima e abaixo do texto
+      const heightTotalServ = 7; // Altura do retângulo
+      const widthTotalServ = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectTotalServ = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectTotalServ, verticalTotalServ - paddingTotalServ, widthTotalServ, heightTotalServ, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(220, 220, 220); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectTotalServ, verticalTotalServ - paddingTotalServ, widthTotalServ, heightTotalServ, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2totalServ = verticalTotalServ + 1; // Ajustar o Y para um pouco abaixo
+      // Adicionar texto à direita
+      doc.text("Total", rectTotalServ + 1, adjustedTextY2totalServ);
+      doc.text(totalServicosPDFFormatted, rectTotalServ + 152.5, adjustedTextY2totalServ);
+
+      //TOTAL PRODUTOS
+      // Definir a posição e dimensões do retângulo
+      const verticalTotalFinalProdutos = verticalTotalServ + 10; // Posição vertical do texto
+      const paddingTotalFinalProdutos = 4; // Espaço acima e abaixo do texto
+      const heightTotalFinalProdutos = 7; // Altura do retângulo
+      const widthTotalFinalProdutos = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectTotalFinalProdutos = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectTotalFinalProdutos, verticalTotalFinalProdutos - paddingTotalFinalProdutos, widthTotalFinalProdutos, heightTotalFinalProdutos, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(180, 180, 180); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectTotalFinalProdutos, verticalTotalFinalProdutos - paddingTotalFinalProdutos, widthTotalFinalProdutos, heightTotalFinalProdutos, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      const adjustedTextY2totalFinalProdutos = verticalTotalFinalProdutos + 1; // Ajustar o Y para um pouco abaixo
+      // Definir o texto
+      const totalTexto = `PRODUTOS: ${totalProdutosPDFFormatted}`;
+      // Calcular a largura do texto dinamicamente
+      const textWidth = doc.getTextWidth(totalTexto);
+      // Definir a posição X para alinhar à direita
+      const posX = 208 - textWidth - padding; // 210 é a largura da página A4 no formato retrato
+      // Adicionar texto à extrema direita
+      doc.text(totalTexto, posX, adjustedTextY2totalFinalProdutos);
+
+      //TOTAL SERVIÇOS
+      // Definir a posição e dimensões do retângulo
+      const verticalTotalFinalServicos = verticalTotalFinalProdutos + 7; // Posição vertical do texto
+      const paddingTotalFinalServicos = 4; // Espaço acima e abaixo do texto
+      const heightTotalFinalServicos = 7; // Altura do retângulo
+      const widthTotalFinalServicos = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectTotalFinalServicos = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectTotalFinalServicos, verticalTotalFinalServicos - paddingTotalFinalServicos, widthTotalFinalServicos, heightTotalFinalServicos, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(180, 180, 180); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectTotalFinalServicos, verticalTotalFinalServicos - paddingTotalFinalServicos, widthTotalFinalServicos, heightTotalFinalServicos, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      const adjustedTextY2totalFinalServicos = verticalTotalFinalServicos + 1; // Ajustar o Y para um pouco abaixo
+      // Definir o texto
+      const totalTextoServicos = `SERVIÇOS: ${totalServicosPDFFormatted}`;
+      // Calcular a largura do texto dinamicamente
+      const textWidthServicos = doc.getTextWidth(totalTextoServicos);
+      // Definir a posição X para alinhar à direita
+      const posXServicos = 208 - textWidthServicos - padding; // 210 é a largura da página A4 no formato retrato
+      // Adicionar texto à extrema direita
+      doc.text(totalTextoServicos, posXServicos, adjustedTextY2totalFinalServicos);
+
+      //TOTAL GERAL
+      // Definir a posição e dimensões do retângulo
+      const verticalTotalFinal = verticalTotalFinalServicos + 7; // Posição vertical do texto
+      const paddingTotalFinal = 4; // Espaço acima e abaixo do texto
+      const heightTotalFinal = 7; // Altura do retângulo
+      const widthTotalFinal = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectTotalFinal = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo      
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectTotalFinal, verticalTotalFinal - paddingTotalFinal, widthTotalFinal, heightTotalFinal, "F"); // Retângulo preenchido
+      // Adicionar a borda
+      doc.setDrawColor(180, 180, 180); // Cor da borda
+      doc.setLineWidth(0.1); // Largura da borda
+      doc.rect(rectTotalFinal, verticalTotalFinal - paddingTotalFinal, widthTotalFinal, heightTotalFinal, "S"); // Borda do retângulo
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      const adjustedTextY2totalFinal = verticalTotalFinal + 1; // Ajustar o Y para um pouco abaixo
+      // Definir o valor total somando produtos e serviços
+      const totalGeral = totalProdutosPDF + totalServicosPDF;
+      const totalTextoFinal = `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}`;
+      // Calcular a largura do texto dinamicamente
+      const textWidthFinal = doc.getTextWidth(totalTextoFinal);
+      // Definir a posição X para alinhar à direita
+      const posXFinal = 208 - textWidthFinal - padding; // 210 é a largura da página A4 no formato retrato
+      // Adicionar texto à extrema direita
+      doc.text(totalTextoFinal, posXFinal, adjustedTextY2totalFinal);
+
+      // Título OBSERVAÇÕES
+      const verticalObservacoes = verticalTotalFinal + 15; // Posição vertical do texto
+      const paddingObservacoes = 4; // Espaço acima e abaixo do texto
+      const heightObservacoes = 7; // Altura do retângulo
+      const widthObservacoes = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
+      const rectObservacoes = padding; // Posição X do retângulo, ajustado para a margem da página
+      // Desenhar o retângulo de fundo
+      doc.setFillColor(220, 220, 220); // Cinza claro
+      doc.rect(rectObservacoes, verticalObservacoes - paddingObservacoes, widthObservacoes, heightObservacoes, "F"); // Retângulo preenchido
+      // Definir estilo do texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Preto
+      // Texto
+      const observacoesText = "OBSERVAÇÕES";
+      // Ajuste para a posição vertical (ajustar um pouco para baixo)
+      const adjustedTextY2observacoes = verticalObservacoes + 1; // Ajustar o Y para um pouco abaixo
+      // Adicionar texto à esquerda
+      doc.text(observacoesText, rectObservacoes + 1, adjustedTextY2observacoes);
+      const Yobervacoes_gerais = adjustedTextY2observacoes + 7
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`${formValues.observacoes_gerais}`, 6, Yobervacoes_gerais);
+
+
+
+
+      // Rodapé
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(10);
+      // Posição da linha para a assinatura
+      const lineY = Yobervacoes_gerais + 40;
+      // Define a espessura da linha
+      doc.setLineWidth(0.1);
+      // Desenha a linha
+      doc.setDrawColor(0, 0, 0); // Cor preta
+      doc.line(60, lineY, 150, lineY);
+      // Adiciona o texto abaixo da linha
+      doc.text("Assinatura do cliente", 105, lineY + 5, { align: "center" });
+      // Desenha o retângulo com fundo transparente e bordas pretas
+      const rectMargin = 10; // Margem entre a linha e o retângulo
+      doc.setDrawColor(0, 0, 0); // Cor preta para as bordas
+      doc.setFillColor(255, 255, 255); // Cor branca para o fundo (transparente na prática)
+      doc.rect(30, lineY - rectMargin, 150, 20); // Retângulo ao redor da assinatura
+
+
+
+      // ✅ Abrir o PDF em uma nova aba
+      const pdfURL = doc.output('bloburl');
+      window.open(pdfURL, '_blank');
+    };
+  };
+  // #endregion
+
+
+
+
   // #endregion
 
 
@@ -1136,6 +1760,66 @@ const OrcamentosPage: React.FC = () => {
 
   // #region FROTAS
   const [modalFrotasVisible, setModalFrotasVisible] = useState(false);
+
+  const handleModalClose = () => {
+    setModalFrotasVisible(false); // Fecha o modal
+  };
+
+  const handleGarantiaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+
+    // Garantir que o valor seja numérico e positivo
+    const numericValue = Math.max(0, Number(value));
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      garantia: numericValue, // Atualiza o valor de garantia no estado
+    }));
+  };
+
+
+  const handleTipoGarantiaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      tipo_garantia: value, // Atualiza o valor de tipo_garantia no estado
+    }));
+  };
+
+  const handleMouseDownSelect = (e: React.MouseEvent<HTMLSelectElement>) => {
+    e.preventDefault(); // Impede a abertura do select
+
+    const selectElement = e.currentTarget;
+    let nextValue;
+
+    // Alterna entre os três valores
+    switch (selectElement.value) {
+      case "dias":
+        nextValue = "meses";
+        break;
+      case "meses":
+        nextValue = "anos";
+        break;
+      case "anos":
+        nextValue = "dias";
+        break;
+      default:
+        nextValue = "dias"; // Valor padrão
+        break;
+    }
+
+    // Atualiza o valor no estado diretamente
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      tipo_garantia: nextValue,
+    }));
+
+    // Atualiza o valor visualmente no select (não é necessário disparar evento)
+    selectElement.value = nextValue;
+  };
+
+
 
   // #endregion
 
@@ -1186,6 +1870,8 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0.0,
       valor_total: 0.0,
+      garantia: 0,
+      tipo_garantia: "",
       dbs_pagamentos_orcamento: [],
       dbs_produtos_orcamento: [],
       dbs_servicos_orcamento: [],
@@ -2376,193 +3062,212 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL FROTAS
           }
           <Dialog
-            header="Modal Frotas"
+            header={`Histórico de Garantias - Frota: ${formValues.frota}`}
             visible={modalFrotasVisible}
-            style={{ width: "auto" }}
-            onHide={closeDialog}
+            onHide={handleModalClose}
+            headerStyle={{
+              backgroundColor: "#D9D9D9",
+              color: "#1B405D",
+              fontWeight: "bold",
+              padding: "0.8rem",
+              height: "3rem",
+            }}
+            style={{ width: "50vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
             footer={
-              <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
 
-                <div className="flex justify-between">
-                  <div>
-                    <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
-                      Histórico de Garantias - Frota XXXXXXX
-                    </h2>
-                  </div>
+              <div className="w-full flex flex-col">
+                <div className="mb-4 flex justify-end">
+                  <p className="text-blue font-bold text-lg">Busca:</p>
+                  <InputText
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder=""
+                    className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                    style={{
+                      border: "1px solid #1B405D80",
+                    }}
+                  />
                 </div>
+                <DataTable
+                  value={filteredFrotas.slice(first, first + rows)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
 
-                <div
-                  className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
-                  style={{ height: "95%" }}
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
+                  }}
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                  }}
+                  className="w-full"
+                  responsiveLayout="scroll"
                 >
-                  <div className="mb-4 flex justify-end">
-                    <p className="text-blue font-bold text-lg">Busca:</p>
-                    <InputText
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder=""
-                      className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                      style={{
-                        border: "1px solid #1B405D80",
-                      }}
-                    />
-                  </div>
-                  <DataTable
-                    value={filteredOrcamentos.slice(first, first + rows)}
-                    paginator={true}
-                    rows={rows}
-                    rowsPerPageOptions={[5, 10]}
-                    rowClassName={(data) => 'hover:bg-gray-200'}
-
-                    onPage={(e) => {
-                      setFirst(e.first);
-                      setRows(e.rows);
+                  <Column
+                    field="cod_orcamento"
+                    header="Cód Orcto"
+                    style={{
+                      width: "2%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
                     }}
-                    tableStyle={{
-                      borderCollapse: "collapse",
-                      width: "100%",
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
                     }}
-                    className="w-full"
-                    responsiveLayout="scroll"
-                  >
-                    <Column
-                      field="cod_orcamento"
-                      header="Código"
-                      style={{
-                        width: "0%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                    />
-                    <Column
-                      header="Cliente"
-                      body={(rowData) => {
-                        const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
-                        return cliente ? cliente.nome : "Não encontrado";
-                      }}
-                      style={{
-                        width: "20%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                    />
+                  />
 
-                    <Column
-                      field="dtCadastro"
-                      header="DT Cadastro"
-                      style={{
-                        width: "4%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                      body={(rowData) => {
-                        // Verifica se a data de dtCadastro está presente e é válida
-                        if (rowData.dtCadastro) {
-                          // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
-                          const date = new Date(rowData.dtCadastro);
+                  <Column
+                    field="cod_orcamento"
+                    header="Nr Pedido"
+                    style={{
+                      width: "2%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
 
-                          // Verifica se a data é válida
-                          if (!isNaN(date.getTime())) {
-                            const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false, // Formato de 24 horas
-                            }).format(date);
-                            return <span>{formattedDate}</span>;
-                          } else {
-                            return <span>Data inválida</span>;
-                          }
+                  <Column
+                    field="dtCadastro"
+                    header="Data Pedido"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Verifica se a data de dtCadastro está presente e é válida
+                      if (rowData.dtCadastro) {
+                        // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
+                        const date = new Date(rowData.dtCadastro);
+
+                        // Verifica se a data é válida
+                        if (!isNaN(date.getTime())) {
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false, // Formato de 24 horas
+                          }).format(date);
+                          return <span>{formattedDate}</span>;
                         } else {
-                          return <span>Sem data</span>;
+                          return <span>Data inválida</span>;
                         }
-                      }}
-                    />
+                      } else {
+                        return <span>Sem data</span>;
+                      }
+                    }}
+                  />
 
-                    <Column
-                      field="prazo"
-                      header="Prazo"
-                      style={{
-                        width: "0%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                      body={(rowData) => {
-                        if (!rowData.prazo) return "-"; // Se estiver vazio, exibe '-'
+                  <Column
+                    header="Data Garantia"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      if (rowData.data_venda && rowData.garantia && rowData.tipo_garantia) {
+                        const dataVenda = new Date(rowData.data_venda);
+                        const garantia = parseInt(rowData.garantia, 10);
 
-                        const [year, month, day] = rowData.prazo.split("T")[0].split("-");
-                        return `${day}/${month}/${year}`;
-                      }}
-                    />
+                        if (!isNaN(dataVenda.getTime()) && !isNaN(garantia)) {
+                          let dataGarantia = new Date(dataVenda);
 
-                    <Column
-                      field="situacao"
-                      header="Situação"
-                      style={{
-                        width: "1%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                    />
+                          switch (rowData.tipo_garantia) {
+                            case "dias":
+                              dataGarantia.setDate(dataGarantia.getDate() + garantia);
+                              break;
+                            case "meses":
+                              dataGarantia.setMonth(dataGarantia.getMonth() + garantia);
+                              break;
+                            case "anos":
+                              dataGarantia.setFullYear(dataGarantia.getFullYear() + garantia);
+                              break;
+                            default:
+                              return <span>Tipo inválido</span>;
+                          }
 
-                  </DataTable>
-                </div>
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }).format(dataGarantia);
+
+                          return <span>{formattedDate}</span>;
+                        }
+                      }
+                      return <span>Sem data</span>;
+                    }}
+                  />
+
+
+                  <Column
+                    field="situacao"
+                    header="Situação"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+
+                </DataTable>
               </div>
+
             }
           >
-            <p>Tem certeza que deseja cancelar este orçamento?</p>
           </Dialog>
           {
             //#endregion
@@ -2584,6 +3289,28 @@ const OrcamentosPage: React.FC = () => {
             onHide={() => closeModal()}
             style={{ width: "90vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
           >
+            {visualizando && (
+              <div className="flex gap-2">
+                <button
+                  className="bg-yellow500 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    setVisualizar(false);
+                    setIsEditing(false);
+                  }}
+                >
+                  Copiar Orçamento
+                </button>
+
+                <button
+                  className="!bg-red500 text-white px-4 py-2 rounded"
+                  onClick={gerarPDF}
+                >
+                  Gerar PDF
+                </button>
+              </div>
+            )}
+
+
 
             <div className="p-fluid grid gap-2 mt-2 ">
 
@@ -3327,30 +4054,37 @@ const OrcamentosPage: React.FC = () => {
                 // #region proxima linha
               }
               <div className="border border-white p-2 rounded">
-                <div className="grid grid-cols-4 gap-2 ">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="relative">
                     <label htmlFor="frota" className="block text-blue font-medium">
                       Frota
                     </label>
-                    <input
-                      id="frota"
-                      name="frota"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      type="text"
-                      value={formValues.frota} // Mantém o valor sincronizado com formValues
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        setFormValues((prev) => ({
-                          ...prev,
-                          frota: e.target.value, // Atualiza o valor de frota
-                        }));
-                      }}
-                    />
-                    <button
-                      className={`bg-green-200 rounded-2xl p-1 transform transition-all duration-50 hover:scale-150 hover:bg-green-400 `}
-                      onClick={() => { setModalFrotasVisible(true) }}
-                    />
-
+                    <div className="flex items-center">
+                      <input
+                        id="frota"
+                        name="frota"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        type="text"
+                        value={formValues.frota}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          setFormValues((prev) => ({
+                            ...prev,
+                            frota: e.target.value,
+                          }));
+                        }}
+                      />
+                      <button
+                        className={`bg-green-200 rounded-2xl p-2 transform transition-all duration-50 hover:scale-125 hover:bg-green-400 ml-2 ${visualizando ? 'hidden' : ''}`}
+                        onClick={() => {
+                          const frotas = getFilteredFrotas(formValues.frota);
+                          setFilteredFrotas(frotas);
+                          setModalFrotasVisible(true);
+                        }}
+                      >
+                        <FaSearch /> {/* Ícone de lupa */}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -3375,7 +4109,7 @@ const OrcamentosPage: React.FC = () => {
 
                   <div>
                     <label htmlFor="transportadora" className="block text-blue font-medium">
-                      Transportadora:
+                      Transportadora
                     </label>
                     <select
                       id="transportadora"
@@ -3390,13 +4124,13 @@ const OrcamentosPage: React.FC = () => {
                         if (selected) {
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            cod_transportadora: selected.cod_transportadora, // Atualizando formValues com cod_transportadora
+                            cod_transportadora: selected.cod_transportadora,
                           }));
                         }
                       }}
                       className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                     >
-                      <option value='' disabled selected>
+                      <option value="" disabled>
                         Selecione
                       </option>
                       {transportadoras.map((transportadora) => (
@@ -3430,10 +4164,10 @@ const OrcamentosPage: React.FC = () => {
                       className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                     />
                   </div>
-
-
                 </div>
               </div>
+
+
               {
                 //#endregion
               }
@@ -3936,6 +4670,63 @@ const OrcamentosPage: React.FC = () => {
               {
                 //#endregion
               }
+
+              <br></br>
+
+              <div className="relative">
+                <label htmlFor="garantia" className="block text-blue font-medium">
+                  Garantia
+                </label>
+                <div className="relative">
+                  <input
+                    id="garantia"
+                    name="garantia"
+                    type="number"
+                    className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                    disabled={visualizando}
+                    value={formValues.garantia}
+                    onChange={handleGarantiaChange} // Chama o handleGarantiaChange para o input
+                    min={0}
+                  />
+                  <select
+                    id="tipo_garantia"
+                    name="tipo_garantia"
+                    value={formValues.tipo_garantia}
+                    disabled={visualizando}
+                    onChange={handleTipoGarantiaChange} // Chama o handleTipoGarantiaChange para o select
+                    onMouseDown={handleMouseDownSelect} // Alteração manual sem disparar um evento fake
+                    className="absolute right-0 top-0 h-full w-[70px] border-l border-gray-400 !bg-gray-50 px-1"
+                    style={{
+                      WebkitAppearance: "none",
+                      MozAppearance: "none",
+                      appearance: "none",
+                      background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)",
+                      color: "black",
+                      textAlign: "center",
+                      border: "2px solid #6b7280",
+                      borderRadius: "0",
+                      paddingRight: "10px",
+                      cursor: "pointer",
+                      transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)";
+                      e.currentTarget.style.borderColor = "#4b5563";
+                      e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)";
+                      e.currentTarget.style.borderColor = "#6b7280";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
+                    }}
+                  >
+                    <option value="dias">&nbsp;Dias</option>
+                    <option value="meses">&nbsp;Meses</option>
+                    <option value="anos">&nbsp;Anos</option>
+                  </select>
+                </div>
+              </div>
 
               <br></br>
 
