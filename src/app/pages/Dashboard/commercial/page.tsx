@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
-import { FaArrowsRotate, FaFolderPlus } from "react-icons/fa6";
+import { FaArrowsRotate, FaFolderPlus, FaClipboardList } from "react-icons/fa6";
 import { TbTool, TbTruck, TbUserScan, TbBrandKick, TbBuilding } from "react-icons/tb";
 import { MdRequestQuote } from "react-icons/md";
 import { redirect } from "next/navigation";
@@ -58,7 +58,7 @@ export default function CommercialPage() {
                     {[{ path: "commercial/clients", icon: <TbUserScan className="text-5xl" />, label: "Clientes" },
                     { path: "commercial/services", icon: <TbTool className="text-5xl" />, label: "Serviços" },
                     { path: "commercial/transportadoras", icon: <TbTruck className="text-5xl" />, label: "Transportadoras" },
-                    { path: "commercial/estruturas", icon: <TbBuilding className="text-5xl" />, label: <>Estruturas de <br />&nbsp;  Orçamento</> }].map((item) => (
+                    { path: "commercial/orcamentos?tipo=estrutura", icon: <TbBuilding className="text-5xl" />, label: <>Estruturas de <br />&nbsp;  Orçamento</> }].map((item) => (
                       <div
                         key={item.path}
                         onClick={() => handleRedirect(item.path)}
@@ -85,6 +85,18 @@ export default function CommercialPage() {
                       <MdRequestQuote className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Orçamento</span>
                       {loadingButton === "commercial/orcamentos" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("commercial/orcamentos?tipo=pedido")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-125 transform transition-transform duration-200"
+                    >
+                      <FaClipboardList className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Pedidos de Venda</span>
+                      {loadingButton === "commercial/orcamentos?tipo=pedido" && (
                         <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
                           <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
                         </div>

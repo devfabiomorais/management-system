@@ -38,6 +38,7 @@ interface Client {
   celular: string;
   telefone: string;
   dtCadastro?: string;
+  documento?: string;
 }
 
 const ClientsPage: React.FC = () => {
@@ -87,6 +88,7 @@ const ClientsPage: React.FC = () => {
     celular: "",
     situacao: "",
     tipo: "",
+    documento: "",
   });
 
   const clearInputs = () => {
@@ -105,6 +107,7 @@ const ClientsPage: React.FC = () => {
       celular: "",
       situacao: "default",
       tipo: "default",
+      documento: "",
     });
   };
 
@@ -125,6 +128,7 @@ const ClientsPage: React.FC = () => {
         "celular",
         "situacao",
         "tipo",
+        "documento"
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -176,71 +180,6 @@ const ClientsPage: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
-    setItemCreateDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        "http://localhost:9009/api/clients/register",
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemCreateDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
-    }
-  };
 
   const [rowData, setRowData] = useState<Client[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -261,6 +200,7 @@ const ClientsPage: React.FC = () => {
         "celular",
         "situacao",
         "tipo",
+        "documento",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -466,20 +406,130 @@ const ClientsPage: React.FC = () => {
     setVisible(false);
   };
 
-  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
-    setFormValues({
-      ...formValues,
-      [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
-    });
+  const formatTelefoneFixo = (telefone: string) => {
+    if (!telefone) return "";
+
+    let value = telefone.replace(/\D/g, ""); // Remove tudo que não for número
+
+    if (value.length === 10) {
+      // Formato telefone fixo: (99) 9999-9999
+      return value.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+    }
+
+    return telefone; // Retorna como está se não tiver 10 dígitos
   };
 
 
-  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault();
+  const formatCelular = (celular: string) => {
+    if (!celular) return "";
+
+    let value = celular.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length === 11) {
+      // Formato celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = value.replace(/^(\d{2})(\d)(\d{4})(\d{4})$/, "($1) $2 $3-$4");
+    } else if (value.length === 10) {
+      // Formato telefone fixo com 8 dígitos: (99) 9999-9999
+      formattedValue = value.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+    }
+
+    return formattedValue;
+  };
+
+  const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length > 2) {
+      // Adiciona o DDD entre parênteses
+      formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    }
+
+    if (value.length === 11) {
+      // Formato para celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d)(\d{4})(\d{4})$/, "$1 $2 $3-$4");
+    } else if (value.length >= 10) {
+      // Formato para telefone fixo (8 dígitos após o DDD): (99) 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d{4})(\d{4})$/, "$1 $2-$3");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      celular: formattedValue,
+    }));
+  };
+
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length > 2) {
+      // Adiciona o DDD entre parênteses
+      formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    }
+
+    if (value.length === 11) {
+      // Formato para celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d)(\d{4})(\d{4})$/, "$1 $2 $3-$4");
+    } else if (value.length >= 10) {
+      // Formato para telefone fixo (8 dígitos após o DDD): (99) 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d{4})(\d{4})$/, "$1 $2-$3");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      telefone: formattedValue,
+    }));
+  };
+
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/\D/g, '');
+
+    // Formata o CEP como 'XXXXX-XXX'
+    let formattedValue = numericValue;
+    if (numericValue.length > 5) {
+      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+    }
+
+    // Atualiza o estado do formulário
+    setFormValues(prevValues => ({
+      ...prevValues,
+      [name]: formattedValue,
+    }));
+
+    // Se o CEP tiver 8 dígitos, faz a busca do endereço
+    if (numericValue.length === 8) {
+      try {
+        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
+
+        if (!response.data.erro) {
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: response.data.logradouro || "",
+            bairro: response.data.bairro || "",
+            cidade: response.data.localidade || "",
+            estado: response.data.uf || "",
+          }));
+        } else {
+          alert("CEP não encontrado!");
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: "",
+            bairro: "",
+            cidade: "",
+            estado: "",
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar o CEP:", error);
+      }
     }
   };
 
@@ -491,6 +541,34 @@ const ClientsPage: React.FC = () => {
       [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length <= 11) {
+      // CPF: ###.###.###-##
+      formattedValue = value
+        .replace(/^(\d{3})(\d)/, "$1.$2")
+        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+    } else {
+      // CNPJ: ##.###.###/####-##
+      formattedValue = value
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      documento: formattedValue,
+    }));
+  };
+
+
 
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
@@ -634,23 +712,22 @@ const ClientsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="telefone"
-                    className="block text-blue font-medium"
-                  >
-                    Telefone
+                  <label htmlFor="documento" className="block text-blue font-medium">
+                    Documento
                   </label>
                   <input
                     type="text"
-                    id="telefone"
-                    name="telefone"
-                    value={formValues.telefone}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
+                    id="documento"
+                    name="documento"
+                    placeholder="CPF ou CNPJ"
+                    value={formValues.documento}
+                    onChange={handleDocumentChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15}
+                    minLength={14}
+                    maxLength={18}
                   />
                 </div>
+
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -665,34 +742,29 @@ const ClientsPage: React.FC = () => {
                     id="celular"
                     name="celular"
                     value={formValues.celular}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
+                    onChange={handleCelularChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     maxLength={15}
                   />
                 </div>
                 <div>
                   <label
-                    htmlFor="situacao"
+                    htmlFor="telefone"
                     className="block text-blue font-medium"
                   >
-                    Situação
+                    Telefone
                   </label>
-                  <select
-                    id="situacao"
-                    name="situacao"
-                    value={formValues.situacao}
-                    defaultValue={"default"}
-                    onChange={(e) =>
-                      setFormValues({ ...formValues, situacao: e.target.value })
-                    }
+                  <input
+                    type="text"
+                    id="telefone"
+                    name="telefone"
+                    value={formValues.telefone}
+                    onChange={handleTelefoneChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="default">Selecione</option>
-                    <option value="ATIVO">Ativo</option>
-                    <option value="DESATIVADO">Inativo</option>
-                  </select>
+                    maxLength={14}
+                  />
                 </div>
+
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -704,10 +776,9 @@ const ClientsPage: React.FC = () => {
                     id="cep"
                     name="cep"
                     value={formValues.cep}
-                    onChange={handleCepInputChange} // Formata o CEP enquanto digita
-                    onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
+                    onChange={handleCepChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
+                    maxLength={15} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
                   />
                 </div>
                 <div>
@@ -793,79 +864,66 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+                <div>
+                  <div>
+                    <label
+                      htmlFor="situacao"
+                      className="block text-blue font-medium"
+                    >
+                      Situação
+                    </label>
+                    <select
+                      id="situacao"
+                      name="situacao"
+                      value={formValues.situacao}
+                      defaultValue={"default"}
+                      onChange={(e) =>
+                        setFormValues({ ...formValues, situacao: e.target.value })
+                      }
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    >
+                      <option value="default">Selecione</option>
+                      <option value="ATIVO">Ativo</option>
+                      <option value="DESATIVADO">Inativo</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-center items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
-                <Button
-                  label="Sair Sem Salvar"
-                  className="text-white"
-                  icon="pi pi-times"
-                  style={{
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.5rem 3.2rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                  }}
-                  onClick={() => closeModal()}
-                />
+            <br></br>
 
-                {!isEditing ? (
-                  <>
-                    <Button
-                      label="Salvar e Voltar à Listagem"
-                      className="text-white"
-                      icon="pi pi-refresh"
-                      onClick={() => { handleSaveReturn(false) }}
-                      disabled={itemCreateReturnDisabled}
-                      style={{
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                      }}
-                    />
-                    <Button
-                      label="Salvar e Adicionar Outro"
-                      className="text-white"
-                      icon="pi pi-check"
-                      onClick={() => { handleSaveReturn(true) }}
-                      disabled={itemCreateDisabled}
-                      style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                      }}
-                    />
-                  </>
-                ) : (
+            <div className={`grid gap-3 h-[50px] w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <Button
+                label="Sair Sem Salvar"
+                className="text-white"
+                icon="pi pi-times"
+                style={{
+                  backgroundColor: "#dc3545",
+                  border: "1px solid #dc3545",
+                  padding: "0.5rem 3.2rem",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+                onClick={() => closeModal()}
+              />
+
+              {!isEditing ? (
+                <>
                   <Button
-                    label="Salvar"
+                    label="Salvar e Voltar à Listagem"
                     className="text-white"
-                    icon="pi pi-check"
-                    onClick={handleSaveEdit}
-                    disabled={itemEditDisabled}
+                    icon="pi pi-refresh"
+                    onClick={() => { handleSaveReturn(false) }}
+                    disabled={itemCreateReturnDisabled}
                     style={{
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 5.5rem",
+                      backgroundColor: "#007bff",
+                      border: "1px solid #007bff",
+                      padding: "0.5rem 1.5rem",
                       fontSize: "14px",
                       fontWeight: "bold",
                       display: "flex",
@@ -874,9 +932,47 @@ const ClientsPage: React.FC = () => {
                       width: "100%",
                     }}
                   />
-                )}
-              </div>
+                  <Button
+                    label="Salvar e Adicionar Outro"
+                    className="text-white"
+                    icon="pi pi-check"
+                    onClick={() => { handleSaveReturn(true) }}
+                    disabled={itemCreateDisabled}
+                    style={{
+                      backgroundColor: "#28a745",
+                      border: "1px solid #28a745",
+                      padding: "0.5rem 1.5rem",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "100%",
+                    }}
+                  />
+                </>
+              ) : (
+                <Button
+                  label="Salvar"
+                  className="text-white"
+                  icon="pi pi-check"
+                  onClick={handleSaveEdit}
+                  disabled={itemEditDisabled}
+                  style={{
+                    backgroundColor: "#28a745",
+                    border: "1px solid #28a745",
+                    padding: "0.5rem 5.5rem",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                  }}
+                />
+              )}
             </div>
+
 
           </Dialog>
 
@@ -1009,25 +1105,7 @@ const ClientsPage: React.FC = () => {
                     return <span>{tipoExibido}</span>;
                   }}
                 />
-                <Column
-                  field="situacao"
-                  header="Situação"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
+
                 <Column
                   field="email"
                   header="E-mail"
@@ -1050,8 +1128,30 @@ const ClientsPage: React.FC = () => {
                 <Column
                   field="celular"
                   header="Celular"
+                  body={(rowData) => formatCelular(rowData.celular)}
                   style={{
-                    width: "1%",
+                    width: "11%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+
+                <Column
+                  field="telefone"
+                  header="Telefone"
+                  body={(rowData) => formatTelefoneFixo(rowData.telefone)}
+                  style={{
+                    width: "11%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1067,8 +1167,8 @@ const ClientsPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="telefone"
-                  header="Telefone"
+                  field="situacao"
+                  header="Situação"
                   style={{
                     width: "1%",
                     textAlign: "center",

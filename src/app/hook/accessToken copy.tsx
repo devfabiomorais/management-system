@@ -4,8 +4,6 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 interface TokenContextType {
   token: string | null;
   setToken: (token: string | null) => void;
-  codUsuarioLogado: number | null;
-  setCodUsuarioLogado: (cod: number | null) => void;
 }
 
 const TokenContext = createContext<TokenContextType | undefined>(undefined);
@@ -16,16 +14,9 @@ interface TokenProviderProps {
 
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
+    // Recupera o token do localStorage no carregamento inicial
     if (typeof window !== "undefined") {
       return localStorage.getItem("@Birigui:token");
-    }
-    return null;
-  });
-
-  const [codUsuarioLogado, setCodUsuarioLogado] = useState<number | null>(() => {
-    if (typeof window !== "undefined") {
-      const storedCod = localStorage.getItem("@Birigui:cod_usuario");
-      return storedCod ? parseInt(storedCod, 10) : null;
     }
     return null;
   });
@@ -38,16 +29,8 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
     }
   }, [token]);
 
-  useEffect(() => {
-    if (codUsuarioLogado !== null) {
-      localStorage.setItem("@Birigui:cod_usuario", String(codUsuarioLogado));
-    } else {
-      localStorage.removeItem("@Birigui:cod_usuario");
-    }
-  }, [codUsuarioLogado]);
-
   return (
-    <TokenContext.Provider value={{ token, setToken, codUsuarioLogado, setCodUsuarioLogado }}>
+    <TokenContext.Provider value={{ token, setToken }}>
       {children}
     </TokenContext.Provider>
   );

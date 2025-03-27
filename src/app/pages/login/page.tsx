@@ -8,7 +8,10 @@ import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
 import { useToken } from "../../hook/accessToken";
 
+
+
 export default function Login() {
+  const { setCodUsuarioLogado } = useToken();
   const { setToken } = useToken();
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
@@ -37,15 +40,18 @@ export default function Login() {
       const response = await axios.post("http://localhost:9009/api/auth/login", payload);
 
       if (response.status === 200) {
-        setToken(response.data.token)
+        setToken(response.data.token);
+        setCodUsuarioLogado(response.data.id); // Agora salva o código do usuário
         localStorage.setItem("@Birigui:token", response.data.token);
-        localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo)
+        localStorage.setItem("@Birigui:cod_usuario", response.data.cod_usuario);
+
         toast.success("Login realizado com sucesso!", {
           position: "top-right",
           autoClose: 2000,
         });
+
         setTimeout(() => {
-          redirect("/pages/Dashboard/home")
+          redirect("/pages/Dashboard/home");
         }, 2000);
       }
     } catch (err: any) {
@@ -62,6 +68,7 @@ export default function Login() {
       }
     }
   };
+
 
   return (
     <div className="flex flex-col justify-between min-h-screen bg-gray-200">

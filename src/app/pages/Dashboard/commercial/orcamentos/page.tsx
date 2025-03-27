@@ -1,7 +1,7 @@
 "use client";
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { MdVisibility } from "react-icons/md";
-import { FaTimes, FaPlus, FaBan } from "react-icons/fa";
+import { MdContentCopy, MdRequestQuote, MdVisibility } from "react-icons/md";
+import { FaTimes, FaPlus, FaBan, FaRegCopy, FaRegBuilding, FaSuse } from "react-icons/fa";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -24,9 +24,99 @@ import { useGroup } from "@/app/hook/acessGroup";
 import { truncate } from "fs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Dropdown } from "primereact/dropdown";
+import { MultiSelect } from "primereact/multiselect";
+import { useSearchParams, useRouter } from "next/navigation";
+import { AiFillFilePdf } from "react-icons/ai";
+import { GiCalculator } from "react-icons/gi";
 
+interface PedidosVenda {
+  cod_pedido_venda: number;
+  cod_orcamento: number;
+  cod_cliente: number;
+  dt_hr_pedido: Date;
+  cod_usuario_pedido: number;
+  situacao: string;
+  valor_total: number;
+  cod_nota_fiscal: number;
+  dbs_orcamentos: any[];
+  dbs_clientes: any[];
+  dbs_usuarios: any[];
+}
 
+interface ItemFamilia {
+  cod_familia: number;
+  descricao: string;
+  nome: string;
+}
 
+interface Establishment {
+  cod_estabelecimento: number;
+  nome: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  complemento: string;
+  estado: string;
+}
+
+interface ItemMedida {
+  cod_un: number;
+  descricao: string;
+  un: string;
+}
+
+interface ProdutosCadastro {
+  cod_item: string;
+  descricao: string;
+  narrativa: string;
+  dbs_unidades_medida?: {
+    un?: string;
+    cod_un: number;
+  } | null;
+  dbs_familias?: {
+    cod_familia: number;
+    nome: string;
+    descricao: string
+  };
+  dbs_estabelecimentos_item?: Array<{
+    cod_estabel: number;
+    cod_estabel_item: number;
+    cod_item: string;
+  }>;
+  cod_un: { cod_un: number; un: string; descricao: string } | null;
+  cod_familia: { cod_familia: number; nome: string; descricao: string } | null
+  cod_estabelecimento: string[];
+  dt_hr_criacao?: string;
+  anexo?: File;
+  situacao: string;
+  valor_custo: number;
+  valor_venda: number;
+}
+
+interface ServicoCadastro {
+  cod_servico: number;
+  nome: string;
+  descricao?: string;
+  valor_venda?: string;
+  valor_custo?: string;
+  comissao?: string;
+  dtCadastroServ?: string;
+  situacao?: string;
+}
+
+interface Estruturas {
+  cod_estrutura_orcamento: number;
+  nome: string;
+  descricao?: string;
+  dt_hr_criacao: Date;
+  cod_usuario_criado: number;
+  situacao: string;
+  dbs_produtos_estrutura_orcamento: any[];
+  dbs_servicos_estrutura_orcamento: any[];
+}
 
 interface Transportadora {
   cod_transportadora: number;
@@ -116,6 +206,7 @@ interface Client {
   celular: string;
   telefone: string;
   dtCadastro?: string;
+  documento?: string;
 }
 
 interface CentroCusto {
@@ -162,12 +253,11 @@ interface Produto {
   valor_desconto: number;
   tipo_desconto: "Percentual" | "Reais";
 }
-//cod_produto, cod_orcamento, quantidade, valor_unitario, desconto
 
 
 const OrcamentosPage: React.FC = () => {
   const { groupCode } = useGroup();
-  const { token } = useToken();
+  const { token, codUsuarioLogado } = useToken();
   const { permissions } = useUserPermissions(groupCode ?? 0, "Comercial");
   let [loading, setLoading] = useState(false);
   let [color, setColor] = useState("#B8D047");
@@ -185,8 +275,432 @@ const OrcamentosPage: React.FC = () => {
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [orcamentoIdToDelete, setOrcamentoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [isEditingProd, setIsEditingProd] = useState<boolean>(false);
-  const [isEditingServ, setIsEditingServ] = useState<boolean>(false);
+
+
+
+  // #region ESTRUTURAS 
+  const [modalUsarEstruturaVisible, setModalUsarEstruturaVisible] = useState(false);
+  const handleModalUsarEstruturaClose = () => {
+    setModalUsarEstruturaVisible(false); // Fecha o modal
+  };
+
+  const [selectedEstrutura, setSelectedEstrutura] = useState<Estruturas | null>(null);
+  const [estruturaIDtoCancel, setEstruturaIdToCancel] = useState<number | null>(null);
+  const [formValuesEstruturas, setFormValuesEstruturas] = useState<Estruturas>({
+    cod_estrutura_orcamento: 0,
+    nome: "",
+    descricao: "",
+    dt_hr_criacao: new Date(),
+    cod_usuario_criado: codUsuarioLogado !== null ? codUsuarioLogado : 0, // Melhor leitura
+    situacao: "",
+    dbs_produtos_estrutura_orcamento: [],
+    dbs_servicos_estrutura_orcamento: [],
+  });
+
+  useEffect(() => {
+    if (codUsuarioLogado !== null) {
+      setFormValuesEstruturas((prev) => ({
+        ...prev,
+        cod_usuario_criado: codUsuarioLogado, // Define o usuário logado
+      }));
+    }
+  }, [codUsuarioLogado]);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tipo = searchParams.get('tipo'); // Pega o parâmetro da URL
+  const [isEstrutura, setIsEstrutura] = useState(false);
+
+  useEffect(() => {
+    setIsEstrutura(tipo === "estrutura");
+  }, [tipo]);
+
+
+  const [estruturas, setEstruturas] = useState<Estruturas[]>([]);
+  const fetchEstruturas = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/estruturas",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setEstruturas(response.data.estruturas);
+
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar estruturas:", error);
+    }
+  };
+
+
+  const filteredEstruturas = estruturas.filter((estrutura) => {
+    // Apenas ATIVO aparecem
+    if (estrutura.situacao !== "Ativo") {
+      return false;
+    }
+
+    // Função de busca
+    return Object.values(estrutura).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  useEffect(() => {
+    // Atualiza qualquer estado que dependa de estruturas ou
+    // força a atualização de componentes ao alterar estados relacionados
+    setFirst(0);  // Por exemplo, reinicia a paginação quando estruturas mudar
+  }, [estruturas]);  // Esse useEffect roda sempre que `estruturas` for alterada
+
+
+  const handleCancelarEstrutura = async () => {
+    if (estruturaIDtoCancel === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/estruturas/cancel/${estruturaIDtoCancel}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchEstruturas(); // Atualizar a lista de estruturas
+        setModalDeleteVisible(false);
+        toast.success("Estrutura de orçamento cancelada com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar estrutura de orçamento.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao cancelar estrutura de orçamento:", error);
+      toast.error("Erro ao cancelar estrutura de orçamento. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleEditEstrutura = (estrutura: Estruturas, visualizar: boolean) => {
+    setVisualizar(visualizar)
+    console.log("Estrutura recebida para edição:", estrutura);
+
+    console.log("Produtos recebidos:", estrutura.dbs_produtos_estrutura_orcamento);
+    console.log("Serviços recebidos:", estrutura.dbs_servicos_estrutura_orcamento);
+
+
+    setFormValuesEstruturas(estrutura);
+    setSelectedEstrutura(estrutura);
+
+    setProdSelecionados(estrutura.dbs_produtos_estrutura_orcamento ?
+      estrutura.dbs_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
+      : []);
+    setServicosSelecionados(estrutura.dbs_servicos_estrutura_orcamento ?
+      estrutura.dbs_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
+      : []);
+
+    if (isEstrutura) {
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+    }
+    setVisible(true); // Abre o modal
+  };
+
+  const handleUsarEstrutura = (estrutura: Estruturas) => {
+    setModalUsarEstruturaVisible(false);
+
+    setProdSelecionados(estrutura.dbs_produtos_estrutura_orcamento ?
+      estrutura.dbs_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
+      : []);
+    setServicosSelecionados(estrutura.dbs_servicos_estrutura_orcamento ?
+      estrutura.dbs_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
+      : []);
+    console.log(produtosSelecionados);
+    console.log(servicosSelecionados);
+    setIsEditing(false);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("tipo"); // Remove o parâmetro 'tipo'
+    router.push(`/pages/Dashboard/commercial/orcamentos?${params.toString()}`, { scroll: false });
+
+    setVisible(true); // Abre o modal
+  };
+
+  const handleSaveEditEstrutura = async () => {
+    try {
+      // Validação dos campos obrigatórios
+      const requiredFields = ["nome", "descricao", "situacao"];
+
+      const isEmptyField = requiredFields.some(
+        (field) =>
+          Object.prototype.hasOwnProperty.call(formValuesEstruturas, field) &&
+          (formValuesEstruturas[field as keyof typeof formValuesEstruturas] === "" ||
+            formValuesEstruturas[field as keyof typeof formValuesEstruturas] === null ||
+            formValuesEstruturas[field as keyof typeof formValuesEstruturas] === undefined)
+      );
+
+      if (isEmptyField) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      const updatedFormValuesEditEstruturas = {
+        ...formValuesEstruturas,
+        produtos: produtosSelecionados.map((produto) => ({
+          ...produto,
+          valor_venda: produto.valor_unitario
+        })),
+        servicos: servicosSelecionados.map((servico) => ({
+          ...servico,
+          valor_venda: servico.valor_unitario
+        })),
+        situacao: "Ativo",
+      };
+
+      // Envio dos dados para a API
+      const response = await axios.put(
+        `http://localhost:9009/api/estruturas/edit/${formValuesEstruturas.cod_estrutura_orcamento}`,
+        updatedFormValuesEditEstruturas,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setIsEditing(false);
+        setItemEditDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchEstruturas();
+        toast.success("Estrutura de orçamento atualizada com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+      } else {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar estrutura de orçamento.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error: any) {
+      setItemEditDisabled(false);
+      setLoading(false);
+
+      console.error("Erro ao salvar estrutura de orçamento:", error);
+
+      const errorMessage = error.response?.data?.message || "Erro ao salvar estrutura de orçamento.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // #endregion
+
+  // #region PEDIDOS DE VENDA  
+  const [pedidoIDtoCancel, setPedidoIdToCancel] = useState<number | null>(null);
+  const [pedidosVenda, setPedidosVenda] = useState<PedidosVenda[]>([]);
+  const [isPedido, setIsPedido] = useState(false);
+  const [formValuesPedidosVenda, setFormValuesPedidosVenda] = useState<PedidosVenda>({
+    cod_pedido_venda: 0,
+    cod_orcamento: 0,
+    cod_cliente: 0,
+    dt_hr_pedido: new Date,
+    cod_usuario_pedido: 0,
+    situacao: "",
+    valor_total: 0,
+    cod_nota_fiscal: 0,
+    dbs_orcamentos: [],
+    dbs_clientes: [],
+    dbs_usuarios: [],
+
+  });
+
+  useEffect(() => {
+    setIsPedido(tipo === "pedido");
+  }, [tipo]);
+
+  const fetchPedidosVenda = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:9009/api/pedidosvenda",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPedidosVenda(response.data.pedidos);
+    } catch (error) {
+      console.error("Erro ao carregar pedidos de venda:", error);
+    }
+  };
+
+  const filteredPedidosVenda = pedidosVenda.filter((pedidos) => {
+    // Cancelado nao aparece
+    if (pedidos.situacao === "Cancelado") {
+      return false;
+    }
+
+    // Função de busca
+    return Object.values(pedidos).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  const handleCancelarPedido = async () => {
+    if (pedidoIDtoCancel === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/pedidosvenda/cancel/${pedidoIDtoCancel}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchPedidosVenda(); // Atualizar a lista de estruturas
+        setModalDeleteVisible(false);
+        toast.success("Pedido de venda cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar pedido de venda.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao cancelar pedido de venda:", error);
+      toast.error("Erro ao cancelar pedido de venda. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleGerarPedidoVenda = async () => {
+
+    try {
+      const updatedFormValues = {
+        cod_orcamento: formValues.cod_orcamento,
+        cod_cliente: formValues.cod_cliente,
+        valor_total: formValues.valor_total,
+        cod_nota_fiscal: formValues.nf_compra
+      };
+
+      // Lista de campos obrigatórios
+      const requiredFields = [
+        "cod_orcamento",
+        "cod_cliente",
+        "valor_total",
+        "cod_nota_fiscal",
+      ];
+
+      // Encontrar o primeiro campo obrigatório vazio
+      const missingField = requiredFields.find((field) => {
+        const value = updatedFormValues[field as keyof typeof updatedFormValues];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (missingField) {
+        toast.info(`Faltou o campo: ${missingField.replace("_", " ")}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      const response = await axios.post(
+        "http://localhost:9009/api/pedidosvenda/register",
+        updatedFormValues,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        handleSituacaoPedido_Gerado(selectedOrcamento ? selectedOrcamento.cod_orcamento : formValues.cod_orcamento);
+        clearInputs();
+        fetchPedidosVenda();
+        toast.success("Pedido de venda gerado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+        router.push("/pages/Dashboard/commercial/orcamentos?tipo=pedido")
+      } else {
+        throw new Error("Erro ao gerar pedido de venda.");
+      }
+    } catch (error: any) {
+
+      console.error("Erro ao gerar pedido de venda:", error);
+
+      const errorMessage = error.response?.data?.message || "Erro ao gerar pedido de venda.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleVisualizarPedidoVenda = async (cod_pedido_venda: number, cod_orcamento: number) => {
+    if (!cod_orcamento || !cod_pedido_venda) {
+      console.error("cod_orcamento ou cod_pedido_venda não recebido.");
+      return;
+    }
+    const pedidoAserBuscado = pedidosVenda.find((pedido) => pedido.cod_pedido_venda === cod_pedido_venda);
+    if (pedidoAserBuscado) {
+      setFormValuesPedidosVenda(pedidoAserBuscado);
+    } else {
+      console.error("Pedido de venda não encontrado.");
+    }
+
+    const orcamentoAserBuscado = orcamentos.find((orcamento) => orcamento.cod_orcamento === cod_orcamento);
+    if (orcamentoAserBuscado) {
+      handleEdit(orcamentoAserBuscado, true);
+    } else {
+      console.error("Orçamento não encontrado.");
+    }
+  };
+
+
+
+  // #endregion
+
 
   // #region TRANSPORTADORAS
   const [selectedTransportadora, setSelectedTransportadora] = useState<Transportadora | null>(null);
@@ -273,6 +787,7 @@ const OrcamentosPage: React.FC = () => {
     celular: "",
     situacao: "",
     tipo: "",
+    documento: "",
   });
   //autopreenchimento de campos ao selecionar algo CLIENTS
   useEffect(() => {
@@ -415,6 +930,7 @@ const OrcamentosPage: React.FC = () => {
 
 
   // #region PRODUTOS  
+  const [produtosCadastro, setProdutosCadastro] = useState<ProdutosCadastro[]>([]);
   const [produtos, setProd] = useState<Produto[]>([]);
   const [produtosSelecionados, setProdSelecionados] = useState<Produto[]>([]);
   const [selectedProd, setSelectedProd] = useState<Produto | null>(null);
@@ -526,9 +1042,6 @@ const OrcamentosPage: React.FC = () => {
   };
 
 
-
-
-
   const handleDescontoUnitProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value === "%prod" ? "Percentual" : "Reais";
     setDescontoUnitProd(newValue);
@@ -565,8 +1078,6 @@ const OrcamentosPage: React.FC = () => {
   }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
 
   const fetchProd = async () => {
-    clearInputs();
-    setLoading(true);
     try {
       const response = await axios.get("http://localhost:9009/api/itens", {
         headers: {
@@ -575,6 +1086,7 @@ const OrcamentosPage: React.FC = () => {
       });
       console.log(response.data.items);
       setProd(response.data.items);
+      setProdutosCadastro(response.data.items);
       setFormValuesProd((prevValues) => ({
         ...prevValues,
         cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
@@ -586,7 +1098,279 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
+  //produtos-cadastro  
+  const [fileName, setFileName] = useState("");
+  const [families, setFamilies] = useState<ItemFamilia[]>([]);
+  const [selectedFamily, setSelectedFamily] = useState<number | null>(null);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
+  const [units, setUnits] = useState<ItemMedida[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ProdutosCadastro | null>(null);
+  const [formValuesCadastroProdutos, setFormValuesCadastroProdutos] = useState<ProdutosCadastro>({
+    cod_item: "",
+    descricao: "",
+    narrativa: "",
+    dbs_unidades_medida: {
+      un: "",
+      cod_un: 0
+    },
+    cod_estabelecimento: [],
+    cod_un: null,
+    cod_familia: null,
+    situacao: "",
+    valor_custo: 0,
+    valor_venda: 0,
+  });
 
+  const handleSaveEditProdutos = async (produto: any = selectedItem) => {
+    if (!produto?.cod_item) {
+      toast.error("Item não selecionado ou inválido. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+
+    try {
+      const formData = new FormData();
+      formData.append("descricao", produto.descricao);
+      formData.append("narrativa", produto.narrativa);
+      if (produto.cod_un !== null) {
+        formData.append("cod_un", produto.cod_un.toString());
+      }
+      if (produto.cod_familia !== null) {
+        formData.append("cod_familia", produto.cod_familia.toString());
+      }
+      formData.append("situacao", produto.situacao);
+
+      // Enviar os estabelecimentos como um array serializado
+      formData.append("cod_estabelecimento", JSON.stringify(selectedEstablishments.map(e => e.cod_estabelecimento)));
+
+      // Adicionar arquivo de anexo, se presente
+      if (produto.anexo) {
+        formData.append("anexo", produto.anexo);
+      }
+
+      // Caso a situação seja "DESATIVADO", atualiza os dados do item
+      const response = await axios.put(`http://localhost:9009/api/itens/edit/${produto.cod_item}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        clearInputsProd();
+        fetchProd();
+        toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
+        setVisibleProd(false);
+      } else {
+        toast.error("Erro ao salvar item.", { position: "top-right", autoClose: 3000 });
+      }
+    } catch (error: any) {
+      console.error("Erro ao atualizar item:", error);
+      toast.error(`Erro ao atualizar item: ${error.response?.data?.msg || "Erro desconhecido"}`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleSaveReturnProdutos = async (fecharTela: boolean) => {
+    try {
+      const requiredFields = [
+        "descricao",
+        "narrativa",
+        "cod_un",
+        "situacao",
+        "cod_familia",
+        "valor_custo",
+        "valor_venda"
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValuesCadastroProdutos[field as keyof typeof formValuesCadastroProdutos];
+        return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
+      });
+
+      if (selectedEstablishments.length === 0) {
+        toast.info("Você deve selecionar pelo menos um estabelecimento!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      if (isEmptyField) {
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("descricao", formValuesCadastroProdutos.descricao);
+      formData.append("narrativa", formValuesCadastroProdutos.narrativa);
+      formData.append("cod_item", formValuesCadastroProdutos.cod_item);
+      if (formValuesCadastroProdutos.cod_un && formValuesCadastroProdutos.cod_un.cod_un !== undefined) {
+        formData.append("cod_un", formValuesCadastroProdutos.cod_un.cod_un.toString());
+      }
+
+      formData.append("situacao", formValuesCadastroProdutos.situacao);
+      formData.append("valor_custo", formValuesCadastroProdutos.valor_custo.toString());
+      formData.append("valor_venda", formValuesCadastroProdutos.valor_venda.toString());
+
+      if (formValuesCadastroProdutos.cod_familia && formValuesCadastroProdutos.cod_familia.cod_familia !== undefined) {
+        formData.append("cod_familia", formValuesCadastroProdutos.cod_familia.cod_familia.toString());
+      }
+
+      selectedEstablishments.forEach((establishment) => {
+        if (establishment.cod_estabelecimento) {
+          console.log(establishment.cod_estabelecimento);
+          formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
+        } else {
+          console.error("Valor inválido para cod_estabelecimento:", establishment);
+        }
+      });
+
+      if (formValuesCadastroProdutos.anexo) {
+        const file = formValuesCadastroProdutos.anexo;
+        formData.append("anexo", file);
+      }
+
+      // Verificar se o "nome" já existe no banco de dados no storedRowData
+      const nomeExists = produtosCadastro.some((item) => item.descricao === formValuesCadastroProdutos.descricao);
+
+      if (nomeExists) {
+        const itemEncontrado = produtosCadastro.find((item) => item.descricao === formValuesCadastroProdutos.descricao);
+        const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
+
+        if (situacaoAtivo) {
+          // Caso o nome exista e a situação seja ATIVO, não permite a ação
+          toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
+            position: "top-right",
+            autoClose: 3000,
+            progressStyle: { background: "yellow" },
+            icon: <span>⚠️</span>, // Usa o emoji de alerta
+          });
+          return;
+        } else {
+          // Caso a situação seja DESATIVADO, atualiza os dados
+          if (itemEncontrado) {
+            setSelectedItem(itemEncontrado);
+          } else {
+            setSelectedItem(null);
+          }
+          await handleSaveEditProdutos(itemEncontrado); // Passa o serviço diretamente para atualização
+          fetchProd();  // Recarrega os produtos
+          clearInputsProd();
+          setVisibleProd(fecharTela);
+          toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+            position: "top-right",
+            autoClose: 10000,
+            progressStyle: { background: "green" },
+            icon: <span>♻️</span>, // Ícone de recarga
+          });
+          return;
+        }
+      }
+
+      // Se o nome não existir, cadastra o item normalmente
+      const response = await axios.post("http://localhost:9009/api/itens/register",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+      if (response.status >= 200 && response.status < 300) {
+        clearInputsProd();
+        fetchProd();
+        toast.success("Item salvo com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        clearInputsProd();
+        setVisibleProd(fecharTela);
+      } else {
+        toast.error("Erro ao salvar item.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar item:", error);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchEstabilishments();
+    fetchUnits();
+    fetchFamilias();
+  }, []);
+
+  const fetchEstabilishments = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/estabilishment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data.estabelecimentos)
+      setEstablishments(response.data.estabelecimentos);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar estabelecimentos:", error);
+    }
+  };
+
+  const fetchUnits = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/unMedida", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUnits(response.data.units);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar unidades de medida:", error);
+    }
+  };
+
+  const fetchFamilias = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/familia/itens/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setFamilies(response.data.families);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar famílias de itens:", error);
+    }
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0]; // Pega o primeiro arquivo selecionado
+      setFileName(file.name); // Atualiza o nome do arquivo no estado
+    }
+  };
 
   // #endregion
 
@@ -604,7 +1388,7 @@ const OrcamentosPage: React.FC = () => {
     setTotalServicosSomados(total);
   }, [servicosSelecionados]); // Executa toda vez que servicosSelecionados mudar
 
-
+  const [servicosCadastro, setServicosCadastro] = useState<ServicoCadastro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
   const [formValuesServico, setFormValuesServico] = useState<Servico>({
@@ -707,73 +1491,191 @@ const OrcamentosPage: React.FC = () => {
     setServicosSelecionados((prev) => prev.filter(servico => servico.id !== id));
   };
 
-  //serviços-cadastro
-  const [descricaoServ, setDescricaoServ] = useState('');
-  const handleInputChangeDescricaoServ = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormValuesServico((prevValues) => ({
-      ...prevValues,
-      [name]: value,
-    }));
+  const clearInputsServ = () => {
+    setFormValues({
+      cod_orcamento: 0,
+      cod_responsavel: 0,
+      cod_cliente: 0,
+      canal_venda: "",
+      data_venda: "",
+      prazo: "",
+      cod_centro_custo: 0,
+      frota: "",
+      nf_compra: "",
+      cod_transportadora: 0,
+      frete: 0,
+      endereco_cliente: "Sim",
+      logradouro: "",
+      cidade: "",
+      bairro: "",
+      estado: "",
+      complemento: "",
+      numero: 0,
+      cep: "",
+      observacoes_gerais: "",
+      observacoes_internas: "",
+      desconto_total: 0,
+      valor_total: 0,
+      dbs_pagamentos_orcamento: [],
+      dbs_produtos_orcamento: [],
+      dbs_servicos_orcamento: [],
+    });
   };
-  const handleSaveReturnServicos = async (fecharTela: boolean) => {
-    setItemCreateReturnDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "nome",
-        "descricao",
-        "valor_custo",
-        "valor_venda",
-        "comissao",
-      ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValuesServico[field as keyof typeof formValuesServico];
-        return value === "" || value === null || value === undefined;
+  //serviços-cadastro  
+  const [formValuesCadastroServicos, setFormValuesCadastroServicos] = useState<ServicoCadastro>({
+    cod_servico: 0,
+    nome: "",
+    descricao: "",
+    valor_custo: "",
+    valor_venda: "",
+    comissao: "",
+  });
+
+  const handleSaveEditServicos = async (servico: any = selectedServico) => {
+    if (!servico?.cod_servico) {
+      toast.error("Serviço não selecionado ou inválido. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
       });
+      return;
+    }
 
-      if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        "http://localhost:9009/api/servicos/register",
-        formValues,
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/servicos/edit/${servico.cod_servico}`,
+        { ...formValuesCadastroServicos, situacao: "Ativo", cod_servico: servico.cod_servico },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
+        //CLEAR INPUTS CADASTRO SERVIÇOS
+        setFormValuesCadastroServicos({
+          cod_servico: 0,
+          nome: "",
+          descricao: "",
+          valor_custo: "",
+          valor_venda: "",
+          comissao: "",
+        });
         fetchServicos();
         toast.success("Serviço salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
-        closeModalServ();
+        setVisibleServ(false);
+      } else {
+        toast.error("Erro ao salvar serviço.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar serviço:", error);
+    }
+  };
+
+  const handleSaveReturnServicos = async (fecharTela: boolean) => {
+
+    try {
+      const requiredFields = [
+        { key: "nome", label: "Nome" },
+        { key: "descricao", label: "Descrição" },
+        { key: "valor_custo", label: "Valor de Custo" },
+        { key: "valor_venda", label: "Valor de Venda" },
+        { key: "comissao", label: "Comissão" },
+      ];
+
+      const missingField = requiredFields.find(({ key }) => {
+        const value = formValuesCadastroServicos[key as keyof typeof formValuesCadastroServicos];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (missingField) {
+        toast.info(`O campo que está faltando é: ${missingField.label}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+
+      const servicoEncontrado = servicosCadastro.find((item) => item.nome === formValuesCadastroServicos.nome);
+      const nomeExists = !!servicoEncontrado;
+      const situacaoInativo = servicoEncontrado?.situacao === "Inativo";
+
+      console.log("Servico encontrado:", servicoEncontrado);
+
+      if (nomeExists && !situacaoInativo) {
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>,
+        });
+        return;
+      }
+
+      if (nomeExists && situacaoInativo && servicoEncontrado?.cod_servico) {
+        await handleSaveEditServicos(servicoEncontrado); // Passa o serviço diretamente        
+        fetchServicos();
+        //CLEAR INPUTS CADASTRO SERVIÇOS
+        setFormValuesCadastroServicos({
+          cod_servico: 0,
+          nome: "",
+          descricao: "",
+          valor_custo: "",
+          valor_venda: "",
+          comissao: "",
+        });
+        setVisibleServ(fecharTela);
+        toast.info("Esse serviço estava inativo na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
+      // Se o nome não existir, cadastra o serviço normalmente
+      const response = await axios.post(
+        "http://localhost:9009/api/servicos/register",
+        formValuesCadastroServicos,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchServicos();
+        toast.success("Serviço salvo com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        //CLEAR INPUTS CADASTRO SERVIÇOS
+        setFormValuesCadastroServicos({
+          cod_servico: 0,
+          nome: "",
+          descricao: "",
+          valor_custo: "",
+          valor_venda: "",
+          comissao: "",
+        });
         setVisibleServ(fecharTela);
       } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
         toast.error("Erro ao salvar serviços.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
       console.error("Erro ao salvar serviços:", error);
     }
   };
@@ -803,22 +1705,24 @@ const OrcamentosPage: React.FC = () => {
   const fetchServicos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        "http://localhost:9009/api/servicos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await axios.get("http://localhost:9009/api/servicos", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const servicosAtivos = response.data.servicos.filter(
+        (servico: { situacao: string; }) => servico.situacao !== "Inativo"
       );
-      console.log(response.data.servicos);
-      setServicos(response.data.servicos);
-      setLoading(false);
+
+      console.log(servicosAtivos);
+      setServicos(servicosAtivos);
+      setServicosCadastro(servicosAtivos);
     } catch (error) {
-      setLoading(false);
       console.error("Erro ao carregar serviços:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
   // #endregion
 
 
@@ -832,6 +1736,7 @@ const OrcamentosPage: React.FC = () => {
   const [produtosTotal, setProdutosTotal] = useState(0);
   const [servicosTotal, setServicosTotal] = useState(0);
   const [frete, setFrete] = useState(0.0);
+  const [freteInput, setFreteInput] = useState(frete.toFixed(2));
   const [valorTotalTotal, setValorTotalTotal] = useState(0);
 
   useEffect(() => {
@@ -903,6 +1808,7 @@ const OrcamentosPage: React.FC = () => {
   const [selectedFormaPagamento, setSelectedFormaPagamento] = useState<Pagamento | null>(null);
   const [parcela, setParcela] = useState<number>(0);
   const [valorParcela, setvalorParcela] = useState<number>(0);
+  const [valorParcelaInput, setValorParcelaInput] = useState(`R$ ${valorParcela.toFixed(2).replace('.', ',')}`); // Estado inicial com "R$"
   const [juros, setJuros] = useState<number>(0);
   const [data_parcela, setDataParcela] = useState<string>("");
   const [quantidadeParcelas, setQuantidadeParcelas] = useState<number>(1); // Novo estado para quantidade de parcelas
@@ -1038,7 +1944,7 @@ const OrcamentosPage: React.FC = () => {
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const filteredOrcamentos = orcamentos.filter((orcamento) => {
-    if (orcamento.situacao !== 'Pendente') {
+    if (orcamento.situacao !== 'Pendente' && orcamento.situacao !== 'Ativo') {
       return false;
     }
 
@@ -1112,7 +2018,6 @@ const OrcamentosPage: React.FC = () => {
     dbs_servicos_orcamento: [],
   });
   useEffect(() => {
-    console.log("FormValues atualizado:", formValues);
   }, [formValues]);
 
 
@@ -1149,65 +2054,100 @@ const OrcamentosPage: React.FC = () => {
   };
 
   // #region PDF
+  const [DOCformatado, setDOCformatado] = useState<string>('');
+
+  const formattedDocumento = () => {
+    let value = selectedClient?.documento || ""
+      ? selectedClient?.documento?.replace(/\D/g, "") ?? ""
+      : (formValuesClients.documento ?? "").replace(/\D/g, "");
+
+    let formattedValue = value;
+
+    if (value.length <= 11) {
+      // CPF: ###.###.###-##
+      formattedValue = value
+        .replace(/^(\d{3})(\d)/, "$1.$2")
+        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+    } else if (value.length > 11) {
+      // CNPJ: ##.###.###/####-##
+      formattedValue = value
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+    }
+    setDOCformatado(formattedValue); // Atualiza o estado com o valor formatado
+  };
+  useEffect(() => {
+    formattedDocumento();  // Garante que a função seja chamada assim que o estado do "documento" mudar
+  }, [selectedClient?.documento, formValuesClients.documento]);
+
+
+
+
   const gerarPDF = () => {
     const doc = new jsPDF();
 
     // Adicionar a logo
     const img = new Image();
-    img.src = "/logo-birigui-bgtransparent.png"; // Certifique-se de ter essa imagem na pasta 'public'    
+    img.src = "/logo-birigui-bgtransparent.png"; // Certifique-se de ter essa imagem na pasta 'public'
 
     img.onload = function () {
-      // #region cabeçalho   
+      const totalPages = doc.internal.pages.length - 1;
+      const finalY = doc.internal.pageSize.height - 5; // Posição padrão no final da página
+      const maxHeight = doc.internal.pageSize.height; // Altura total da página
+      const marginBottom = 10; // Margem inferior
+      let yPosition = 40; // Começa abaixo do cabeçalho
+
+
+
+      // Função para desenhar o cabeçalho em todas as páginas
+      const createHeader = (doc: any, img: any) => {
+        const padding = 5;
+        const headerWidth = 210 - 2 * padding;
+        const headerHeight = 30;
+
+        doc.rect(padding, padding, headerWidth, headerHeight); // Fundo do cabeçalho
+
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.01);
+        doc.rect(padding, padding, headerWidth, headerHeight, 'S'); // Borda
+
+        doc.addImage(img, "PNG", 5, 6, 30, 25); // Logo
+
+        const leftX = 35;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("BIRIGUI SISTEMAS HIDRÁULICOS", leftX, 10);
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+
+        doc.text(`CNPJ: 52.489.657/0001-68`, leftX, 14);
+        doc.text(`Endereço: R Diogo Linares Moralles, 141`, leftX, 19);
+        doc.text(`Birigui-SP - CEP: 16204-436`, leftX, 24);
+
+        const telefone = "(18) 2185-0801 / (18) 9 3085-3795";
+        const email = "birigui@biriguish.com.br";
+        const vendedor = `Vendedor: ${formValues.cod_responsavel}`;
+
+        const margemDireita = 200;
+        doc.text(telefone, margemDireita - doc.getTextWidth(telefone), 14);
+        doc.text(email, margemDireita - doc.getTextWidth(email), 19);
+        doc.text(vendedor, margemDireita - doc.getTextWidth(vendedor), 24);
+      };
+
+      // Chama o cabeçalho na primeira página
+      createHeader(doc, img);
+
+      //--------------------------------------------------------------------------------------------------------------------
+
+
+
       const padding = 5; // Definindo o padding (espaço) ao redor do retângulo
       const headerWidth = 210 - 2 * padding; // Largura do cabeçalho com padding
       const headerHeight = 30; // Altura do cabeçalho
-
-      doc.rect(padding, padding, headerWidth, headerHeight); // Retângulo de fundo para o cabeçalho com padding
-
-      // Desenhando o retângulo com bordas nos quatro lados e padding
-      doc.setDrawColor(0, 0, 0); // Cor da borda (preto)
-      doc.setLineWidth(0.01); // Largura da borda
-      doc.rect(padding, padding, headerWidth, headerHeight, 'S'); // Borda de 4 lados com padding
-
-      // Logo à esquerda preenchendo altura do cabeçalho
-      doc.addImage(img, "PNG", 5, 6, 30, 25); // Posição e tamanho da logo
-
-      // Posições para o texto
-      const leftX = 35; // Posição à esquerda, após o logo
-
-      // Título em negrito
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("BIRIGUI SISTEMAS HIDRÁULICOS", leftX, 10); // Alinhado após o logo
-
-      // Informações abaixo do título
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-
-      const margemDireita = 200; // Define a posição da margem direita
-
-      // Informações combinadas à esquerda
-      doc.text(`CNPJ: 52.489.657/0001-68`, leftX, 14);
-      doc.text(`Endereço: R Diogo Linares Moralles, 141, - Distrito Industrial Jorge`, leftX, 19);
-      doc.text(`ISSA JUNIOR`, leftX, 24);
-      doc.text(`Birigui-SP - CEP: 16204-436`, leftX, 29);
-
-      // Informações alinhadas à direita
-      const telefone = "(18) 2185-0801 / (18) 9 3085-3795";
-      const email = "birigui@biriguish.com.br";
-      const vendedor = `Vendedor: ${formValues.cod_responsavel}`;
-
-      // Calcula a largura do texto para alinhar corretamente
-      const telefoneWidth = doc.getTextWidth(telefone);
-      const emailWidth = doc.getTextWidth(email);
-      const vendedorWidth = doc.getTextWidth(vendedor);
-
-      doc.text(telefone, margemDireita - telefoneWidth, 14); // Alinhado à direita
-      doc.text(email, margemDireita - emailWidth, 19); // Alinhado à direita
-      doc.text(vendedor, margemDireita - vendedorWidth, 24); // Alinhado à direita
-      // #endregion
-      //--------------------------------------------------------------------------------------------------------------------
-
 
 
       // #region orçamento
@@ -1233,7 +2173,7 @@ const OrcamentosPage: React.FC = () => {
       doc.setTextColor(0, 0, 0); // Preto
 
       // Texto "ORÇAMENTO Nº" e data
-      const orcamentoText = `ORÇAMENTO Nº ${formValues.cod_orcamento}`;
+      const orcamentoText = `${isPedido ? "PEDIDO Nº " + formValuesPedidosVenda.cod_pedido_venda : "ORÇAMENTO Nº " + formValues.cod_orcamento}`;
       const dataVendaText = new Date(formValues.data_venda).toLocaleDateString("pt-BR"); // dd/mm/aaaa
 
       // Calcular a largura do texto "ORÇAMENTO Nº"
@@ -1260,7 +2200,7 @@ const OrcamentosPage: React.FC = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0); // Preto
-      doc.text('MOTOR DE RODA CASE 9900', 5, 55);
+      doc.text(`Canal de venda: ${formValues.canal_venda}`, 5, 55);
 
       // #region previsao de entrega
       // Definir a posição e dimensões do retângulo
@@ -1381,11 +2321,12 @@ const OrcamentosPage: React.FC = () => {
         }
       }
 
+
       // Dados da tabela
       const leftColumnBold = ["Razão social:", "CNPJ/CPF:", "CEP:", "Telefone:"];
       const leftColumnNormal = [
         selectedClient?.nome || "",
-        "XXX.XXX.XXX-XX",
+        DOCformatado ? DOCformatado : (selectedClient?.documento || ""),
         formValuesClients.cep || "",
         selectedClient?.telefone || ""
       ];
@@ -1425,6 +2366,10 @@ const OrcamentosPage: React.FC = () => {
       //----------------------------------------------------------------------------------------------------------------------
 
 
+
+
+
+      // #region produtos
       // Definir a posição e dimensões do retângulo
       const verticalProdutos = 130; // Posição vertical do texto
       const paddingProdutos = 4; // Espaço acima e abaixo do texto
@@ -1479,12 +2424,15 @@ const OrcamentosPage: React.FC = () => {
 
       autoTable(doc, {
         startY: 133, // Começar a tabela após o cabeçalho
+        didDrawPage: function (data) {
+          createHeader(doc, img);
+        },
         head: [["#", "NOME", "CÓD UN", "QTD", "VALOR UNITÁRIO", "SUBTOTAL"]],
         body: produtos,
-        theme: "striped",
+        theme: "grid",
         styles: { fontSize: 10, textColor: [0, 0, 0] },
         headStyles: { fillColor: [220, 220, 220] },
-        margin: { left: 4.9 }, // Ajusta a posição da tabela horizontalmente
+        margin: { top: 40, left: 4.9 }, // Ajusta a posição da tabela horizontalmente
         columnStyles: {
           0: { cellWidth: columnWidths[0] },
           1: { cellWidth: columnWidths[1] },
@@ -1496,6 +2444,7 @@ const OrcamentosPage: React.FC = () => {
         tableLineColor: [220, 220, 220], // Cor das linhas (preto)
         tableLineWidth: 0.1, // Largura das linhas
         tableWidth: totalWidth, // Largura da tabela de linhas
+        showHead: 'everyPage',
       });
       // Definir a posição e dimensões do retângulo
       const verticalTotalProd = (doc as any).lastAutoTable.finalY + 3; // Posição vertical do texto
@@ -1519,10 +2468,14 @@ const OrcamentosPage: React.FC = () => {
       // Adicionar texto à direita
       doc.text("Total", rectTotalProd + 1, adjustedTextY2totalProd);
       doc.text(totalProdutosPDFFormatted, rectTotalProd + 151.5, adjustedTextY2totalProd);
+      //#endregion
+      //---------------------------------------------------------------------------------------------------------------------
 
 
 
-      // titulo serviços
+
+
+      // #region serviços
       const verticalServicos = (doc as any).lastAutoTable.finalY + 15; // Posição vertical do texto
       const paddingServicos = 4; // Espaço acima e abaixo do texto
       const heightServicos = 7; // Altura do retângulo
@@ -1546,10 +2499,9 @@ const OrcamentosPage: React.FC = () => {
       const servicos = servicosSelecionados.map((servico) => {
         const quantidade = servico.quantidade ?? 0;
         const valorUnitario = Number(servico.valor_unitario) || 0;
-
         return [
           servico.cod_servico, // Código
-          (servico as any).descricao, // Descrição
+          servico.dbs_servicos.nome ?? "sem nome",
           quantidade, // Quantidade
           `R$ ${valorUnitario.toFixed(2)}`, // Valor Unitário
           `R$ ${(quantidade * valorUnitario).toFixed(2)}` // Total
@@ -1566,27 +2518,48 @@ const OrcamentosPage: React.FC = () => {
       const totalServicosPDFFormatted = `R$ ${totalServicosPDF.toFixed(2)}`;
 
 
-      // tabela de serviços
-      const columnWidthsServ = [15, 68, 18, 50, 49];
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 18, // Ajustar a posição após a tabela anterior
-        head: [["#", "NOME", "QTD", "VALOR UNITÁRIO", "SUBTOTAL"]],
-        body: servicos,
-        theme: "striped",
-        styles: { fontSize: 10, textColor: [0, 0, 0] },
-        headStyles: { fillColor: [220, 220, 220] },
-        margin: { left: 5 },
-        columnStyles: {
-          0: { cellWidth: columnWidthsServ[0] },
-          1: { cellWidth: columnWidthsServ[1] },
-          2: { cellWidth: columnWidthsServ[2] },
-          3: { cellWidth: columnWidthsServ[3] },
-          4: { cellWidth: columnWidthsServ[4] },
-        },
-        tableLineColor: [220, 220, 220], // Cor das linhas (preto)
-        tableLineWidth: 0.1, // Largura das linhas
-        tableWidth: totalWidth, // Largura da tabela de linhas
-      });
+      const tabelaServicos = async (y: any, doc: any, servicos: any) => {
+        const columnWidthsServ = [15, 68, 18, 50, 49];
+        const totalWidth = columnWidthsServ.reduce((acc, width) => acc + width, 0); // Soma todas as larguras das colunas
+
+
+        autoTable(doc, {
+          startY: y,
+          didDrawPage: function (data) {
+            createHeader(doc, img);
+          },
+          head: [["#", "NOME", "QTD", "VALOR UNITÁRIO", "SUBTOTAL"]],
+          body: servicos,
+          theme: "grid",
+          styles: { fontSize: 10, textColor: [0, 0, 0] },
+          headStyles: { fillColor: [220, 220, 220] },
+          margin: { top: 40, left: 5 },
+          columnStyles: {
+            0: { cellWidth: columnWidthsServ[0] },
+            1: { cellWidth: columnWidthsServ[1] },
+            2: { cellWidth: columnWidthsServ[2] },
+            3: { cellWidth: columnWidthsServ[3] },
+            4: { cellWidth: columnWidthsServ[4] },
+          },
+          tableLineColor: [220, 220, 220], // Cor das linhas (preto)
+          tableLineWidth: 0.1, // Largura das linhas
+          tableWidth: totalWidth, // Largura da tabela de linhas
+          showHead: "everyPage", // Exibe o cabeçalho em todas as páginas
+        });
+      };
+
+      // Posição inicial para a tabela de serviços
+      const startY = (doc as any).lastAutoTable.finalY + 18;
+
+      if (startY >= finalY) {
+        doc.addPage(); // Adiciona uma nova página
+        tabelaServicos(40, doc, servicos); // Começa a tabela na posição desejada da nova página
+      } else {
+        tabelaServicos(startY, doc, servicos); // Continua na posição atual
+      }
+
+
+
 
       // Definir a posição e dimensões do retângulo
       const verticalTotalServ = (doc as any).lastAutoTable.finalY + 3; // Posição vertical do texto
@@ -1610,8 +2583,14 @@ const OrcamentosPage: React.FC = () => {
       // Adicionar texto à direita
       doc.text("Total", rectTotalServ + 1, adjustedTextY2totalServ);
       doc.text(totalServicosPDFFormatted, rectTotalServ + 152.5, adjustedTextY2totalServ);
+      //#endregion
+      //--------------------------------------------------------------------------------------------------------------------------------------------------------
 
-      //TOTAL PRODUTOS
+
+
+
+
+      // #region TOTAL
       // Definir a posição e dimensões do retângulo
       const verticalTotalFinalProdutos = verticalTotalServ + 10; // Posição vertical do texto
       const paddingTotalFinalProdutos = 4; // Espaço acima e abaixo do texto
@@ -1695,13 +2674,19 @@ const OrcamentosPage: React.FC = () => {
       const posXFinal = 208 - textWidthFinal - padding; // 210 é a largura da página A4 no formato retrato
       // Adicionar texto à extrema direita
       doc.text(totalTextoFinal, posXFinal, adjustedTextY2totalFinal);
+      //#endregion
+      //------------------------------------------------------------------------------------------------------------------
 
-      // Título OBSERVAÇÕES
+
+
+
+      // #region observações
       const verticalObservacoes = verticalTotalFinal + 15; // Posição vertical do texto
       const paddingObservacoes = 4; // Espaço acima e abaixo do texto
       const heightObservacoes = 7; // Altura do retângulo
       const widthObservacoes = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
       const rectObservacoes = padding; // Posição X do retângulo, ajustado para a margem da página
+
       // Desenhar o retângulo de fundo
       doc.setFillColor(220, 220, 220); // Cinza claro
       doc.rect(rectObservacoes, verticalObservacoes - paddingObservacoes, widthObservacoes, heightObservacoes, "F"); // Retângulo preenchido
@@ -1719,33 +2704,38 @@ const OrcamentosPage: React.FC = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.text(`${formValues.observacoes_gerais}`, 6, Yobervacoes_gerais);
+      // #endregion
 
 
 
+      // #region Rodapé
+      const assinaturaY = Yobervacoes_gerais + 40; // Distância abaixo das observações
+      if (assinaturaY > finalY) {
+        doc.setPage(totalPages + 2);
+      } else {
+        // Garante que está na última página antes de desenhar      
+        doc.setPage(totalPages + 1);
+      }
+      const adjustedFinalY = finalY - 10
 
-      // Rodapé
-      const pageHeight = doc.internal.pageSize.height;
+
+      // Desenha a assinatura
       doc.setFontSize(10);
-      // Posição da linha para a assinatura
-      const lineY = Yobervacoes_gerais + 40;
-      // Define a espessura da linha
       doc.setLineWidth(0.1);
-      // Desenha a linha
-      doc.setDrawColor(0, 0, 0); // Cor preta
-      doc.line(60, lineY, 150, lineY);
-      // Adiciona o texto abaixo da linha
-      doc.text("Assinatura do cliente", 105, lineY + 5, { align: "center" });
-      // Desenha o retângulo com fundo transparente e bordas pretas
-      const rectMargin = 10; // Margem entre a linha e o retângulo
-      doc.setDrawColor(0, 0, 0); // Cor preta para as bordas
-      doc.setFillColor(255, 255, 255); // Cor branca para o fundo (transparente na prática)
-      doc.rect(30, lineY - rectMargin, 150, 20); // Retângulo ao redor da assinatura
+      doc.setDrawColor(0, 0, 0);
+      doc.line(60, adjustedFinalY, 150, adjustedFinalY);
+      doc.text("Assinatura do cliente", 105, adjustedFinalY + 5, { align: "center" });
+
+      // Adiciona um retângulo ao redor da assinatura
+      doc.setDrawColor(0, 0, 0);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(30, adjustedFinalY - 10, 150, 20);
+      // #endregion
 
 
-
-      // ✅ Abrir o PDF em uma nova aba
-      const pdfURL = doc.output('bloburl');
-      window.open(pdfURL, '_blank');
+      // Abrir o PDF em uma nova aba
+      const pdfURL = doc.output("bloburl");
+      window.open(pdfURL, "_blank");
     };
   };
   // #endregion
@@ -1753,7 +2743,7 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-  // #endregion
+
 
 
 
@@ -1832,6 +2822,8 @@ const OrcamentosPage: React.FC = () => {
     fetchTransportadoras();
     fetchUsers();
     fetchOrcamentos();
+    fetchEstruturas();
+    fetchPedidosVenda();
     fetchClients();
     fetchCentrosCusto();
     fetchServicos();
@@ -1891,6 +2883,7 @@ const OrcamentosPage: React.FC = () => {
       celular: "",
       situacao: "",
       tipo: "",
+      documento: "",
     });
     setSelectedClient(null);
     setSelectedUser(null);
@@ -1903,73 +2896,43 @@ const OrcamentosPage: React.FC = () => {
     setFrete(0);
   };
   const clearInputsProd = () => {
-    setFormValues({
-      cod_orcamento: 0,
-      cod_responsavel: 0,
-      cod_cliente: 0,
-      canal_venda: "",
-      data_venda: "",
-      prazo: "",
-      cod_centro_custo: 0,
-      frota: "",
-      nf_compra: "",
-      cod_transportadora: 0,
-      frete: 0,
-      endereco_cliente: "Sim",
-      logradouro: "",
-      cidade: "",
-      bairro: "",
-      estado: "",
-      complemento: "",
-      numero: 0,
-      cep: "",
-      observacoes_gerais: "",
-      observacoes_internas: "",
-      desconto_total: 0.0,
-      valor_total: 0.0,
-      dbs_pagamentos_orcamento: [],
-      dbs_produtos_orcamento: [],
-      dbs_servicos_orcamento: [],
+    setFormValuesCadastroProdutos({
+      cod_item: "",
+      descricao: "",
+      narrativa: "",
+      dbs_unidades_medida: {
+        un: "",
+        cod_un: 0
+      },
+      cod_estabelecimento: [],
+      cod_un: null,
+      cod_familia: null,
+      situacao: "",
+      valor_custo: 0,
+      valor_venda: 0,
     });
-  };
-  const clearInputsServ = () => {
-    setFormValues({
-      cod_orcamento: 0,
-      cod_responsavel: 0,
-      cod_cliente: 0,
-      canal_venda: "",
-      data_venda: "",
-      prazo: "",
-      cod_centro_custo: 0,
-      frota: "",
-      nf_compra: "",
-      cod_transportadora: 0,
-      frete: 0,
-      endereco_cliente: "Sim",
-      logradouro: "",
-      cidade: "",
-      bairro: "",
-      estado: "",
-      complemento: "",
-      numero: 0,
-      cep: "",
-      observacoes_gerais: "",
-      observacoes_internas: "",
-      desconto_total: 0,
-      valor_total: 0,
-      dbs_pagamentos_orcamento: [],
-      dbs_produtos_orcamento: [],
-      dbs_servicos_orcamento: [],
-    });
+    setSelectedUnit(null);
+    setSelectedFamily(null);
+    setSelectedEstablishments([]);
   };
 
+
   const openDialog = (id: number) => {
-    setOrcamentoIdToDelete(id);
+    if (isEstrutura) {
+      setEstruturaIdToCancel(id);
+    } else if (isPedido) {
+      setPedidoIdToCancel(id);
+    } else {
+      setOrcamentoIdToDelete(id);
+    }
     setModalDeleteVisible(true);
   };
+
   const closeDialog = () => {
     setModalDeleteVisible(false);
     setOrcamentoIdToDelete(null);
+    setEstruturaIdToCancel(null);
+    setPedidoIdToCancel(null);
   };
   // #endregion
 
@@ -2089,173 +3052,172 @@ const OrcamentosPage: React.FC = () => {
   };
 
 
-  const handleSave = async () => {
-    setItemCreateDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "cod_responsavel",
-        "cod_cliente",
-        "canal_venda",
-        "data_venda",
-        "prazo",
-        "cod_centro_custo",
-        "frota",
-        "nf_compra",
-        "cod_transportadora",
-        "frete",
-        "endereco_cliente",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep"
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        "http://localhost:9009/api/orcamentos/register",
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchOrcamentos();
-        toast.success("Orçamento salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar orçamento.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemCreateDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar orçamento:", error);
-    }
-  };
-
   const handleSaveReturn = async (fecharTela: boolean) => {
-    setItemCreateReturnDisabled(true);
-    setLoading(true);
+    if (!isEstrutura) {
+      setItemCreateReturnDisabled(true);
+      setLoading(true);
 
-    try {
-      // Função para formatar datas corretamente antes do envio
-      const formatDate = (date?: string) => {
-        if (!date) return "";
-        const formattedDate = new Date(date);
-        return isNaN(formattedDate.getTime()) ? "" : formattedDate.toISOString().split("T")[0];
-      };
+      try {
+        // Função para formatar datas corretamente antes do envio
+        const formatDate = (date?: string) => {
+          if (!date) return "";
+          const formattedDate = new Date(date);
+          return isNaN(formattedDate.getTime()) ? "" : formattedDate.toISOString().split("T")[0];
+        };
 
-      const updatedFormValues = {
-        ...formValues,
-        data_venda: formatDate(formValues.data_venda),
-        prazo: formatDate(formValues.prazo),
-        situacao: "Pendente",
-        parcelas: pagamentos.map((parcela) => ({
-          ...parcela,
-          data_parcela: formatDate(parcela.data_parcela),
-        })),
-        produtos: produtosSelecionados,
-        servicos: servicosSelecionados,
-      };
+        const updatedFormValues = {
+          ...formValues,
+          data_venda: formatDate(formValues.data_venda),
+          prazo: formatDate(formValues.prazo),
+          situacao: "Pendente",
+          parcelas: pagamentos.map((parcela) => ({
+            ...parcela,
+            data_parcela: formatDate(parcela.data_parcela),
+          })),
+          produtos: produtosSelecionados,
+          servicos: servicosSelecionados,
+        };
 
-      // Lista de campos obrigatórios
-      const requiredFields = [
-        "cod_responsavel",
-        "cod_cliente",
-        "canal_venda",
-        "data_venda",
-        "prazo",
-        "cod_centro_custo",
-        "nf_compra",
-        "cod_transportadora",
-        "frete",
-        "endereco_cliente",
-        "valor_total",
-        "situacao",
-        "parcelas",
-        "produtos",
-        "servicos",
-      ];
+        // Lista de campos obrigatórios
+        const requiredFields = [
+          "cod_responsavel",
+          "cod_cliente",
+          "canal_venda",
+          "data_venda",
+          "prazo",
+          "cod_centro_custo",
+          "nf_compra",
+          "cod_transportadora",
+          "frete",
+          "endereco_cliente",
+          "valor_total",
+          "situacao",
+          "parcelas",
+          "produtos",
+          "servicos",
+        ];
 
-      // Encontrar o primeiro campo obrigatório vazio
-      const missingField = requiredFields.find((field) => {
-        const value = updatedFormValues[field as keyof typeof updatedFormValues];
-        return value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
-      });
-
-      if (missingField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info(`Por favor, preencha o campo: ${missingField.replace("_", " ")}`, {
-          position: "top-right",
-          autoClose: 3000,
+        // Encontrar o primeiro campo obrigatório vazio
+        const missingField = requiredFields.find((field) => {
+          const value = updatedFormValues[field as keyof typeof updatedFormValues];
+          return value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
         });
-        return;
-      }
 
-      const response = await axios.post(
-        "http://localhost:9009/api/orcamentos/register",
-        updatedFormValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (missingField) {
+          setItemCreateReturnDisabled(false);
+          setLoading(false);
+          toast.info(`Por favor, preencha o campo: ${missingField.replace("_", " ")}`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          return;
         }
-      );
 
-      if (response.status >= 200 && response.status < 300) {
+        const response = await axios.post(
+          "http://localhost:9009/api/orcamentos/register",
+          updatedFormValues,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.status >= 200 && response.status < 300) {
+          setItemCreateReturnDisabled(false);
+          setLoading(false);
+          clearInputs();
+          fetchOrcamentos();
+          toast.success("Orçamento salvo com sucesso!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          setVisible(fecharTela);
+        } else {
+          throw new Error("Erro ao salvar orçamento.");
+        }
+      } catch (error: any) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        clearInputs();
-        fetchOrcamentos();
-        toast.success("Orçamento salvo com sucesso!", {
+
+        console.error("Erro ao salvar orçamento:", error);
+
+        const errorMessage = error.response?.data?.message || "Erro ao salvar orçamento.";
+        toast.error(errorMessage, {
           position: "top-right",
           autoClose: 3000,
         });
-        setVisible(fecharTela);
-      } else {
-        throw new Error("Erro ao salvar orçamento.");
       }
-    } catch (error: any) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
+    }
+    else {
+      try {
 
-      console.error("Erro ao salvar orçamento:", error);
+        const updatedFormValuesEstruturas = {
+          ...formValuesEstruturas,
+          dbs_produtos_estrutura_orcamento: produtosSelecionados,
+          dbs_servicos_estrutura_orcamento: servicosSelecionados,
+        };
 
-      const errorMessage = error.response?.data?.message || "Erro ao salvar orçamento.";
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+        const requiredFieldsEstruturas = [
+          "nome",
+          "descricao",
+        ];
+
+        const missingFieldEstruturas = requiredFieldsEstruturas.find((field) => {
+          const value = updatedFormValuesEstruturas[field as keyof typeof updatedFormValuesEstruturas];
+          return value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
+        });
+
+        if (missingFieldEstruturas) {
+          setItemCreateReturnDisabled(false);
+          setLoading(false);
+          toast.info(`Por favor, preencha o campo: ${missingFieldEstruturas.replace("_", " ")}`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          return;
+        }
+
+        const response = await axios.post(
+          "http://localhost:9009/api/estruturas/register",
+          updatedFormValuesEstruturas,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+
+        if (response.status >= 200 && response.status < 300) {
+          setItemCreateReturnDisabled(false);
+          setLoading(false);
+          clearInputs();
+          fetchEstruturas();
+          toast.success("Estrutura de orçamento salva com sucesso!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          setVisible(fecharTela);
+        } else {
+          throw new Error("Erro ao salvar estrutura de orçamento.");
+        }
+      } catch (error: any) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+
+        console.error("Erro ao salvar estrutura de orçamento:", error);
+
+        const errorMessage = error.response?.data?.message || "Erro ao salvar estrutura de orçamento.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+
     }
   };
+
   useEffect(() => {
     console.log("Produtos selecionados atualizados:", produtosSelecionados);
   }, [produtosSelecionados]);
@@ -2267,19 +3229,19 @@ const OrcamentosPage: React.FC = () => {
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
   const handleEdit = (orcamento: Orcamento, visualizar: boolean) => {
-    setVisualizar(visualizar)
-    console.log("Orçamento recebido para edição:", orcamento);
+    setVisualizar(visualizar);
 
+    console.log("Orçamento recebido para edição:", orcamento);
     console.log("Produtos recebidos:", orcamento.dbs_produtos_orcamento);
     console.log("Serviços recebidos:", orcamento.dbs_servicos_orcamento);
     console.log("Pagamentos recebidos:", orcamento.dbs_pagamentos_orcamento);
-
 
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
 
     // Atualiza os selects com os valores corretos
     setSelectedClient(clients.find(c => c.cod_cliente === orcamento.cod_cliente) || null);
+    formattedDocumento();
     setSelectedUser(users.find(u => u.cod_usuario === orcamento.cod_responsavel) || null);
     setSelectedTransportadora(transportadoras.find(t => t.cod_transportadora === orcamento.cod_transportadora) || null);
     setSelectedCentroCusto(centrosCusto.find(cc => cc.cod_centro_custo === orcamento.cod_centro_custo) || null);
@@ -2325,6 +3287,38 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
+  const handleSituacaoPedido_Gerado = async (cod_orcamento: number) => {
+    if (cod_orcamento === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/orcamentos/pedido_gerado/${cod_orcamento}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchOrcamentos();
+        setModalDeleteVisible(false);
+        toast.success("Situação mudou: pedido gerado!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao mudar para Pedido_Gerado.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao mudar para Pedido_Gerado:", error);
+    }
+  };
+
   const handleDelete = async () => {
     if (orcamentoIdToDelete === null) return;
 
@@ -2351,6 +3345,7 @@ const OrcamentosPage: React.FC = () => {
       });
     }
   };
+
   // #endregion
 
 
@@ -2409,24 +3404,54 @@ const OrcamentosPage: React.FC = () => {
 
   // #region ENDEREÇO
 
-  const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCepInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
-    // Remove qualquer caractere não numérico
-    const numericValue = value.replace(/[^0-9]/g, '');
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/\D/g, '');
 
-    // Formata o CEP com o formato 'XXXXX-XXX'
-    const formattedValue = numericValue.replace(
-      /(\d{5})(\d{0,3})/,
-      (match, p1, p2) => `${p1}-${p2}`
-    );
+    // Formata o CEP como 'XXXXX-XXX'
+    let formattedValue = numericValue;
+    if (numericValue.length > 5) {
+      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+    }
 
-    // Atualiza o estado com o valor formatado
-    setFormValuesClients({
-      ...formValuesClients,
-      [name]: formattedValue, // Atualiza o campo de CEP com a formatação
-    });
+    // Atualiza o estado do formulário
+    setFormValuesClients(prevValues => ({
+      ...prevValues,
+      [name]: formattedValue,
+    }));
+
+    // Se o CEP tiver 8 dígitos, faz a busca do endereço
+    if (numericValue.length === 8) {
+      try {
+        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
+
+        if (!response.data.erro) {
+          setFormValuesClients(prevValues => ({
+            ...prevValues,
+            logradouro: response.data.logradouro || "",
+            bairro: response.data.bairro || "",
+            cidade: response.data.localidade || "",
+            estado: response.data.uf || "",
+          }));
+        } else {
+          alert("CEP não encontrado!");
+          setFormValuesClients(prevValues => ({
+            ...prevValues,
+            logradouro: "",
+            bairro: "",
+            cidade: "",
+            estado: "",
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar o CEP:", error);
+      }
+    }
   };
+
+
 
   const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
@@ -2643,8 +3668,6 @@ const OrcamentosPage: React.FC = () => {
   // #endregion
 
 
-
-
   // #region RETURN
   return (
     <>
@@ -2682,13 +3705,24 @@ const OrcamentosPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleCancelar}
+                  onClick={
+                    isEstrutura
+                      ? handleCancelarEstrutura
+                      : isPedido
+                        ? handleCancelarPedido
+                        : handleCancelar
+                  }
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este orçamento?</p>
+            <p>Tem certeza que deseja cancelar {isEstrutura
+              ? "esta estrutura de orçamento"
+              : isPedido
+                ? "este pedido de venda"
+                : "este orçamento"
+            }?</p>
           </Dialog>
           {
             //#endregion
@@ -2699,7 +3733,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL PRODUTOS
           }
           <Dialog
-            header={isEditingProd ? "Editar produtos" : "Novo Item"}
+            header={"Novo Item"}
             visible={visibleProd}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -2709,165 +3743,255 @@ const OrcamentosPage: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModalProd()}
-            style={{ width: "60vw", maxHeight: "60vh", overflowY: "auto" }} // Added styles for scroll
+            style={{ width: "60vw", maxHeight: "75vh", overflowY: "auto" }}
           >
-            <div className="p-fluid grid gap-2 mt-2">
-              {/* Primeira Linha */}
-              <div className="border border-white p-2 rounded">
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label htmlFor="codigoProd" className="block text-blue font-medium mb-1">
-                      Código
-                    </label>
-                    <input
-                      type="text"
-                      id="codigoProd"
-                      name="codigoProd"
-                      disabled
-                      className="border border-gray-400 !bg-gray-400 pl-1 rounded-sm h-8 w-full !important"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label htmlFor="descricaoProd" className="block text-blue font-medium mb-1">
-                      Descrição
-                    </label>
-                    <input
-                      type="text"
-                      id="descricaoProd"
-                      name="descricaoProd"
-                      onChange={handleInputChange}
-                      className="border border-gray-400 pl-1 rounded-sm h-8 w-full"
-                    />
-                  </div>
+            <div className="p-fluid grid gap-3 mt-2">
+              <div className="grid grid-cols-4 gap-2">
+                <div className="">
+                  <label htmlFor="code" className="block text-blue font-medium">
+                    Código
+                  </label>
+                  <input
+                    type="text"
+                    id="code"
+                    name="descricao"
+                    value={formValuesCadastroProdutos.cod_item}
+                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_item: e.target.value })}
+                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[50px]"
+                  />
+                </div>
+
+                <div className="col-span-3">
+                  <label htmlFor="situation" className="block text-blue  font-medium">
+                    Situação
+                  </label>
+                  <Dropdown
+                    id="situacao"
+                    name="situacao"
+                    value={formValuesCadastroProdutos.situacao}
+                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, situacao: e.value })}
+                    options={[
+                      { label: 'Ativo', value: 'ATIVO' },
+                      { label: 'Inativo', value: 'DESATIVADO' }
+                    ]}
+                    placeholder="Selecione"
+                    className="w-full md:w-14rem"
+                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
+                </div>
+
+              </div>
+
+              <div className="">
+                <label htmlFor="description" className="block text-blue  font-medium">
+                  Descrição
+                </label>
+                <input
+                  type="text"
+                  id="description"
+                  name="descricao"
+                  value={formValuesCadastroProdutos.descricao}
+                  onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, descricao: e.target.value })}
+                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  placeholder="" />
+              </div>
+
+              <div className="">
+                <label htmlFor="narrative" className="block text-blue  font-medium">
+                  Narrativa
+                </label>
+                <textarea
+                  id="narrative"
+                  rows={3}
+                  name="narrativa"
+                  value={formValuesCadastroProdutos.narrativa}
+                  onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, narrativa: e.target.value })}
+                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  placeholder="" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="">
+                  <label htmlFor="un" className="block text-blue  font-medium">
+                    UN
+                  </label>
+                  <Dropdown
+                    id="un"
+                    name="cod_un"
+                    value={selectedUnit}
+                    onChange={(e) => {
+                      setSelectedUnit(e.value);
+                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_un: e.value });
+                    }}
+                    options={units}
+                    optionLabel="descricao"
+                    placeholder="Selecione"
+                    filter
+
+                    className="w-full" />
+                </div>
+                <div className="">
+                  <label htmlFor="family" className="block text-blue  font-medium">
+                    Família
+                  </label>
+                  <Dropdown
+                    id="family"
+                    name="cod_familia"
+                    value={selectedFamily}
+                    onChange={(e) => {
+                      console.log(e.value);
+                      setSelectedFamily(e.value);
+                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_familia: e.value });
+                    }}
+                    options={families}
+                    optionLabel="nome"
+                    placeholder="Selecione a Família"
+                    filter
+                    className="w-full md:w-14rem" />
                 </div>
               </div>
 
-              {/* Segunda Linha */}
-              <div className="border border-white p-2 rounded mt-2">
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label htmlFor="unProd" className="block text-blue font-medium mb-1">
-                      UN
-                    </label>
-                    <select
-                      id="unProd"
-                      name="unProd"
-                      className="bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8 w-full !important"
-                    >
-                      {/* Adicione aqui as opções do select */}
-                      <option value=""> </option>
-                      <option value="UN1">UN1</option>
-                      <option value="UN2">UN2</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="familiaProd" className="block text-blue font-medium mb-1">
-                      Família
-                    </label>
-                    <select
-                      id="familiaProd"
-                      name="familiaProd"
-                      className="border border-gray-400 pl-1 rounded-sm h-8 w-full"
-                    >
-                      {/* Adicione aqui as opções do select */}
-                      <option value=""> </option>
-                      <option value="Familia1">Família 1</option>
-                      <option value="Familia2">Família 2</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="vl_unitario_prod" className="block text-blue font-medium mb-1">
-                      Valor Unitário
-                    </label>
-                    <input
-                      type="text"
-                      id="vl_unitario_prod"
-                      name="vl_unitario_prod"
-                      disabled
-                      className="bg-gray-300 border border-gray-400 pl-1 rounded-sm h-8 w-full !important"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+
+                <div className="">
+                  <label htmlFor="valor_venda" className="block text-blue  font-medium">
+                    Valor Venda
+                  </label>
+                  <input
+                    id="valor_venda"
+                    name="valor_venda"
+                    type="text"
+                    value={`R$ ${Number(formValuesCadastroProdutos.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_venda: numericValue });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                  />
+
+                </div>
+
+                <div className="">
+                  <label htmlFor="valor_custo" className="block text-blue  font-medium">
+                    Valor Unitário
+                  </label>
+                  <input
+                    id="valor_custo"
+                    name="valor_custo"
+                    type="text"
+                    value={`R$ ${Number(formValuesCadastroProdutos.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_custo: numericValue });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                  />
+
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="w-full">
+                  <label htmlFor="photo" className="block text-blue font-medium">
+                    Foto
+                  </label>
+
+                  <input
+                    type="file"
+                    id="photo"
+                    name="foto"
+                    onChange={handleFileChange}
+                    className="file-input"
+                    style={{ display: "none" }}  // Esconde o input real
+                  />
+
+                  <label
+                    htmlFor="photo"
+                    className="custom-file-input w-full"
+                    style={{
+                      display: "inline-block",
+                      padding: "10px 20px",
+                      backgroundColor: "#f0f0f0",  // Cor de fundo cinza claro
+                      color: "#1D4ED8",  // Cor do texto blue (Tailwind)
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      border: "2px solid #D1D5DB",  // Borda cinza escuro
+                      transition: "background-color 0.3s ease",
+                    }}
+                  >
+                    <span>Escolher arquivo</span>
+                  </label>
+
+                  {/* Exibe o nome do arquivo selecionado, se houver */}
+                  {fileName && (
+                    <div className="mt-2 text-blue-500">
+                      <strong>Arquivo selecionado: </strong> {fileName}
+                    </div>
+                  )}
+                </div>
+
+                <div className="">
+                  <label htmlFor="estabilishments" className="block text-blue  font-medium">
+                    Estabelecimentos
+                  </label>
+
+                  <MultiSelect
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione os Estabelecimentos"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black" />
                 </div>
               </div>
             </div>
 
+            <br></br>
 
-            <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-2 gap-3 w-full">
-                {!visualizando && (
+            {/* Botões */}
+            <div className="grid grid-cols-2 gap-3 w-full">
+
+              {!isEditing && (
+                <>
                   <Button
-                    label="Sair Sem Salvar"
+                    label="Salvar e Voltar à Listagem"
                     className="text-white"
-                    icon="pi pi-times"
+                    icon="pi pi-refresh"
+                    onClick={() => { handleSaveReturnProdutos(false) }}
                     style={{
-                      backgroundColor: "#dc3545",
-                      border: "1px solid #dc3545",
-                      padding: "0.75rem 2rem",  // Tamanho aumentado
-                      fontSize: "16px",  // Tamanho aumentado
+                      backgroundColor: "#007bff",
+                      border: "1px solid #007bff",
+                      padding: "0.75rem 2rem",
+                      fontSize: "16px",
                       fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",
                     }}
-                    onClick={() => closeModalProd()}
                   />
-                )}
-
-                {!isEditing && !visualizando && (
-                  <>
-                    <Button
-                      label="Salvar e Voltar à Listagem"
-                      className="text-white"
-                      icon="pi pi-refresh"
-                      // onClick={() => { handleSaveReturnProd(false) }}
-                      disabled={itemCreateReturnDisabled}
-                      style={{
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.75rem 2rem",  // Tamanho aumentado
-                        fontSize: "16px",  // Tamanho aumentado
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    />
-                    <Button
-                      label="Salvar e Adicionar Outro"
-                      className="text-white"
-                      icon="pi pi-check"
-                      // onClick={() => { handleSaveReturn(true) }}
-                      disabled={itemCreateDisabled}
-                      style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.75rem 2rem",  // Tamanho aumentado
-                        fontSize: "16px",  // Tamanho aumentado
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    />
-                  </>
-                )}
-
-                {isEditing && !visualizando && (
                   <Button
-                    label="Salvar"
+                    label="Salvar e Adicionar Outro"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
-                    disabled={itemEditDisabled}
+                    onClick={() => { handleSaveReturnProdutos(true) }}
                     style={{
                       backgroundColor: "#28a745",
                       border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
+                      padding: "0.75rem 2rem",
+                      fontSize: "16px",
                       fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",
                     }}
                   />
-                )}
-              </div>
+                </>
+              )}
             </div>
 
 
@@ -2881,7 +4005,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL SERVIÇOS
           }
           <Dialog
-            header={isEditingServ ? "Editar servicos" : "Novo Serviço"}
+            header={"Novo serviço"}
             visible={visibleServ}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -2905,9 +4029,13 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="nome"
                       name="nome"
-                      value={formValuesServico.nome}
-                      onChange={handleAlphabeticInputChange} // Não permite números
-                      onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                      value={formValuesCadastroServicos.nome}
+                      onChange={(e) =>
+                        setFormValuesCadastroServicos((prevValues) => ({
+                          ...prevValues,
+                          nome: e.target.value,
+                        }))
+                      }
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
@@ -2918,8 +4046,13 @@ const OrcamentosPage: React.FC = () => {
                     <textarea
                       id="descricao"
                       name="descricao"
-                      value={formValuesServico.descricao}
-                      onChange={handleInputChangeDescricaoServ}
+                      value={formValuesCadastroServicos.descricao}
+                      onChange={(e) =>
+                        setFormValuesCadastroServicos((prevValues) => ({
+                          ...prevValues,
+                          descricao: e.target.value,
+                        }))
+                      }
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm resize-y"
                       rows={4}
                       maxLength={255}
@@ -2939,9 +4072,13 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="valor_custo"
                       name="valor_custo"
-                      value={formValuesServico.valor_custo}
-                      onChange={handleNumericInputChange} // Não permite letras
-                      onKeyPress={handleNumericKeyPress} // Bloqueia letras
+                      value={formValuesCadastroServicos.valor_custo}
+                      onChange={(e) =>
+                        setFormValuesCadastroServicos((prevValues) => ({
+                          ...prevValues,
+                          valor_custo: e.target.value,
+                        }))
+                      }
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
@@ -2953,9 +4090,13 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="valor_venda"
                       name="valor_venda"
-                      value={formValuesServico.valor_venda}
-                      onChange={handleNumericInputChange} // Não permite letras
-                      onKeyPress={handleNumericKeyPress} // Bloqueia letras
+                      value={formValuesCadastroServicos.valor_venda}
+                      onChange={(e) =>
+                        setFormValuesCadastroServicos((prevValues) => ({
+                          ...prevValues,
+                          valor_venda: e.target.value,
+                        }))
+                      }
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
@@ -2967,9 +4108,13 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="comissao"
                       name="comissao"
-                      value={formValuesServico.comissao}
-                      onChange={handleNumericInputChange} // Não permite letras
-                      onKeyPress={handleNumericKeyPress} // Bloqueia letras
+                      value={formValuesCadastroServicos.comissao}
+                      onChange={(e) =>
+                        setFormValuesCadastroServicos((prevValues) => ({
+                          ...prevValues,
+                          comissao: e.target.value,
+                        }))
+                      }
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
@@ -2988,7 +4133,6 @@ const OrcamentosPage: React.FC = () => {
                       className="text-white"
                       icon="pi pi-refresh"
                       onClick={() => { handleSaveReturnServicos(false) }}
-                      disabled={itemCreateReturnDisabled}
                       style={{
                         backgroundColor: "#007bff",
                         border: "1px solid #007bff",
@@ -3003,8 +4147,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Adicionar Outro"
                       className="text-white"
                       icon="pi pi-check"
-                      onClick={() => { handleSaveReturnServicos(false) }}
-                      disabled={itemCreateDisabled}
+                      onClick={() => { handleSaveReturnServicos(true) }}
                       style={{
                         backgroundColor: "#28a745",
                         border: "1px solid #28a745",
@@ -3016,39 +4159,6 @@ const OrcamentosPage: React.FC = () => {
                       }}
                     />
                   </>
-                )}
-
-                {isEditing && (
-                  <><Button
-                    label="Sair Sem Salvar"
-                    className="text-white"
-                    icon="pi pi-times"
-                    style={{
-                      backgroundColor: "#dc3545",
-                      border: "1px solid #dc3545",
-                      padding: "0.75rem 2rem", // Tamanho aumentado
-                      fontSize: "16px", // Tamanho aumentado
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                    onClick={() => closeModalServ()} />
-                    <Button
-                      label="Salvar"
-                      className="text-white"
-                      icon="pi pi-check"
-                      onClick={handleSaveEdit}
-                      disabled={itemEditDisabled}
-                      style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                      }} /></>
-
                 )}
               </div>
             </div>
@@ -3274,10 +4384,284 @@ const OrcamentosPage: React.FC = () => {
           }
 
           {
+            //#region MODAL USAR ESTRUTURA
+          }
+          <Dialog
+            header={`Usar Estrutura de Orçamento`}
+            visible={modalUsarEstruturaVisible}
+            onHide={handleModalUsarEstruturaClose}
+            headerStyle={{
+              backgroundColor: "#D9D9D9",
+              color: "#1B405D",
+              fontWeight: "bold",
+              padding: "0.8rem",
+              height: "3rem",
+            }}
+            style={{ width: "50vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
+            footer={
+
+              <div className="w-full flex flex-col">
+                <div className="mb-4 flex justify-end">
+                  <p className="text-blue font-bold text-lg">Busca:</p>
+                  <InputText
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder=""
+                    className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                    style={{
+                      border: "1px solid #1B405D80",
+                    }}
+                  />
+                </div>
+                <DataTable
+                  value={filteredEstruturas.slice(first, first + rows)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
+
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
+                  }}
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                  }}
+                  className="w-full"
+                  responsiveLayout="scroll"
+                >
+                  <Column
+                    field="cod_estrutura_orcamento"
+                    header="Código"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="nome"
+                    header="Nome"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="descricao"
+                    header="Descrição"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="situacao"
+                    header="Situação"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="dt_hr_criacao"
+                    header="DT Cadastro"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Verifica se a data de dt_hr_criacao está presente e é válida
+                      if (rowData.dt_hr_criacao) {
+                        // Certifica-se de que rowData.dt_hr_criacao é um número de timestamp (se for uma string ISO)
+                        const date = new Date(rowData.dt_hr_criacao);
+
+                        // Verifica se a data é válida
+                        if (!isNaN(date.getTime())) {
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false, // Formato de 24 horas
+                          }).format(date);
+                          return <span>{formattedDate}</span>;
+                        } else {
+                          return <span>Data inválida</span>;
+                        }
+                      } else {
+                        return <span>Sem data</span>;
+                      }
+                    }}
+                  />
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => {
+                            handleUsarEstrutura(rowData);
+                          }}
+                          className="hover:scale-125 hover:bg-green-700 p-2 bg-green-500 transform transition-all duration-50  rounded-2xl"
+                          title="Usar para um criar um novo orçamento"
+                        >
+                          <FaSuse style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                        </button>
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+
+                  {permissions?.edicao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEditEstrutura(rowData, false)}
+                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
+                            title="Editar"
+                          >
+                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                  {permissions?.delecao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
+                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
+                            title="Cancelar"
+                          >
+                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                </DataTable>
+              </div>
+
+            }
+          >
+          </Dialog>
+          {
+            //#endregion
+          }
+
+          {
             //#region MODAL PRINCIPAL
           }
           <Dialog
-            header={visualizando ? "Visualizando Orçamento" : (isEditing ? "Editar Orçamento" : "Novo Orçamento")}
+            header={isEstrutura ? "Criar Estrutura de Orçamento" : (visualizando ? (isPedido ? "Visualizando Pedido de Venda" : "Visualizando Orçamento") : (isEditing ? "Editar Orçamento" : "Novo Orçamento"))}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -3289,24 +4673,66 @@ const OrcamentosPage: React.FC = () => {
             onHide={() => closeModal()}
             style={{ width: "90vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
           >
+            <br></br>
             {visualizando && (
-              <div className="flex gap-2">
+              <div className="flex gap-10 justify-center items-center">
+
                 <button
-                  className="bg-yellow500 text-white px-4 py-2 rounded"
+                  className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
+                  onClick={gerarPDF}
+                >
+                  <div className="bg-red700 w-10 h-10 flex items-center justify-center rounded">
+                    <AiFillFilePdf className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap">
+                    {isPedido ? "PDF Pedido" : "PDF Orçamento"}&nbsp;&nbsp;
+                  </span>
+                </button>
+
+
+                <button
+                  className={`!bg-yellow-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-yellow-700 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
                   onClick={() => {
                     setVisualizar(false);
                     setIsEditing(false);
                   }}
                 >
-                  Copiar Orçamento
+                  <div className="bg-yellow-700 w-10 h-10 flex items-center justify-center rounded">
+                    <MdContentCopy className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap">Copiar Orçamento&nbsp;&nbsp;</span>
                 </button>
 
+
+
                 <button
-                  className="!bg-red500 text-white px-4 py-2 rounded"
-                  onClick={gerarPDF}
+                  className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
+                  onClick={() => {
+                    handleGerarPedidoVenda();
+                  }}
                 >
-                  Gerar PDF
+                  <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap">Gerar Pedido de Venda&nbsp;&nbsp;</span>
                 </button>
+
+
+                <button
+                  className={`!bg-cyan-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-cyan-800 hover:scale-125 ${!isPedido ? 'hidden' : ''}`}
+                  onClick={() => {
+                    handleGerarPedidoVenda();
+                  }}
+                >
+                  <div className="bg-cyan-600 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap">Gerar Nota Fiscal&nbsp;&nbsp;</span>
+                </button>
+
+
+
+
               </div>
             )}
 
@@ -3328,68 +4754,87 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="codigo"
                       name="codigo"
-                      value={formValues.cod_orcamento}
+                      value={!isEstrutura ? formValues.cod_orcamento : formValuesEstruturas.cod_estrutura_orcamento}
                       disabled
                       className="bg-gray-300 border border-gray-400 pl-1 rounded-sm  h-[31.7px] w-full cursor-not-allowed disabled:!bg-gray-300"
                     />
                   </div>
-
-                  <div className="col-span-2">
-                    <label htmlFor="clients" className="block text-blue font-medium">
-                      Cliente
-                    </label>
-                    <select
-                      id="clients"
-                      name="clients"
-                      value={selectedClient ? selectedClient.cod_cliente : ""}
-                      onChange={handleClientChange}
-                      className={`w-full pl-1 rounded-sm h-8 ${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'}`}
-                      disabled={visualizando}
-                    >
-                      <option value="" disabled>
-                        Selecione
-                      </option>
-                      {clients.map((cliente) => (
-                        <option key={cliente.cod_cliente} value={cliente.cod_cliente}>
-                          {cliente.nome}
+                  {!isEstrutura ? (
+                    <div className="col-span-2">
+                      <label htmlFor="clients" className="block text-blue font-medium">
+                        Cliente
+                      </label>
+                      <select
+                        id="clients"
+                        name="clients"
+                        value={selectedClient ? selectedClient.cod_cliente : ""}
+                        onChange={handleClientChange}
+                        className={`w-full pl-1 rounded-sm h-8 ${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'}`}
+                        disabled={visualizando}
+                      >
+                        <option value="" disabled>
+                          Selecione
                         </option>
-                      ))}
-                    </select>
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="responsavel" className="block text-blue font-medium mb-1">
-                      Vendedor/Responsável
-                    </label>
-                    <select
-                      id="responsavel"
-                      name="responsavel"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      value={selectedUser?.cod_usuario || ""}
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
-                        setSelectedUser(user || null);
-                        // Atualizando formValues com o valor de cod_responsavel
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          cod_responsavel: user?.cod_usuario || 0, // Garantir que cod_responsavel seja atualizado
-                        }));
-                      }}
-                    >
-                      <option value='' disabled selected>
-                        Selecione
-                      </option>
-                      {users.map((user) => (
-                        <option key={user.cod_usuario} value={user.cod_usuario}>
-                          {user.nome}
+                        {clients.map((cliente) => (
+                          <option key={cliente.cod_cliente} value={cliente.cod_cliente}>
+                            {cliente.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="col-start-2 col-span-3">
+                      <label htmlFor="nome" className="block text-blue font-medium">
+                        Nome
+                      </label>
+                      <input
+                        type="text"
+                        id="nome"
+                        name="nome"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        disabled={visualizando}
+                        value={formValuesEstruturas.nome}
+                        onChange={(e) => {
+                          setFormValuesEstruturas((prev) => ({
+                            ...prev,
+                            nome: e.target.value,
+                          }));
+                        }}
+                      />
+                    </div>
+                  )}
+                  {!isEstrutura && (
+                    <div>
+                      <label htmlFor="responsavel" className="block text-blue font-medium mb-1">
+                        Vendedor/Responsável
+                      </label>
+                      <select
+                        id="responsavel"
+                        name="responsavel"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        value={selectedUser?.cod_usuario || ""}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
+                          setSelectedUser(user || null);
+                          // Atualizando formValues com o valor de cod_responsavel
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            cod_responsavel: user?.cod_usuario || 0, // Garantir que cod_responsavel seja atualizado
+                          }));
+                        }}
+                      >
+                        <option value='' disabled selected>
+                          Selecione
                         </option>
-                      ))}
-                    </select>
-                  </div>
-
-
+                        {users.map((user) => (
+                          <option key={user.cod_usuario} value={user.cod_usuario}>
+                            {user.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 {
                   //#endregion
@@ -3400,147 +4845,184 @@ const OrcamentosPage: React.FC = () => {
                 {
                   // #region segunda linha
                 }
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label htmlFor="canal_venda" className="block text-blue font-medium">
-                      Canal de venda
-                    </label>
-                    <select
-                      id="canal_venda"
-                      name="canal_venda"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      value={formValues.canal_venda}
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        setFormValues((prev) => ({
-                          ...prev,
-                          canal_venda: e.target.value,
-                        }));
-                      }}
-                    >
-                      <option value="" disabled>
-                        Selecione
-                      </option>
-                      {canaisVenda.map((canal) => (
-                        <option key={canal} value={canal}>
-                          {canal}
+                {!isEstrutura ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label htmlFor="canal_venda" className="block text-blue font-medium">
+                        Canal de venda
+                      </label>
+                      <select
+                        id="canal_venda"
+                        name="canal_venda"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        value={formValues.canal_venda}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          setFormValues((prev) => ({
+                            ...prev,
+                            canal_venda: e.target.value,
+                          }));
+                        }}
+                      >
+                        <option value="" disabled>
+                          Selecione
                         </option>
-                      ))}
-                    </select>
-                  </div>
+                        {canaisVenda.map((canal) => (
+                          <option key={canal} value={canal}>
+                            {canal}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label htmlFor="data_venda" className="block text-blue font-medium">
-                      Data de venda
-                    </label>
-                    <input
-                      type="date"
-                      id="data_venda"
-                      name="data_venda"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      disabled={visualizando}
-                      value={!isEditing ?
-                        formValues.data_venda :
-                        new Date(formValues.data_venda).toISOString().split("T")[0]}
-
-                      onChange={(e) => {
-                        const value = e.target.value;  // O valor já estará no formato correto
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          data_venda: value,  // Envia como string "yyyy-mm-dd"
-                        }));
-                      }}
-                    />
-                  </div>
+                    <div>
+                      <label htmlFor="data_venda" className="block text-blue font-medium">
+                        Data de venda
+                      </label>
+                      <input
+                        type="date"
+                        id="data_venda"
+                        name="data_venda"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        disabled={visualizando}
+                        value={
+                          !isEditing
+                            ? formValues.data_venda
+                            : formValues.data_venda
+                              ? new Date(formValues.data_venda).toISOString().split("T")[0]
+                              : "" // Se for undefined ou inválido, retorna uma string vazia
+                        }
 
 
-                  <div>
-                    <label htmlFor="prazo_entrega" className="block text-blue font-medium">
-                      Prazo de entrega
-                    </label>
-                    <input
-                      type="date"
-                      id="prazo_entrega"
-                      name="prazo_entrega"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      disabled={visualizando}
-                      value={!isEditing ?
-                        formValues.prazo :
-                        (formValues.prazo ? new Date(formValues.prazo).toISOString().split("T")[0] : "")}
-
-
-                      onChange={(e) => {
-                        const value = e.target.value;  // O valor já estará no formato correto
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          prazo: value,  // Envia como string "yyyy-mm-dd"
-                        }));
-                      }}
-                    />
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="centrosCusto" className="block text-blue font-medium">
-                      Centro de Custo
-                    </label>
-                    <select
-                      id="centrosCusto"
-                      name="centrosCusto"
-                      value={selectedCentroCusto ? selectedCentroCusto.cod_centro_custo : ''}
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        const selected = centrosCusto.find(
-                          (est) => est.cod_centro_custo === Number(e.target.value)
-                        );
-                        setSelectedCentroCusto(selected || null);
-
-                        if (selected) {
+                        onChange={(e) => {
+                          const value = e.target.value;  // O valor já estará no formato correto
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            cod_centro_custo: selected.cod_centro_custo,
+                            data_venda: value,  // Envia como string "yyyy-mm-dd"
                           }));
-                        }
-                      }}
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    >
-                      <option value='' disabled selected>
-                        Selecione
-                      </option>
-                      {centrosCusto.map((centro) => (
-                        <option key={centro.cod_centro_custo} value={centro.cod_centro_custo}>
-                          {centro.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                        }}
+                      />
+                    </div>
 
-                </div>
+
+                    <div>
+                      <label htmlFor="prazo_entrega" className="block text-blue font-medium">
+                        Prazo de entrega
+                      </label>
+                      <input
+                        type="date"
+                        id="prazo_entrega"
+                        name="prazo_entrega"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        disabled={visualizando}
+                        value={!isEditing ?
+                          formValues.prazo :
+                          (formValues.prazo ? new Date(formValues.prazo).toISOString().split("T")[0] : "")}
+
+
+                        onChange={(e) => {
+                          const value = e.target.value;  // O valor já estará no formato correto
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            prazo: value,  // Envia como string "yyyy-mm-dd"
+                          }));
+                        }}
+                      />
+                    </div>
+
+
+                    <div>
+                      <label htmlFor="centrosCusto" className="block text-blue font-medium">
+                        Centro de Custo
+                      </label>
+                      <select
+                        id="centrosCusto"
+                        name="centrosCusto"
+                        value={selectedCentroCusto ? selectedCentroCusto.cod_centro_custo : ''}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const selected = centrosCusto.find(
+                            (est) => est.cod_centro_custo === Number(e.target.value)
+                          );
+                          setSelectedCentroCusto(selected || null);
+
+                          if (selected) {
+                            setFormValues((prevValues) => ({
+                              ...prevValues,
+                              cod_centro_custo: selected.cod_centro_custo,
+                            }));
+                          }
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                      >
+                        <option value='' disabled selected>
+                          Selecione
+                        </option>
+                        {centrosCusto.map((centro) => (
+                          <option key={centro.cod_centro_custo} value={centro.cod_centro_custo}>
+                            {centro.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="descricao" className="block text-blue font-medium">
+                      Descrição:
+                    </label>
+                    <textarea
+                      id="descricao"
+                      name="descricao"
+                      value={formValuesEstruturas.descricao}
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
+
+                      onChange={(e) => {
+                        setFormValuesEstruturas((prevValues) => ({
+                          ...prevValues,
+                          descricao: e.target.value,
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
                 {
                   //#endregion
                 }
               </div>
 
-
-              <br></br>
-
               {
                 // #region produtos
               }
+              <button
+                onClick={() => setModalUsarEstruturaVisible(true)}
+                className="mr-4 flex items-center bg-blue p-2 rounded-md transition-all duration-300 w-10 hover:w-[315px] overflow-hidden"
+                title="Visualizar estruturas"
+              >
+                <FaRegBuilding className="text-white text-2xl transition-all duration-300 flex-shrink-0" />
+                <span className="ml-2 text-white  whitespace-nowrap">
+                  Visualizar Estruturas de Orçamento
+                </span>
+              </button>
               <div className="border border-gray-700 p-2 rounded bg-gray-100">
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Produtos</h3>
                   <button
-                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hidden hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
+                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400"
                     onClick={() => setVisibleProd(true)}
                     disabled={visualizando}
-                    style={{ padding: "0.1rem 0.1rem" }}
+                    style={{
+                      padding: "0.1rem 0.1rem",
+                      display: visualizando ? "none" : "block", // Controla visibilidade com display
+                    }}
                   >
                     <IoAddCircleOutline
                       style={{ fontSize: "2rem" }}
                       className="text-white text-center"
                     />
                   </button>
+
 
                 </div>
                 <div style={{ height: "16px" }}></div>
@@ -3713,7 +5195,7 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
-                          produto.descricao :
+                          (produto.descricao ?? ('dbs_itens' in produto ? (produto as any).dbs_itens?.descricao : produto.descricao)) :
                           ('dbs_itens' in produto ? (produto as any).dbs_itens?.descricao : produto.descricao)
                         }
                         disabled
@@ -3733,7 +5215,7 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
-                          produto.valor_venda :
+                          (produto.valor_venda ?? produto.valor_unitario) :
                           ('dbs_itens' in produto ? (produto as any).dbs_itens?.valor_venda : produto.valor_venda)
                         }
                         disabled
@@ -3743,7 +5225,7 @@ const OrcamentosPage: React.FC = () => {
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ? produto.descontoProd : produto.valor_desconto}
+                        value={!isEditing ? (produto.descontoProd ?? produto.valor_desconto) : produto.valor_desconto}
                         disabled
                       />
                       <select
@@ -3754,7 +5236,7 @@ const OrcamentosPage: React.FC = () => {
                           appearance: "none",
                           color: "gray",
                         }}
-                        value={produto.descontoUnitProdtipo}
+                        value={produto.descontoUnitProdtipo ?? produto.tipo_desconto}
                         disabled
                       >
                         <option value="%prod">&nbsp;&nbsp;&nbsp;%</option>
@@ -3795,16 +5277,20 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
-                    className={`bg-green200 rounded-2xl transform transition-all hidden duration-50 hover:scale-150 hover:bg-green400 ${visualizando ? 'hidden' : ''}`}
+                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400`}
                     onClick={() => setVisibleServ(true)}
                     disabled={visualizando}
-                    style={{ padding: "0.1rem 0.1rem" }}
+                    style={{
+                      padding: "0.1rem 0.1rem",
+                      display: visualizando ? "none" : "block", // Controla visibilidade com display
+                    }}
                   >
                     <IoAddCircleOutline
                       style={{ fontSize: "2rem" }}
                       className="text-white text-center"
                     />
                   </button>
+
 
                 </div>
                 <div style={{ height: "16px" }}></div>
@@ -3970,7 +5456,10 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ? servico.nome : (servico.dbs_servicos?.descricao ?? servico.nome)}
+                        value={!isEditing ?
+                          (servico.nome ?? (servico.dbs_servicos?.descricao ?? servico.nome))
+                          :
+                          (servico.dbs_servicos?.descricao ?? servico.nome)}
                       />
                     </div>
                     <div>
@@ -3987,25 +5476,20 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing
-                          ? servico.valor_venda
+                          ? (servico.valor_venda ?? servico.valor_unitario)
                           : (servico.dbs_servicos?.valor_venda ?? servico.valor_venda)
                         }
 
                       />
                     </div>
-                    {/* <div>
-                      <input
-                        type="text"
-                        disabled
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ? servico.descontoProd : servico.valor_desconto}
-                      />
-                    </div> */}
                     <div className="relative">
                       <input
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ? servico.descontoProd : (servico.valor_desconto ? servico.valor_desconto : servico.descontoProd)}
+                        value={!isEditing ?
+                          (servico.descontoProd ?? (servico.valor_desconto ? servico.valor_desconto : servico.descontoProd))
+                          :
+                          (servico.valor_desconto ? servico.valor_desconto : servico.descontoProd)}
                         disabled
                       />
                       <select
@@ -4016,7 +5500,7 @@ const OrcamentosPage: React.FC = () => {
                           appearance: "none",
                           color: "gray",
                         }}
-                        value={servico.descontoUnitProdtipo}
+                        value={(servico.descontoUnitProdtipo ?? servico.tipo_desconto)}
                         disabled
                       >
                         <option value="%prod">&nbsp;&nbsp;&nbsp;%</option>
@@ -4053,120 +5537,134 @@ const OrcamentosPage: React.FC = () => {
               {
                 // #region proxima linha
               }
-              <div className="border border-white p-2 rounded">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="relative">
-                    <label htmlFor="frota" className="block text-blue font-medium">
-                      Frota
-                    </label>
-                    <div className="flex items-center">
+              {!isEstrutura && (
+                <div className="border border-white p-2 rounded">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="relative">
+                      <label htmlFor="frota" className="block text-blue font-medium">
+                        Frota
+                      </label>
+                      <div className="flex items-center">
+                        <input
+                          id="frota"
+                          name="frota"
+                          className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                          type="text"
+                          value={formValues.frota}
+                          disabled={visualizando}
+                          onChange={(e) => {
+                            setFormValues((prev) => ({
+                              ...prev,
+                              frota: e.target.value,
+                            }));
+                          }}
+                        />
+                        <button
+                          className={`bg-green-200 rounded-2xl p-2 transform transition-all duration-50 hover:scale-125 hover:bg-green-400 ml-1 ${visualizando ? 'hidden' : ''}`}
+                          onClick={() => {
+                            const frotas = getFilteredFrotas(formValues.frota);
+                            setFilteredFrotas(frotas);
+                            setModalFrotasVisible(true);
+                          }}
+                        >
+                          <FaSearch /> {/* Ícone de lupa */}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="nf-compra" className="block text-blue font-medium">
+                        NF-Compra
+                      </label>
                       <input
-                        id="frota"
-                        name="frota"
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                         type="text"
-                        value={formValues.frota}
+                        id="nf-compra"
+                        name="nf-compra"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                         disabled={visualizando}
+                        value={formValues.nf_compra}
                         onChange={(e) => {
                           setFormValues((prev) => ({
                             ...prev,
-                            frota: e.target.value,
+                            nf_compra: e.target.value,
                           }));
                         }}
                       />
-                      <button
-                        className={`bg-green-200 rounded-2xl p-2 transform transition-all duration-50 hover:scale-125 hover:bg-green-400 ml-2 ${visualizando ? 'hidden' : ''}`}
-                        onClick={() => {
-                          const frotas = getFilteredFrotas(formValues.frota);
-                          setFilteredFrotas(frotas);
-                          setModalFrotasVisible(true);
-                        }}
-                      >
-                        <FaSearch /> {/* Ícone de lupa */}
-                      </button>
                     </div>
-                  </div>
 
-                  <div>
-                    <label htmlFor="nf-compra" className="block text-blue font-medium">
-                      NF-Compra
-                    </label>
-                    <input
-                      type="text"
-                      id="nf-compra"
-                      name="nf-compra"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      disabled={visualizando}
-                      value={formValues.nf_compra}
-                      onChange={(e) => {
-                        setFormValues((prev) => ({
-                          ...prev,
-                          nf_compra: e.target.value,
-                        }));
-                      }}
-                    />
-                  </div>
+                    <div>
+                      <label htmlFor="transportadora" className="block text-blue font-medium">
+                        Transportadora
+                      </label>
+                      <select
+                        id="transportadora"
+                        name="transportadora"
+                        value={selectedTransportadora ? selectedTransportadora.cod_transportadora : ''}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const selected = transportadoras.find(
+                            (est) => est.cod_transportadora === Number(e.target.value)
+                          );
+                          setSelectedTransportadora(selected || null);
+                          if (selected) {
+                            setFormValues((prevValues) => ({
+                              ...prevValues,
+                              cod_transportadora: selected.cod_transportadora,
+                            }));
+                          }
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                      >
+                        <option value="" disabled>
+                          Selecione
+                        </option>
+                        {transportadoras.map((transportadora) => (
+                          <option key={transportadora.cod_transportadora} value={transportadora.cod_transportadora}>
+                            {transportadora.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label htmlFor="transportadora" className="block text-blue font-medium">
-                      Transportadora
-                    </label>
-                    <select
-                      id="transportadora"
-                      name="transportadora"
-                      value={selectedTransportadora ? selectedTransportadora.cod_transportadora : ''}
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        const selected = transportadoras.find(
-                          (est) => est.cod_transportadora === Number(e.target.value)
-                        );
-                        setSelectedTransportadora(selected || null);
-                        if (selected) {
+                    <div>
+                      <label htmlFor="frete" className="block text-blue font-medium">
+                        Frete
+                      </label>
+                      <input
+                        id="frete"
+                        name="frete"
+                        type="text"
+                        value={freteInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          // Remove o "R$" inicial e caracteres não numéricos para facilitar a digitação
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setFreteInput(`R$ ${rawValue.replace('.', ',')}`); // Adiciona "R$" novamente enquanto o usuário digita
+                        }}
+                        onBlur={(e) => {
+                          // Remove o "R$" e formata o valor final
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          // Atualiza os valores principais
+                          setFrete(numericValue);
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            cod_transportadora: selected.cod_transportadora,
+                            frete: numericValue,
                           }));
-                        }
-                      }}
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    >
-                      <option value="" disabled>
-                        Selecione
-                      </option>
-                      {transportadoras.map((transportadora) => (
-                        <option key={transportadora.cod_transportadora} value={transportadora.cod_transportadora}>
-                          {transportadora.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
 
-                  <div>
-                    <label htmlFor="frete" className="block text-blue font-medium">
-                      Frete
-                    </label>
-                    <input
-                      id="frete"
-                      name="frete"
-                      type="number"
-                      min={0}
-                      defaultValue={0}
-                      value={!isEditing ? frete : formValues.frete}
-                      disabled={visualizando}
-                      onChange={(e) => {
-                        const newFrete = parseFloat(e.target.value) || 0;
-                        setFrete(newFrete);
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          frete: newFrete,
-                        }));
-                      }}
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    />
+                          // Formata o valor final com "R$" para exibição
+                          setFreteInput(`R$ ${numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                        }}
+                        style={{
+                          textAlign: 'left', // Garante que o texto será alinhado à esquerda
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-
+              )}
 
               {
                 //#endregion
@@ -4177,121 +5675,123 @@ const OrcamentosPage: React.FC = () => {
               {
                 // #region endereço de entrega
               }
-              <div className="border border-gray-700 p-2 rounded bg-gray-100">
-                <div className="flex items-center">
-                  <h3 className="text-blue font-medium text-xl mr-2">Endereço de Entrega</h3>
-                </div>
-                <div style={{ height: "16px" }}></div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label htmlFor="usarEnd" className="block text-blue font-medium">
-                      Usar Endereço do Cliente
-                    </label>
-                    <select
-                      id="usarEnd"
-                      name="usarEnd"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      onChange={handleSelectChange}
-                      disabled={visualizando}
-                      value={usarEndereco}
-                    >
-                      <option defaultValue="naoUsar">NÃO</option>
-                      <option value="usar">SIM</option>
-                    </select>
+              {!isEstrutura && (
+                <div className="border border-gray-700 p-2 rounded bg-gray-100">
+                  <div className="flex items-center">
+                    <h3 className="text-blue font-medium text-xl mr-2">Endereço de Entrega</h3>
                   </div>
-                  <div>
-                    <label htmlFor="CEP" className="block text-blue font-medium">
-                      CEP
-                    </label>
-                    <input
-                      id="CEP"
-                      name="cep" // Alterado de "CEP" para "cep" para garantir que o nome do campo corresponda ao estado
-                      type="text"
-                      value={formValuesClients.cep || ""} // Garante que o valor seja atualizado corretamente
-                      onChange={handleCepInputChange}
-                      onKeyPress={handleCepKeyPress}
-                      maxLength={9}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                    />
-                  </div>
+                  <div style={{ height: "16px" }}></div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label htmlFor="usarEnd" className="block text-blue font-medium">
+                        Usar Endereço do Cliente
+                      </label>
+                      <select
+                        id="usarEnd"
+                        name="usarEnd"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        onChange={handleSelectChange}
+                        disabled={visualizando}
+                        value={usarEndereco}
+                      >
+                        <option defaultValue="naoUsar">NÃO</option>
+                        <option value="usar">SIM</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="CEP" className="block text-blue font-medium">
+                        CEP
+                      </label>
+                      <input
+                        id="CEP"
+                        name="cep" // Alterado de "CEP" para "cep" para garantir que o nome do campo corresponda ao estado
+                        type="text"
+                        value={formValuesClients.cep || ""} // Garante que o valor seja atualizado corretamente
+                        onChange={handleCepInputChange}
+                        onKeyPress={handleCepKeyPress}
+                        maxLength={9}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                      />
+                    </div>
 
-                  <div className="col-span-2">
-                    <label htmlFor="logradouro" className="block text-blue font-medium">
-                      Logradouro
-                    </label>
-                    <input
-                      id="logradouro"
-                      name="logradouro"
-                      type="text"
-                      value={formValuesClients.logradouro}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                    />
-                  </div>
+                    <div className="col-span-2">
+                      <label htmlFor="logradouro" className="block text-blue font-medium">
+                        Logradouro
+                      </label>
+                      <input
+                        id="logradouro"
+                        name="logradouro"
+                        type="text"
+                        value={formValuesClients.logradouro}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                      />
+                    </div>
 
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    <div>
+                      <label htmlFor="numero" className="block text-blue font-medium">
+                        Número
+                      </label>
+                      <input
+                        id="numero"
+                        name="numero"
+                        type="text"
+                        value={formValuesClients.numero}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="estado" className="block text-blue font-medium">
+                        Estado (sigla)
+                      </label>
+                      <input
+                        id="estado"
+                        name="estado"
+                        type="text"
+                        value={formValuesClients.estado}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                        maxLength={2}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="bairro" className="block text-blue font-medium">
+                        Bairro
+                      </label>
+                      <input
+                        id="bairro"
+                        name="bairro"
+                        type="text"
+                        value={formValuesClients.bairro}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="cidade" className="block text-blue font-medium">
+                        Cidade
+                      </label>
+                      <input
+                        id="cidade"
+                        name="cidade"
+                        type="text"
+                        value={formValuesClients.cidade}
+                        onChange={handleInputChange}
+                        className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
+                        disabled={isDisabled || visualizando}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  <div>
-                    <label htmlFor="numero" className="block text-blue font-medium">
-                      Número
-                    </label>
-                    <input
-                      id="numero"
-                      name="numero"
-                      type="text"
-                      value={formValuesClients.numero}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="estado" className="block text-blue font-medium">
-                      Estado (sigla)
-                    </label>
-                    <input
-                      id="estado"
-                      name="estado"
-                      type="text"
-                      value={formValuesClients.estado}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                      maxLength={2}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="bairro" className="block text-blue font-medium">
-                      Bairro
-                    </label>
-                    <input
-                      id="bairro"
-                      name="bairro"
-                      type="text"
-                      value={formValuesClients.bairro}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cidade" className="block text-blue font-medium">
-                      Cidade
-                    </label>
-                    <input
-                      id="cidade"
-                      name="cidade"
-                      type="text"
-                      value={formValuesClients.cidade}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabled || visualizando}
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
               {
                 //#endregion
               }
@@ -4302,123 +5802,126 @@ const OrcamentosPage: React.FC = () => {
               {
                 // #region total
               }
-              <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
-                <h3 className="text-blue font-medium text-xl mr-2">Total</h3>
-                <div style={{ height: "16px" }}></div>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label htmlFor="produtos" className="block text-blue font-medium">
-                      Produtos
-                    </label>
-                    <input
-                      id="produtos"
-                      name="produtos"
-                      type="text"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      value={`R$ ${totalProdutosSomados.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`}
-                      step="0.001"
-                      disabled
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="servicos" className="block text-blue font-medium">
-                      Serviços
-                    </label>
-                    <input
-                      id="servicos"
-                      name="servicos"
-                      type="text"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      value={`R$ ${totalServicosSomados.toFixed(3)}`}
-                      step="0.001"
-                      disabled
-                    />
-                  </div>
-                  <div className="relative">
-                    <label htmlFor="descontoTotal" className="block text-blue font-medium">
-                      Desconto
-                    </label>
-                    <div className="relative">
+              {!isEstrutura && (
+                <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
+                  <h3 className="text-blue font-medium text-xl mr-2">Total</h3>
+                  <div style={{ height: "16px" }}></div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label htmlFor="produtos" className="block text-blue font-medium">
+                        Produtos
+                      </label>
                       <input
-                        id="descontoTotal"
-                        name="descontoTotal"
-                        type="number"
+                        id="produtos"
+                        name="produtos"
+                        type="text"
                         className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                        disabled={visualizando}
-                        value={descontoTotal}
-                        onChange={handleDescontoTotalChange}
-                        step="0.01"
-                        min={0}
-                        max={descontoUnitTotal == "%" ? 100 : (totalProdutosSomados + totalServicosSomados)}
+                        value={`R$ ${Number(totalProdutosSomados).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+
+                        step="0.001"
+                        disabled
                       />
-                      <select
-                        id="descontoUnitTotal"
-                        name="descontoUnitTotal"
-                        value={descontoUnitTotal}
-                        disabled={visualizando}
-                        onChange={handleDescontoUnitTotalChange}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // Impede a abertura do select
+                    </div>
 
-                          const selectElement = e.currentTarget; // Obtém o próprio select
-                          const nextValue = selectElement.value === "%" ? "R$" : "%"; // Alterna entre os valores
+                    <div>
+                      <label htmlFor="servicos" className="block text-blue font-medium">
+                        Serviços
+                      </label>
+                      <input
+                        id="servicos"
+                        name="servicos"
+                        type="text"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        value={`R$ ${Number(totalServicosSomados).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        step="0.001"
+                        disabled
+                      />
+                    </div>
+                    <div className="relative">
+                      <label htmlFor="descontoTotal" className="block text-blue font-medium">
+                        Desconto
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="descontoTotal"
+                          name="descontoTotal"
+                          type="number"
+                          className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                          disabled={visualizando}
+                          value={descontoTotal}
+                          onChange={handleDescontoTotalChange}
+                          step="0.01"
+                          min={0}
+                          max={descontoUnitTotal == "%" ? 100 : (totalProdutosSomados + totalServicosSomados)}
+                        />
+                        <select
+                          id="descontoUnitTotal"
+                          name="descontoUnitTotal"
+                          value={descontoUnitTotal}
+                          disabled={visualizando}
+                          onChange={handleDescontoUnitTotalChange}
+                          onMouseDown={(e) => {
+                            e.preventDefault(); // Impede a abertura do select
 
-                          // Cria um evento de mudança manualmente
-                          const event = new Event("change", { bubbles: true });
-                          selectElement.value = nextValue; // Atualiza o valor
-                          selectElement.dispatchEvent(event); // Dispara o evento de mudança
-                        }}
-                        className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "none",
-                          appearance: "none",
-                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
-                          color: "black", // Texto preto
-                          textAlign: "center", // Alinha o texto centralizado
-                          border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
-                          borderRadius: "0", // Borda quadrada
-                          paddingRight: "10px", // Ajuste no padding direito
-                          cursor: "pointer", // Indica que é clicável
-                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
-                          e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
-                          e.currentTarget.style.borderColor = "#6b7280"; // Borda original
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
-                        }}
-                      >
-                        <option value="%">&nbsp;%</option>
-                        <option value="R$">&nbsp;R$</option>
-                      </select>
+                            const selectElement = e.currentTarget; // Obtém o próprio select
+                            const nextValue = selectElement.value === "%" ? "R$" : "%"; // Alterna entre os valores
+
+                            // Cria um evento de mudança manualmente
+                            const event = new Event("change", { bubbles: true });
+                            selectElement.value = nextValue; // Atualiza o valor
+                            selectElement.dispatchEvent(event); // Dispara o evento de mudança
+                          }}
+                          className="absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1"
+                          style={{
+                            WebkitAppearance: "none",
+                            MozAppearance: "none",
+                            appearance: "none",
+                            background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)", // Gradiente mais suave e claro
+                            color: "black", // Texto preto
+                            textAlign: "center", // Alinha o texto centralizado
+                            border: "2px solid #6b7280", // Borda cinza escuro e mais espessa
+                            borderRadius: "0", // Borda quadrada
+                            paddingRight: "10px", // Ajuste no padding direito
+                            cursor: "pointer", // Indica que é clicável
+                            transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease", // Transição suave
+                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Sombra mais suave
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)"; // Cor de fundo mais escura no hover
+                            e.currentTarget.style.borderColor = "#4b5563"; // Borda mais clara
+                            e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)"; // Sombra mais forte no hover
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)"; // Cor de fundo original
+                            e.currentTarget.style.borderColor = "#6b7280"; // Borda original
+                            e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)"; // Sombra suave original
+                          }}
+                        >
+                          <option value="%">&nbsp;%</option>
+                          <option value="R$">&nbsp;R$</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="vl_total_total" className="block text-blue font-medium">
+                        Valor Total
+                      </label>
+                      <input
+                        id="vl_total_total"
+                        value={!isEditing
+                          ? `R$ ${Number(valorTotalTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : `R$ ${(Number(valorTotalTotal) + Number(formValues.frete || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        }
+
+                        name="vl_total_total"
+                        type="text"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        disabled // O valor total final não é editável
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="vl_total_total" className="block text-blue font-medium">
-                      Valor Total
-                    </label>
-                    <input
-                      id="vl_total_total"
-                      value={!isEditing
-                        ? `R$ ${Number(valorTotalTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : `R$ ${(Number(valorTotalTotal) + Number(formValues.frete || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      }
-
-                      name="vl_total_total"
-                      type="text"
-                      className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                      disabled // O valor total final não é editável
-                    />
-                  </div>
                 </div>
-              </div>
+              )}
               {
                 //#endregion
               }
@@ -4428,349 +5931,380 @@ const OrcamentosPage: React.FC = () => {
               {
                 // #region pagamentos
               }
-              <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
-                <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
-                <div style={{ height: "16px" }}></div>
-                <div className="grid grid-cols-6 gap-2">
-                  <div>
-                    <label htmlFor="restanteAserPago" className="block text-black font-small">Restante</label>
-                    <input
-                      id="restanteAserPago"
-                      name="restanteAserPago"
-                      type="number"
-                      disabled
-                      className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
-                      value={!isEditing
-                        ? restanteAserPago
-                        : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos))
-                      }
-                    />
-                    {/* <span>
-                      R$ {!isEditing
-                        ? Number(restanteAserPago).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                      }
-                    </span> */}
-
-                  </div>
-
-                </div>
-                <br></br>
-                <div className="grid grid-cols-6 gap-2">
-                  <div>
-                    <label htmlFor="pagamento" className="block text-blue font-medium">
-                      Forma
-                    </label>
-                    <select
-                      id="pagamento"
-                      name="pagamento"
-                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
-
-                      disabled={visualizando}
-                      value={selectedFormaPagamento?.cod_forma_pagamento || ""}
-                      onChange={(e) => {
-                        const selected = formasPagamento.find(f => f.cod_forma_pagamento === Number(e.target.value));
-                        if (selected) {
-                          setSelectedFormaPagamento({
-                            id: Date.now(),
-                            nome: selected.nome,
-                            cod_forma_pagamento: selected.cod_forma_pagamento,
-                            formaPagamento: selected // Incluindo a formaPagamento completa
-                          });
-                        } else {
-                          setSelectedFormaPagamento(null);
-                        }
-                      }}
-
-                    >
-                      <option value="">Selecione</option>
-                      {formasPagamento.map((forma) => (
-                        <option key={forma.cod_forma_pagamento} value={forma.cod_forma_pagamento}>
-                          {forma.nome ?? "Sem Nome"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="parcela" className="block text-blue font-medium">Parcela</label>
-                    <input
-                      id="parcela"
-                      name="parcela"
-                      type="number"
-                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 !bg-gray-200 ${visualizando ? 'hidden' : ''}`}
-                      value={pagamentos.length > 0 ? (pagamentos[pagamentos.length - 1]?.parcela ?? 0) + 1 : 1}
-                      disabled
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="valorParcela" className="block text-blue font-medium">Valor</label>
-                    <input
-                      id="valorParcela"
-                      name="valorParcela"
-                      type="number"
-                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
-                      disabled={visualizando}
-                      value={valorParcela}
-                      onChange={(e) => setvalorParcela(Number(e.target.value))}
-                    />
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="juros" className="block text-blue font-medium">Juros %</label>
-                    <input
-                      id="juros"
-                      name="juros"
-                      type="number"
-                      className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
-                      placeholder="R$"
-                      value={juros}
-                      disabled={visualizando}
-                      onChange={(e) => setJuros(Number(e.target.value))}
-                      step="0.01"
-                    />
-                  </div>
-
-
-                  <div className="col-span-2 flex flex-col items-start gap-1 w-full">
-                    <label htmlFor="data_parcela" className="block text-blue font-medium">
-                      Data da Parcela
-                    </label>
-                    <div className="flex items-center w-full gap-2">
+              {!isEstrutura && (
+                <div className="border border-gray-400 p-2 rounded mt-2 bg-gray-100">
+                  <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
+                  <div style={{ height: "16px" }}></div>
+                  <div className="grid grid-cols-6 gap-2">
+                    <div>
+                      <label htmlFor="restanteAserPago" className="block text-black font-small">Restante</label>
                       <input
-                        id="data_parcela"
-                        name="data_parcela"
-                        type="date"
+                        id="restanteAserPago"
+                        name="restanteAserPago"
+                        type="text"
+                        disabled
+                        className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
+                        value={!isEditing
+                          ? restanteAserPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                          : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        }
+                      />
+                      {/* <span>
+                        R$ {!isEditing
+                          ? Number(restanteAserPago).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        }
+                      </span> */}
+
+                    </div>
+
+                  </div>
+                  <br></br>
+                  <div className="grid grid-cols-6 gap-2">
+                    <div>
+                      <label htmlFor="pagamento" className="block text-blue font-medium">
+                        Forma
+                      </label>
+                      <select
+                        id="pagamento"
+                        name="pagamento"
+                        className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                        disabled={visualizando}
+                        value={selectedFormaPagamento?.cod_forma_pagamento || ""}
+                        onChange={(e) => {
+                          const selected = formasPagamento.find(f => f.cod_forma_pagamento === Number(e.target.value));
+                          if (selected) {
+                            setSelectedFormaPagamento({
+                              id: Date.now(),
+                              nome: selected.nome,
+                              cod_forma_pagamento: selected.cod_forma_pagamento,
+                              formaPagamento: selected // Incluindo a formaPagamento completa
+                            });
+                          } else {
+                            setSelectedFormaPagamento(null);
+                          }
+                        }}
+
+                      >
+                        <option value="">Selecione</option>
+                        {formasPagamento.map((forma) => (
+                          <option key={forma.cod_forma_pagamento} value={forma.cod_forma_pagamento}>
+                            {forma.nome ?? "Sem Nome"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="parcela" className="block text-blue font-medium">Parcela</label>
+                      <input
+                        id="parcela"
+                        name="parcela"
+                        type="number"
+                        className={`w-full border border-gray-400 pl-1 rounded-sm h-8 !bg-gray-200 ${visualizando ? 'hidden' : ''}`}
+                        value={pagamentos.length > 0 ? (pagamentos[pagamentos.length - 1]?.parcela ?? 0) + 1 : 1}
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="valorParcela" className="block text-blue font-medium">Valor</label>
+                      <input
+                        id="valorParcela"
+                        name="valorParcela"
+                        type="text" // Alterado para "text" para permitir formatação
                         className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
                         disabled={visualizando}
-                        value={data_parcela}
-                        onChange={(e) => setDataParcela(e.target.value)}
+                        value={valorParcelaInput}
+                        onChange={(e) => {
+                          // Remove o "R$" inicial e caracteres não numéricos para facilitar a digitação
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setValorParcelaInput(`R$ ${rawValue.replace('.', ',')}`); // Adiciona "R$" novamente enquanto o usuário digita
+                        }}
+                        onBlur={(e) => {
+                          // Remove o "R$" e formata o valor final
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          // Atualiza os valores principais
+                          setvalorParcela(numericValue);
+
+                          // Formata o valor final com "R$" para exibição
+                          setValorParcelaInput(`R$ ${numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                        }}
                       />
-                      <button
-                        className={`bg-green-200 border border-green-700 hover:bg-green-400 hover:scale-125 transition-all rounded-2xl p-1 flex items-center justify-center h-8 ${visualizando ? 'hidden' : ''}`}
-                        onClick={handleAdicionarPagamento}
+                    </div>
+
+
+                    <div>
+                      <label htmlFor="juros" className="block text-blue font-medium">Juros %</label>
+                      <input
+                        id="juros"
+                        name="juros"
+                        type="number"
+                        className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                        placeholder="R$"
+                        value={juros}
                         disabled={visualizando}
-                      >
-                        <FaPlus className="text-green-700 text-xl" />
-                      </button>
-
-                    </div>
-                    <div className={`flex ml-auto items-center gap-1 ${visualizando ? 'hidden' : ''}`}>
-                      <label htmlFor="quantidadeParcelas" className="text-sm">Parcelas Rápido&nbsp;</label>
-                      <input
-                        type="number"
-                        id="quantidadeParcelas"
-                        value={quantidadeParcelas}
-                        onChange={(e) => setQuantidadeParcelas(Number(e.target.value))}
-                        min={1}
-                        max={24}
-                        className="w-10 h-6 text-center border border-gray-400 rounded-sm"
+                        onChange={(e) => setJuros(Number(e.target.value))}
+                        step="0.01"
                       />
-                      <button
-                        onClick={handleAdicionarMultiplasParcelas}
-                        className="bg-blue200 border border-blue500 hover:bg-blue400 hover:scale-125 transition-all duration-50 rounded-2xl p-1 flex items-center justify-center h-7 w-7 ml-[6px]"
-                      >
-                        <FaPlus className="text-gray-100 text-xl h-4" />
-                      </button>
+                    </div>
+
+
+                    <div className="col-span-2 flex flex-col items-start gap-1 w-full">
+                      <label htmlFor="data_parcela" className="block text-blue font-medium">
+                        Data da Parcela
+                      </label>
+                      <div className="flex items-center w-full gap-2">
+                        <input
+                          id="data_parcela"
+                          name="data_parcela"
+                          type="date"
+                          className={`w-full border border-gray-400 pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                          disabled={visualizando}
+                          value={data_parcela}
+                          onChange={(e) => setDataParcela(e.target.value)}
+                        />
+                        <button
+                          className={`bg-green-200 border border-green-700 hover:bg-green-400 hover:scale-125 transition-all rounded-2xl p-1 flex items-center justify-center h-8 ${visualizando ? 'hidden' : ''}`}
+                          onClick={handleAdicionarPagamento}
+                          disabled={visualizando}
+                        >
+                          <FaPlus className="text-green-700 text-xl" />
+                        </button>
+
+                      </div>
+                      <div className={`flex ml-auto items-center gap-1 ${visualizando ? 'hidden' : ''}`}>
+                        <label htmlFor="quantidadeParcelas" className="text-sm">Parcelas Rápido&nbsp;</label>
+                        <input
+                          type="number"
+                          id="quantidadeParcelas"
+                          value={quantidadeParcelas}
+                          onChange={(e) => setQuantidadeParcelas(Number(e.target.value))}
+                          min={1}
+                          max={24}
+                          className="w-10 h-6 text-center border border-gray-400 rounded-sm"
+                        />
+                        <button
+                          onClick={handleAdicionarMultiplasParcelas}
+                          className="bg-blue175 border border-blue500  hover:bg-blue200 hover:scale-125 transition-all duration-50 rounded-2xl p-1 flex items-center justify-center h-7 w-7 ml-[6px]"
+                        >
+                          <FaPlus className="text-blue400 text-xl h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <br />
+                  <br />
 
-                {/* Pagamentos Adicionados */}
-                {pagamentos.map((pagamento, index) => (
-                  <div key={`${pagamento.id}-${index}`} className="grid grid-cols-6 gap-2 items-center mt-2">
-                    <div> {/* Forma */}
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ? pagamento.nome : pagamento.cod_forma_pagamento}
-                        disabled
-                        readOnly
-                      />
+                  {/* Pagamentos Parcelas Adicionados */}
+                  {pagamentos.map((pagamento, index) => (
+                    <div key={`${pagamento.id}-${index}`} className="grid grid-cols-6 gap-2 items-center mt-2">
+                      <div> {/* Forma */}
+                        <input
+                          type="text"
+                          className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                          value={!isEditing ? pagamento.nome : pagamento.cod_forma_pagamento}
+                          disabled
+                          readOnly
+                        />
+                      </div>
+
+                      <div> {/* Parcela */}
+                        <input
+                          type="number"
+                          className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                          value={pagamento.parcela} // valor individual da parcela
+                          disabled
+                          readOnly
+                        />
+                      </div>
+
+                      <div> {/* Valor */}
+                        <input
+                          type="text"
+                          className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                          value={
+                            pagamento.valorParcela
+                              ? (pagamento.valorParcela * (1 + (pagamento.juros ? pagamento.juros / 100 : 0)))
+                                .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                              : 'R$ 0,00'
+                          }
+                          disabled
+                          readOnly
+                        />
+                      </div>
+
+                      <div> {/* Juros */}
+                        <input
+                          type="text"
+                          className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                          value={pagamento.juros}
+                          disabled
+                          readOnly
+                        />
+                      </div>
+
+                      {/* Data */}
+                      <div className="col-span-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                          value={
+                            pagamento.data_parcela
+                              ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
+                              : ""
+                          }
+                        // value={
+                        //   pagamento.data_parcela
+                        //     ? isEditing
+                        //       ? new Date(pagamento.data_parcela).toISOString().split("T")[0] // Formato YYYY-MM-DD para inputs do tipo date
+                        //       : new Date(pagamento.data_parcela).toLocaleDateString("pt-BR") // Formato DD/MM/YYYY para exibição
+                        //     : ""
+                        // }
+                        />
+                        <button
+                          className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
+                          onClick={() => handleRemovePagamento(pagamento.id)}
+                        >
+                          <FaTimes className="text-red text-2xl" />
+                        </button>
+
+                      </div>
                     </div>
-
-                    <div> {/* Parcela */}
+                  ))}
+                  <div className="flex justify-end mt-5">
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="totalPagamentos" className="text-blue text-[16px]">Total final</label>
                       <input
-                        type="number"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.parcela} // valor individual da parcela
-                        disabled
-                        readOnly
-                      />
-                    </div>
-
-                    <div> {/* Valor */}
-                      <input
+                        id="totalPagamentos"
+                        name="totalPagamentos"
                         type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.valorParcela ? pagamento.valorParcela * (1 + (pagamento.juros ? pagamento.juros / 100 : 0)) : 0}
-                        disabled
-                        readOnly
-                      />
-                    </div>
-
-                    <div> {/* Juros */}
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={pagamento.juros}
-                        disabled
-                        readOnly
-                      />
-                    </div>
-
-                    {/* Data */}
-                    <div className="col-span-2 flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
+                        className="w-25 h-6 border border-gray-400 pl-1 rounded-sm !bg-gray-200"
                         value={
-                          pagamento.data_parcela
-                            ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
-                            : ""
+                          totalPagamentos
+                            ? `R$ ${Number(totalPagamentos).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : 'R$ 0,00'
                         }
-                      // value={
-                      //   pagamento.data_parcela
-                      //     ? isEditing
-                      //       ? new Date(pagamento.data_parcela).toISOString().split("T")[0] // Formato YYYY-MM-DD para inputs do tipo date
-                      //       : new Date(pagamento.data_parcela).toLocaleDateString("pt-BR") // Formato DD/MM/YYYY para exibição
-                      //     : ""
-                      // }
-                      />
-                      <button
-                        className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
-                        onClick={() => handleRemovePagamento(pagamento.id)}
-                      >
-                        <FaTimes className="text-red text-2xl" />
-                      </button>
 
+                        readOnly
+                      />
                     </div>
                   </div>
-                ))}
-                <div className="flex justify-end mt-5">
-                  <div className="flex items-center space-x-2">
-                    <label htmlFor="totalPagamentos" className="text-blue text-[16px]">Total final</label>
-                    <input
-                      id="totalPagamentos"
-                      name="totalPagamentos"
-                      type="number"
-                      className="w-25 h-6 border border-gray-400 pl-1 rounded-sm !bg-gray-200"
-                      value={totalPagamentos}
-                      readOnly
-                    />
-                  </div>
+
                 </div>
-
-              </div>
-
+              )}
               {
                 //#endregion
               }
 
-              <br></br>
-
-              <div className="relative">
-                <label htmlFor="garantia" className="block text-blue font-medium">
-                  Garantia
-                </label>
-                <div className="relative">
-                  <input
-                    id="garantia"
-                    name="garantia"
-                    type="number"
-                    className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    disabled={visualizando}
-                    value={formValues.garantia}
-                    onChange={handleGarantiaChange} // Chama o handleGarantiaChange para o input
-                    min={0}
-                  />
-                  <select
-                    id="tipo_garantia"
-                    name="tipo_garantia"
-                    value={formValues.tipo_garantia}
-                    disabled={visualizando}
-                    onChange={handleTipoGarantiaChange} // Chama o handleTipoGarantiaChange para o select
-                    onMouseDown={handleMouseDownSelect} // Alteração manual sem disparar um evento fake
-                    className="absolute right-0 top-0 h-full w-[70px] border-l border-gray-400 !bg-gray-50 px-1"
-                    style={{
-                      WebkitAppearance: "none",
-                      MozAppearance: "none",
-                      appearance: "none",
-                      background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)",
-                      color: "black",
-                      textAlign: "center",
-                      border: "2px solid #6b7280",
-                      borderRadius: "0",
-                      paddingRight: "10px",
-                      cursor: "pointer",
-                      transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
-                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)";
-                      e.currentTarget.style.borderColor = "#4b5563";
-                      e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)";
-                      e.currentTarget.style.borderColor = "#6b7280";
-                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-                    }}
-                  >
-                    <option value="dias">&nbsp;Dias</option>
-                    <option value="meses">&nbsp;Meses</option>
-                    <option value="anos">&nbsp;Anos</option>
-                  </select>
+              {/* <br></br> */}
+              {!isEstrutura && (
+                <div className="flex items-center gap-2 grid-cols-4">
+                  <div className="relative">
+                    <label htmlFor="garantia" className="block text-blue font-medium">
+                      Garantia
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="garantia"
+                        name="garantia"
+                        type="number"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                        disabled={visualizando}
+                        value={formValues.garantia}
+                        onChange={handleGarantiaChange} // Chama o handleGarantiaChange para o input
+                        min={0}
+                      />
+                      <select
+                        id="tipo_garantia"
+                        name="tipo_garantia"
+                        value={formValues.tipo_garantia}
+                        disabled={visualizando}
+                        onChange={handleTipoGarantiaChange} // Chama o handleTipoGarantiaChange para o select
+                        onMouseDown={handleMouseDownSelect} // Alteração manual sem disparar um evento fake
+                        className="absolute right-0 top-0 h-full w-[70px] border-l border-gray-400 !bg-gray-50 px-1"
+                        style={{
+                          WebkitAppearance: "none",
+                          MozAppearance: "none",
+                          appearance: "none",
+                          background: "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)",
+                          color: "black",
+                          textAlign: "center",
+                          border: "2px solid #6b7280",
+                          borderRadius: "0",
+                          paddingRight: "10px",
+                          cursor: "pointer",
+                          transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "linear-gradient(135deg, #f5f5f5 30%, #c0c0c0 100%)";
+                          e.currentTarget.style.borderColor = "#4b5563";
+                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "linear-gradient(135deg, #fafafa 30%, #d3d3d3 100%)";
+                          e.currentTarget.style.borderColor = "#6b7280";
+                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
+                        }}
+                      >
+                        <option value="dias">&nbsp;Dias</option>
+                        <option value="meses">&nbsp;Meses</option>
+                        <option value="anos">&nbsp;Anos</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <br></br>
 
               {
                 // #region oberservações
               }
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div>
-                  <label htmlFor="obervacoes_gerais" className="block text-blue font-medium">
-                    Observações Gerais:
-                  </label>
-                  <textarea
-                    id="obervacoes_gerais"
-                    name="obervacoes_gerais"
-                    value={formValues.observacoes_gerais || ""}
-                    className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
+              {!isEstrutura && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <label htmlFor="obervacoes_gerais" className="block text-blue font-medium">
+                      Observações Gerais:
+                    </label>
+                    <textarea
+                      id="obervacoes_gerais"
+                      name="obervacoes_gerais"
+                      value={formValues.observacoes_gerais || ""}
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
 
-                    onChange={(e) => {
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        observacoes_gerais: e.target.value, // Atualiza o campo observacoes_gerais
-                      }));
-                    }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="obervacoes_internas" className="block text-blue font-medium">
-                    Observações Internas:
-                  </label>
-                  <textarea
-                    id="obervacoes_internas"
-                    name="obervacoes_internas"
-                    value={formValues.observacoes_internas || ""}
-                    className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
-                    onChange={(e) => {
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        observacoes_internas: e.target.value, // Atualiza o campo observacoes_internas
-                      }));
-                    }}
-                  />
-                </div>
+                      onChange={(e) => {
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          observacoes_gerais: e.target.value, // Atualiza o campo observacoes_gerais
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="obervacoes_internas" className="block text-blue font-medium">
+                      Observações Internas:
+                    </label>
+                    <textarea
+                      id="obervacoes_internas"
+                      name="obervacoes_internas"
+                      value={formValues.observacoes_internas || ""}
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
+                      onChange={(e) => {
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          observacoes_internas: e.target.value, // Atualiza o campo observacoes_internas
+                        }));
+                      }}
+                    />
+                  </div>
 
-              </div>
+                </div>
+              )}
               {
                 //#endregion
               }
@@ -4805,6 +6339,7 @@ const OrcamentosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
+                      // onClick={() => console.log(codUsuarioLogado)}
                       onClick={() => { handleSaveReturn(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
@@ -4841,7 +6376,12 @@ const OrcamentosPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
+                    onClick={() => (
+                      isEstrutura
+                        ?
+                        handleSaveEditEstrutura()
+                        :
+                        handleSaveEdit())}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: "#28a745",
@@ -4872,13 +6412,14 @@ const OrcamentosPage: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
-                  Orçamentos
+                  {isEstrutura ? 'Estrutura de Orçamentos' : (isPedido ? 'Pedidos de Venda' : 'Orçamentos')}
                 </h2>
+
               </div>
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400  "
+                    className={`bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${isPedido ? 'hidden' : ''}`}
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
@@ -4889,251 +6430,468 @@ const OrcamentosPage: React.FC = () => {
                 </div>
               )}
             </div>
-            <div
-              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
-              style={{ height: "95%" }}
-            >
-              <div className="mb-4 flex justify-end">
-                <p className="text-blue font-bold text-lg">Busca:</p>
-                <div className="flex items-center">
+
+            {(!isEstrutura && !isPedido) ? (
+
+              <div
+                className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                style={{ height: "95%" }}
+              >
+
+                <div className="mb-4 flex items-center justify-end">
+                  <button
+                    onClick={() => router.push("/pages/Dashboard/commercial/orcamentos?tipo=estrutura")}
+                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50  rounded-2xl"
+                    title="Visualizar estruturas"
+                  >
+                    <FaRegBuilding style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                  </button>
+                  <p className="text-blue font-bold text-lg">Busca:</p>
                   <InputText
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder=""
                     className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
-                    style={{ border: "1px solid #1B405D80" }}
+                    style={{
+                      border: "1px solid #1B405D80",
+                    }}
                   />
-                  <select
-                    value={searchField}
-                    onChange={(e) => setSearchField(e.target.value)}
-                    className="p-inputtext-sm border rounded-md h-7 w-13 text-black"
-                    style={{ border: "1px solid #1B405D80" }}
-                  >
-                    <option value="cod_cliente">Código do Cliente</option>
-                    <option value="cod_orcamento">Código do Orçamento</option>
-                    <option value="situacao">Situação</option>
-                  </select>
-
                 </div>
-              </div>
-              <DataTable
-                value={filteredOrcamentos.slice(first, first + rows)}
-                paginator={true}
-                rows={rows}
-                rowsPerPageOptions={[5, 10]}
-                rowClassName={(data) => 'hover:bg-gray-200'}
+                <DataTable
+                  value={filteredOrcamentos.slice(first, first + rows)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
 
-                onPage={(e) => {
-                  setFirst(e.first);
-                  setRows(e.rows);
-                }}
-                tableStyle={{
-                  borderCollapse: "collapse",
-                  width: "100%",
-                }}
-                className="w-full"
-                responsiveLayout="scroll"
-              >
-                <Column
-                  field="cod_orcamento"
-                  header="Código"
-                  style={{
-                    width: "0%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
                   }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
                   }}
-                />
-                <Column
-                  header="Cliente"
-                  body={(rowData) => {
-                    const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
-                    return cliente ? cliente.nome : "Não encontrado";
-                  }}
-                  style={{
-                    width: "20%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-
-                <Column
-                  header="Valor"
-                  style={{
-                    width: "5%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                  body={(rowData) =>
-                    rowData.valor_total
-                      ? Number(rowData.valor_total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                      : "R$ 0,00"
-                  }
-
-                />
-                <Column
-                  field="situacao"
-                  header="Situação"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="prazo"
-                  header="Prazo"
-                  style={{
-                    width: "0%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                  body={(rowData) => {
-                    if (!rowData.prazo) return "-"; // Se estiver vazio, exibe '-'
-
-                    const [year, month, day] = rowData.prazo.split("T")[0].split("-");
-                    return `${day}/${month}/${year}`;
-                  }}
-                />
-
-
-                <Column
-                  field="dtCadastro"
-                  header="DT Cadastro"
-                  style={{
-                    width: "4%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                  body={(rowData) => {
-                    // Verifica se a data de dtCadastro está presente e é válida
-                    if (rowData.dtCadastro) {
-                      // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
-                      const date = new Date(rowData.dtCadastro);
-
-                      // Verifica se a data é válida
-                      if (!isNaN(date.getTime())) {
-                        const formattedDate = new Intl.DateTimeFormat("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false, // Formato de 24 horas
-                        }).format(date);
-                        return <span>{formattedDate}</span>;
-                      } else {
-                        return <span>Data inválida</span>;
-                      }
-                    } else {
-                      return <span>Sem data</span>;
+                  className="w-full"
+                  responsiveLayout="scroll"
+                >
+                  <Column
+                    field="cod_orcamento"
+                    header="Código"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header="Cliente"
+                    body={(rowData) => {
+                      const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
+                      return cliente ? cliente.nome : "Não encontrado";
+                    }}
+                    style={{
+                      width: "20%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header="Valor"
+                    style={{
+                      width: "5%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) =>
+                      rowData.valor_total
+                        ? Number(rowData.valor_total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                        : "R$ 0,00"
                     }
-                  }}
+                  />
+                  <Column
+                    field="situacao"
+                    header="Situação"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="prazo"
+                    header="Prazo"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      if (!rowData.prazo) return "-"; // Se estiver vazio, exibe '-'
 
-                />
+                      const [year, month, day] = rowData.prazo.split("T")[0].split("-");
+                      return `${day}/${month}/${year}`;
+                    }}
+                  />
+                  <Column
+                    field="dtCadastro"
+                    header="DT Cadastro"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Verifica se a data de dtCadastro está presente e é válida
+                      if (rowData.dtCadastro) {
+                        // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
+                        const date = new Date(rowData.dtCadastro);
 
+                        // Verifica se a data é válida
+                        if (!isNaN(date.getTime())) {
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false, // Formato de 24 horas
+                          }).format(date);
+                          return <span>{formattedDate}</span>;
+                        } else {
+                          return <span>Data inválida</span>;
+                        }
+                      } else {
+                        return <span>Sem data</span>;
+                      }
+                    }}
+                  />
 
-                <Column
-                  header=""
-                  body={(rowData) => (
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        onClick={() => handleEdit(rowData, true)}
-                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
-                        title="Visualizar"
-                      >
-                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                      </button>
-                    </div>
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleEdit(rowData, true)}
+                          className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                          title="Visualizar"
+                        >
+                          <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                        </button>
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+
+                  {permissions?.edicao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEdit(rowData, false)}
+                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
+                            title="Editar"
+                          >
+                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
                   )}
-                  className="text-black"
-                  style={{
-                    width: "0%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
+                  {permissions?.delecao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
+                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
+                            title="Cancelar"
+                          >
+                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                </DataTable>
+              </div>
 
-                {permissions?.edicao === "SIM" && (
+            ) : (!isPedido && isEstrutura) ? (
+
+              <div
+                className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                style={{ height: "95%" }}
+              >
+                <div className="mb-4 flex justify-end">
+                  <p className="text-blue font-bold text-lg">Busca:</p>
+                  <InputText
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder=""
+                    className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                    style={{
+                      border: "1px solid #1B405D80",
+                    }}
+                  />
+                </div>
+                <DataTable
+                  value={filteredEstruturas.slice(first, first + rows)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
+
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
+                  }}
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                  }}
+                  className="w-full"
+                  responsiveLayout="scroll"
+                >
+                  <Column
+                    field="cod_estrutura_orcamento"
+                    header="Código"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="nome"
+                    header="Nome"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="descricao"
+                    header="Descrição"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="situacao"
+                    header="Situação"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="dt_hr_criacao"
+                    header="DT Cadastro"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Verifica se a data de dt_hr_criacao está presente e é válida
+                      if (rowData.dt_hr_criacao) {
+                        // Certifica-se de que rowData.dt_hr_criacao é um número de timestamp (se for uma string ISO)
+                        const date = new Date(rowData.dt_hr_criacao);
+
+                        // Verifica se a data é válida
+                        if (!isNaN(date.getTime())) {
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false, // Formato de 24 horas
+                          }).format(date);
+                          return <span>{formattedDate}</span>;
+                        } else {
+                          return <span>Data inválida</span>;
+                        }
+                      } else {
+                        return <span>Sem data</span>;
+                      }
+                    }}
+                  />
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData, false)}
-                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                          title="Editar"
+                          onClick={() => {
+                            handleUsarEstrutura(rowData);
+                          }}
+                          className="hover:scale-125 hover:bg-green-700 p-2 bg-green-500 transform transition-all duration-50  rounded-2xl"
+                          title="Usar para um criar um novo orçamento"
                         >
-                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          <FaSuse style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -5154,18 +6912,304 @@ const OrcamentosPage: React.FC = () => {
                       padding: "10px",
                     }}
                   />
-                )}
-                {permissions?.delecao === "SIM" && (
+
+                  {permissions?.edicao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEditEstrutura(rowData, false)}
+                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
+                            title="Editar"
+                          >
+                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                  {permissions?.delecao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
+                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
+                            title="Cancelar"
+                          >
+                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                </DataTable>
+              </div>
+
+            ) : (
+
+              <div
+                className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                style={{ height: "95%" }}
+              >
+
+                <div className="mb-4 flex items-center justify-end">
+                  <button
+                    onClick={() => router.push("/pages/Dashboard/commercial/orcamentos")}
+                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50  rounded-2xl"
+                    title="Visualizar orçamentos"
+                  >
+                    <MdRequestQuote style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                  </button>
+                  <p className="text-blue font-bold text-lg">Busca:</p>
+                  <InputText
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder=""
+                    className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                    style={{
+                      border: "1px solid #1B405D80",
+                    }}
+                  />
+                </div>
+                <DataTable
+                  value={filteredPedidosVenda.slice(first, first + rows)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
+
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
+                  }}
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                  }}
+                  className="w-full"
+                  responsiveLayout="scroll"
+                >
+                  <Column
+                    field="cod_pedido_venda"
+                    header="Pedido"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="cod_orcamento"
+                    header="Orcto"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header="Cliente"
+                    body={(rowData) => {
+                      const cliente = clients.find((c) => c.cod_cliente === rowData.cod_cliente);
+                      return cliente ? cliente.nome : "Não encontrado";
+                    }}
+                    style={{
+                      width: "20%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header="Valor"
+                    style={{
+                      width: "5%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) =>
+                      rowData.valor_total
+                        ? Number(rowData.valor_total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                        : "R$ 0,00"
+                    }
+                  />
+                  <Column
+                    field="situacao"
+                    header="Situação"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field=""
+                    header="Prazo"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Acessa o primeiro orçamento e verifica se tem prazo
+                      const prazo = rowData.dbs_orcamentos?.prazo;
+                      if (!prazo) {
+                        return "-";
+                      }
+                      // Converte "2025-03-20T00:00:00.000Z" para "20/03/2025"
+                      const [year, month, day] = prazo.split("T")[0].split("-");
+                      return `${day}/${month}/${year}`;
+                    }}
+                  />
+
+                  <Column
+                    field="dt_hr_pedido"
+                    header="DT Pedido"
+                    style={{
+                      width: "4%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                    body={(rowData) => {
+                      // Verifica se a data de dt_hr_pedido está presente e é válida
+                      if (rowData.dt_hr_pedido) {
+                        // Certifica-se de que rowData.dt_hr_pedido é um número de timestamp (se for uma string ISO)
+                        const date = new Date(rowData.dt_hr_pedido);
+
+                        // Verifica se a data é válida
+                        if (!isNaN(date.getTime())) {
+                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false, // Formato de 24 horas
+                          }).format(date);
+                          return <span>{formattedDate}</span>;
+                        } else {
+                          return <span>Data inválida</span>;
+                        }
+                      } else {
+                        return <span>Sem data</span>;
+                      }
+                    }}
+                  />
+
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => openDialog(rowData.cod_orcamento)}
-                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                          title="Cancelar"
+                          onClick={() => handleVisualizarPedidoVenda(rowData.cod_pedido_venda, rowData.cod_orcamento)}
+                          className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                          title="Visualizar"
                         >
-                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                         </button>
                       </div>
                     )}
@@ -5186,9 +7230,48 @@ const OrcamentosPage: React.FC = () => {
                       padding: "10px",
                     }}
                   />
-                )}
-              </DataTable>
-            </div>
+
+                  {permissions?.delecao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => openDialog(isEstrutura
+                              ? rowData.cod_estrutura_orcamento
+                              : isPedido
+                                ? rowData.cod_pedido_venda
+                                : rowData.cod_orcamento)}
+                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
+                            title="Cancelar"
+                          >
+                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                          </button>
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                </DataTable>
+              </div>
+
+            )
+            }
           </div>
           {
             //#endregion
