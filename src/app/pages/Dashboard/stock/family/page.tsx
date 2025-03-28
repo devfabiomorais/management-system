@@ -122,8 +122,8 @@ const FamilyPage: React.FC = () => {
             });
             return;
         }
-        if (nomeExists && situacaoInativo && familiaEncontrada?.cod_familia) {
-            await editItem(familiaEncontrada); // Passa o serviço diretamente
+        if (nomeExists && situacaoInativo && familiaEncontrada) {
+            await editItem(familiaEncontrada.cod_familia);
             fetchFamilias();
             setFamilyCreateDisabled(false);
             setLoading(false);
@@ -172,8 +172,8 @@ const FamilyPage: React.FC = () => {
         }
     }
 
-    const editItem = async (familia: any = selectedFamilia) => {
-        if (!familia?.cod_familia) {
+    const editItem = async (familia: any) => {
+        if (!familia) {
             toast.error("Família não selecionada ou inválida. Tente novamente.", {
                 position: "top-right",
                 autoClose: 3000,
@@ -199,8 +199,8 @@ const FamilyPage: React.FC = () => {
                 name: nome
             }
 
-            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${familia.cod_familia}`,
-                { ...bodyForm, situacao: "Ativo", cod_familia: familia.cod_familia },
+            const response = await axios.put(`http://localhost:9009/api/familia/itens/edit/${familia}`,
+                { ...bodyForm, situacao: "Ativo" },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -572,21 +572,46 @@ const FamilyPage: React.FC = () => {
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                     }} />)}
-                                                {isEditing && (<Button
-                                                    label="Salvar Família"
-                                                    className="text-white"
-                                                    icon="pi pi-check"
-                                                    onClick={() => editItem()}
-                                                    disabled={familyEditDisabled}
-                                                    style={{
-                                                        backgroundColor: '#28a745',
-                                                        border: '1px solid #28a745',
-                                                        padding: '0.5rem 1.5rem',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }} />)}
+                                                {isEditing && (
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <Button
+                                                            label="Cancelar"
+                                                            className="text-white"
+                                                            icon="pi pi-times"
+                                                            onClick={() => {
+                                                                setIsEditing(false);
+                                                                clearInputs();
+                                                            }
+                                                            }
+                                                            disabled={familyEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#f87171', // Cor red400
+                                                                border: '1px solid #f87171',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            label="Salvar Edição"
+                                                            className="text-white"
+                                                            icon="pi pi-check"
+                                                            onClick={() => editItem(selectedFamilia)}
+                                                            disabled={familyEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                     </div>

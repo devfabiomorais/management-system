@@ -99,8 +99,8 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/edit/${centro.cod_centro_custo}`,
-        { ...formValues, situacao: "Ativo", cod_centro_custo: centro.cod_centro_custo },
+        `http://localhost:9009/api/centrosCusto/edit/${formValues.cod_centro_custo}`,
+        { ...formValues, situacao: "Ativo" },
         {
           headers: {
             Authorization: `Bearer ${token}`,

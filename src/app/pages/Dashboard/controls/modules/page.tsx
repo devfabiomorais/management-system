@@ -101,19 +101,36 @@ const ModulePage: React.FC = () => {
         }
 
         // Verifica se já existe no banco de dados um módulo com a mesma descrição
-        const moduleExists = modules.some((module) => module.descricao.toLowerCase() === descricao.toLowerCase());
+        const moduloEncontrado = modules.find((modulo) => modulo.descricao === descricao);
+        const situacaoInativo = moduloEncontrado?.situacao === "Inativo";
 
-        if (moduleExists) {
+        if (moduloEncontrado && !situacaoInativo) {
             setModuleCreateDisabled(false);
             setLoading(false);
-            toast.info("já existe no banco de dados um módulo com essa descrição. Escolha outra!", {
+            toast.info("Já existe um módulo com essa descrição. Escolha outra!", {
                 position: "top-right",
                 autoClose: 3000,
                 progressStyle: { background: "yellow" },
-                icon: <span>⚠️</span>, // Icone de alerta
+                icon: <span>⚠️</span>, // Ícone de alerta
             });
             return;
         }
+
+        if (moduloEncontrado && situacaoInativo) {
+            await editModulo(moduloEncontrado.cod_modulo);
+            fetchModules();
+            setModuleCreateDisabled(false);
+            setLoading(false);
+            clearInputs();
+            toast.info("Esse módulo já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                position: "top-right",
+                autoClose: 10000,
+                progressStyle: { background: "green" },
+                icon: <span>♻️</span>,
+            });
+            return;
+        }
+
 
         console.log({
             descricao: descricao,
@@ -161,7 +178,15 @@ const ModulePage: React.FC = () => {
     };
 
 
-    const editModulo = async () => {
+    const editModulo = async (cod_modulo: any) => {
+        if (!cod_modulo) {
+            toast.error("Módulo não selecionado ou inválido. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
         setModuleEditDisabled(true)
         if (descricao === "") {
             setModuleEditDisabled(false)
@@ -179,7 +204,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.put(`http://localhost:9009/api/module/edit/${selectedModule}`, bodyForm, {
+            const response = await axios.put(`http://localhost:9009/api/module/edit/${(cod_modulo)}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -554,21 +579,46 @@ const ModulePage: React.FC = () => {
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                     }} />)}
-                                                {isEditing && (<Button
-                                                    label="Salvar Módulo"
-                                                    className="text-white hover:bg-green-700 transition-all hover:scale-125 duration-50"
-                                                    icon="pi pi-check"
-                                                    onClick={() => editModulo()}
-                                                    disabled={moduleEditDisabled}
-                                                    style={{
-                                                        backgroundColor: '#28a745',
-                                                        border: '1px solid #28a745',
-                                                        padding: '0.5rem 1.5rem',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                    }} />)}
+                                                {isEditing && (
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <Button
+                                                            label="Cancelar"
+                                                            className="text-white hover:bg-red-700 transition-all hover:scale-125 duration-50"
+                                                            icon="pi pi-times"
+                                                            onClick={() => {
+                                                                setIsEditing(false);
+                                                                clearInputs();
+                                                            }}
+                                                            disabled={moduleEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#f87171', // Cor red400
+                                                                border: '1px solid #f87171',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            label="Salvar Edição"
+                                                            className="text-white hover:bg-green-700 transition-all hover:scale-125 duration-50"
+                                                            icon="pi pi-check"
+                                                            onClick={() => editModulo(selectedModule)}
+                                                            disabled={moduleEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+
                                             </>)}
 
                                     </div>

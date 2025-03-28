@@ -82,8 +82,8 @@ const ServicosPage: React.FC = () => {
     });
   };
 
-  const handleSaveEdit = async (servico: any = selectedServico) => {
-    if (!servico?.cod_servico) {
+  const handleSaveEdit = async (cod_servico: any) => {
+    if (!cod_servico) {
       toast.error("Serviço não selecionado ou inválido. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
@@ -97,8 +97,8 @@ const ServicosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/servicos/edit/${servico.cod_servico}`,
-        { ...formValues, situacao: "Ativo", cod_servico: servico.cod_servico },
+        `http://localhost:9009/api/servicos/edit/${cod_servico}`,
+        { ...formValues, situacao: "Ativo" },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -132,67 +132,6 @@ const ServicosPage: React.FC = () => {
   };
 
 
-
-  const handleSave = async () => {
-    setItemCreateDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "nome",
-        "descricao",
-        "valor_custo",
-        "valor_venda",
-        "comissao",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        "http://localhost:9009/api/servicos/register",
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchServicos();
-        toast.success("Serviço salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar serviço.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemCreateDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar serviço:", error);
-    }
-  };
-
   const [rowData, setRowData] = useState<Servico[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -221,12 +160,11 @@ const ServicosPage: React.FC = () => {
       }
 
       const servicoEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const nomeExists = !!servicoEncontrado;
       const situacaoInativo = servicoEncontrado?.situacao === "Inativo";
 
       console.log("Servico encontrado:", servicoEncontrado);
 
-      if (nomeExists && !situacaoInativo) {
+      if (servicoEncontrado && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -238,8 +176,8 @@ const ServicosPage: React.FC = () => {
         return;
       }
 
-      if (nomeExists && situacaoInativo && servicoEncontrado?.cod_servico) {
-        await handleSaveEdit(servicoEncontrado); // Passa o serviço diretamente
+      if (servicoEncontrado && situacaoInativo) {
+        await handleSaveEdit(servicoEncontrado.cod_servico); // Passa o serviço diretamente
         fetchServicos();
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -544,6 +482,7 @@ const ServicosPage: React.FC = () => {
                     onChange={handleNumericInputChange} // Não permite letras
                     onKeyPress={handleNumericKeyPress} // Bloqueia letras
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={25}
                   />
                 </div>
                 <div>
@@ -558,6 +497,7 @@ const ServicosPage: React.FC = () => {
                     onChange={handleNumericInputChange} // Não permite letras
                     onKeyPress={handleNumericKeyPress} // Bloqueia letras
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={25}
                   />
                 </div>
                 <div>
@@ -572,6 +512,7 @@ const ServicosPage: React.FC = () => {
                     onChange={handleNumericInputChange} // Não permite letras
                     onKeyPress={handleNumericKeyPress} // Bloqueia letras
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={25}
                   />
                 </div>
               </div>
@@ -601,6 +542,7 @@ const ServicosPage: React.FC = () => {
                   className="text-white"
                   icon="pi pi-times"
                   style={{
+                    height: "50px",
                     backgroundColor: "#dc3545",
                     border: "1px solid #dc3545",
                     padding: "0.5rem 1.5rem",
@@ -623,6 +565,7 @@ const ServicosPage: React.FC = () => {
                       onClick={() => { handleSaveReturn(false) }}
                       disabled={itemCreateReturnDisabled}
                       style={{
+                        height: "50px",
                         backgroundColor: "#007bff",
                         border: "1px solid #007bff",
                         padding: "0.5rem 1.5rem",
@@ -641,6 +584,7 @@ const ServicosPage: React.FC = () => {
                       onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
                       style={{
+                        height: "50px",
                         backgroundColor: "#28a745",
                         border: "1px solid #28a745",
                         padding: "0.5rem 1.5rem",
@@ -658,9 +602,10 @@ const ServicosPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => { handleSaveEdit(formValues) }}
+                    onClick={() => { handleSaveEdit(formValues.cod_servico) }}
                     disabled={itemEditDisabled}
                     style={{
+                      height: "50px",
                       backgroundColor: "#28a745",
                       border: "1px solid #28a745",
                       padding: "0.5rem 1.5rem",

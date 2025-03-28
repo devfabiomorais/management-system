@@ -154,8 +154,8 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${estabelecimento.cod_estabelecimento}`,
-                { ...formValues, situacao: "Ativo", cod_estabelecimento: estabelecimento.cod_estabelecimento },
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${formValues.cod_estabelecimento}`,
+                { ...formValues, situacao: "Ativo" },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,

@@ -90,6 +90,24 @@ const UsersPage: React.FC = () => {
         nomeGrupo: "",
         cod_grupo: 0
     });
+    const [isValidEmail, setIsValidEmail] = useState(true); // Para controlar a cor do input
+
+    // Função para lidar com a mudança no campo de email
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        // Formatação do email - aqui você pode implementar a formatação conforme necessário
+        setFormValues({ ...formValues, email: value });
+    };
+
+    // Função para validar o email
+    const handleEmailBlur = () => {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const isValid = emailRegex.test(formValues.email);
+
+        setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
+    };
+
+
     const [users, setUsers] = useState<User[]>([]);
 
     const [search, setSearch] = useState("");
@@ -313,7 +331,7 @@ const UsersPage: React.FC = () => {
                 nome: formValues.nome,
                 email: formValues.email,
                 usuario: formValues.usuario,
-                senha: "changeme",
+                senha: "1234",
                 cod_grupo: selectedGroupPermissions?.cod_grupo,
                 situacao: formValues.situacao,
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
@@ -337,7 +355,7 @@ const UsersPage: React.FC = () => {
                             <!-- Corpo -->
                             <div style="padding: 20px; text-align: center; color: #333;">
                                 <p style="font-size: 18px;">Olá ${formValues.nome}, seja bem-vindo ao Portal Birigui!</p>
-                                <p style="font-size: 16px;">Sua senha padrão é: <strong>changeme</strong></p>
+                                <p style="font-size: 16px;">Sua senha padrão é: <strong>1234</strong></p>
                                 <p style="font-size: 16px;">Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a></p>
 
                             </div>
@@ -446,7 +464,7 @@ const UsersPage: React.FC = () => {
                 nome: formValues.nome,
                 email: formValues.email,
                 usuario: formValues.usuario,
-                senha: "changeme",
+                senha: "1234",
                 cod_grupo: selectedGroupPermissions?.cod_grupo,
                 situacao: formValues.situacao,
                 cod_estabel: selectedEstablishments?.cod_estabelecimento,
@@ -741,8 +759,8 @@ const UsersPage: React.FC = () => {
                                 placeholder="" />
                         </div>
 
-                        <div className="">
-                            <label htmlFor="email" className="block text-blue  font-medium">
+                        <div>
+                            <label htmlFor="email" className="block text-blue font-medium">
                                 E-mail
                             </label>
                             <input
@@ -750,9 +768,12 @@ const UsersPage: React.FC = () => {
                                 id="email"
                                 name="email"
                                 value={formValues.email}
-                                onChange={handleInputChange}
-                                className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder="" />
+                                onChange={handleEmailChange}
+                                onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
+                                className={`w-full border pl-1 rounded-sm h-8 ${isValidEmail ? "border-[#D9D9D9]" : "border-red500"}`} // Altera a cor do border se o email for inválido
+                                style={{ outline: "none" }}
+                            />
+                            {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
                         </div>
 
                         <div className="">
@@ -845,7 +866,7 @@ const UsersPage: React.FC = () => {
                                         className="text-white"
                                         icon="pi pi-refresh"
                                         onClick={() => handleSaveReturn(false)}
-                                        disabled={userCreateReturnDisabled}
+                                        disabled={userCreateReturnDisabled || !isValidEmail}
                                         style={{
                                             backgroundColor: '#007bff',
                                             border: '1px solid #007bff',
@@ -861,7 +882,7 @@ const UsersPage: React.FC = () => {
                                     <Button
                                         label="Salvar e Adicionar Outro"
                                         className="text-white"
-                                        disabled={userCreateDisabled}
+                                        disabled={userCreateDisabled || !isValidEmail}
                                         icon="pi pi-check"
                                         onClick={() => handleSaveReturn(true)}
                                         style={{
@@ -883,7 +904,7 @@ const UsersPage: React.FC = () => {
                                     className="text-white"
                                     icon="pi pi-check"
                                     onClick={handleSaveEdit}
-                                    disabled={userEditDisabled}
+                                    disabled={userEditDisabled || !isValidEmail}
                                     style={{
                                         backgroundColor: "#28a745",
                                         border: "1px solid #28a745",

@@ -49,6 +49,7 @@ interface Item {
     anexo?: File;
     situacao: string;
     valor_custo: number;
+    valor_venda: number;
 }
 
 interface ItemFamilia {
@@ -83,7 +84,7 @@ const ItensPage: React.FC = () => {
     } = useUserPermissions(groupCode ?? 0, "Estoque");
     const [isItemCreateDisabled, setItemCreateDisabled] = useState(false);
     const [isItemCreateDisabledReturn, setItemCreateDisabledReturn] = useState(false);
-    const [isItemEditDisabled, setIsItemEditDisabled] = useState(false);
+    const [isItemEdit, setIsItemEdit] = useState(false);
     const [visible, setVisible] = useState(false);
     const [itens, setItens] = useState<Item[]>([]);
     let [loading, setLoading] = useState(false);
@@ -114,6 +115,7 @@ const ItensPage: React.FC = () => {
         cod_familia: null,
         situacao: "",
         valor_custo: 0,
+        valor_venda: 0,
     });
 
 
@@ -147,6 +149,7 @@ const ItensPage: React.FC = () => {
             cod_familia: null,
             situacao: "",
             valor_custo: 0,
+            valor_venda: 0,
         })
         console.log("Form values after clear:", formValues);
         setSelectedFamily(null);
@@ -159,7 +162,6 @@ const ItensPage: React.FC = () => {
     }, []);
 
     const fetchItens = async () => {
-        clearInputs()
         setLoading(true)
         try {
             const response = await axios.get("http://localhost:9009/api/itens", {
@@ -170,7 +172,6 @@ const ItensPage: React.FC = () => {
             setRowData(response.data.items);
             setIsDataLoaded(true);
             setItens(response.data.items);
-            setFormValues({ ...formValues, cod_item: (response.data.items.length + 1) })
             setLoading(false)
         } catch (error) {
             setLoading(false)
@@ -247,17 +248,14 @@ const ItensPage: React.FC = () => {
         }
     };
 
-
-
-
     const closeModal = () => {
         clearInputs()
         setIsEditing(false)
         setVisible(false)
     }
 
-    const handleSaveEdit = async (servico: any = selectedItem) => {
-        if (!servico?.cod_item) {
+    const handleSaveEdit = async (cod_item_recebido_para_edicao: any) => {
+        if (!cod_item_recebido_para_edicao) {
             toast.error("Item não selecionado ou inválido. Tente novamente.", {
                 position: "top-right",
                 autoClose: 3000,
@@ -265,13 +263,20 @@ const ItensPage: React.FC = () => {
             return;
         }
 
-        setIsItemEditDisabled(true);
+        setIsItemEdit(true);
         setLoading(true);
         setIsEditing(false);
 
         try {
-            // Verificar campos obrigatórios
-            const requiredFields = ["descricao", "narrativa", "cod_un", "situacao", "cod_familia"];
+            const requiredFields = [
+                "descricao",
+                "narrativa",
+                "cod_un",
+                "situacao",
+                "cod_familia",
+                "valor_custo",
+                "valor_venda"
+            ];
 
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
@@ -286,7 +291,7 @@ const ItensPage: React.FC = () => {
             }
 
             if (selectedEstablishments.length === 0) {
-                setIsItemEditDisabled(false);
+                setIsItemEdit(false);
                 setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", { position: "top-right", autoClose: 3000 });
                 return;
@@ -295,9 +300,11 @@ const ItensPage: React.FC = () => {
             const formData = new FormData();
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
+
             if (formValues.cod_un !== null) {
                 formData.append("cod_un", formValues.cod_un.toString());
             }
+
             if (formValues.cod_familia !== null) {
                 formData.append("cod_familia", formValues.cod_familia.toString());
             }
@@ -311,34 +318,26 @@ const ItensPage: React.FC = () => {
                 formData.append("anexo", formValues.anexo);
             }
 
-            // // Verificar a situação do item antes de atualizar
-            // if (servico.situacao === "ATIVO") {
-            //     toast.info("Este item já está ativo. Não é possível reativá-lo.", {
-            //         position: "top-right",
-            //         autoClose: 3000,
-            //         progressStyle: { background: "yellow" },
-            //         icon: <span>⚠️</span>,
-            //     });
-            //     return;
-            // }
 
             // Caso a situação seja "DESATIVADO", atualiza os dados do item
-            const response = await axios.put(`http://localhost:9009/api/itens/edit/${servico.cod_item}`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`http://localhost:9009/api/itens/edit/${cod_item_recebido_para_edicao}`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
             if (response.status >= 200 && response.status < 300) {
-                setIsItemEditDisabled(false);
+                setIsItemEdit(false);
                 setLoading(false);
                 clearInputs();
                 fetchItens();
                 toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
                 setVisible(false);
             } else {
-                setIsItemEditDisabled(false);
+                setIsItemEdit(true);
                 setLoading(false);
                 toast.error("Erro ao salvar item.", { position: "top-right", autoClose: 3000 });
             }
@@ -348,17 +347,14 @@ const ItensPage: React.FC = () => {
                 position: "top-right",
                 autoClose: 3000,
             });
-        } finally {
-            setIsItemEditDisabled(false);
-            setLoading(false);
         }
     };
 
 
+    const [rowData, setRowData] = useState<Item[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    const handleSave = async () => {
-        setItemCreateDisabled(true)
-        setLoading(true);
+    const handleSaveReturnProdutos = async (fecharTela: boolean) => {
         try {
             const requiredFields = [
                 "descricao",
@@ -366,6 +362,8 @@ const ItensPage: React.FC = () => {
                 "cod_un",
                 "situacao",
                 "cod_familia",
+                "valor_custo",
+                "valor_venda"
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -374,8 +372,6 @@ const ItensPage: React.FC = () => {
             });
 
             if (selectedEstablishments.length === 0) {
-                setItemCreateDisabled(false)
-                setLoading(false);
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
                     autoClose: 3000,
@@ -384,8 +380,6 @@ const ItensPage: React.FC = () => {
             }
 
             if (isEmptyField) {
-                setItemCreateDisabled(false)
-                setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
                     autoClose: 3000,
@@ -394,6 +388,7 @@ const ItensPage: React.FC = () => {
             }
 
             const formData = new FormData();
+
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
             formData.append("cod_item", formValues.cod_item);
@@ -402,6 +397,8 @@ const ItensPage: React.FC = () => {
             }
 
             formData.append("situacao", formValues.situacao);
+            formData.append("valor_custo", formValues.valor_custo.toString());
+            formData.append("valor_venda", formValues.valor_venda.toString());
 
             if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
                 formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
@@ -409,7 +406,7 @@ const ItensPage: React.FC = () => {
 
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
-                    console.log(establishment.cod_estabelecimento)
+                    console.log(establishment.cod_estabelecimento);
                     formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
                 } else {
                     console.error("Valor inválido para cod_estabelecimento:", establishment);
@@ -420,41 +417,73 @@ const ItensPage: React.FC = () => {
                 const file = formValues.anexo;
                 formData.append("anexo", file);
             }
-            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
 
+            // Verificar se o "nome" já existe no banco de dados no storedRowData
+            const nomeExists = itens.some((item) => item.descricao === formValues.descricao);
+
+            if (nomeExists) {
+                const itemEncontrado = itens.find((item) => item.descricao === formValues.descricao);
+                const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
+
+                if (situacaoAtivo) {
+                    // Caso o nome exista e a situação seja ATIVO, não permite a ação
+                    toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        progressStyle: { background: "yellow" },
+                        icon: <span>⚠️</span>, // Usa o emoji de alerta
+                    });
+                    return;
+                } else {
+                    // Caso a situação seja DESATIVADO, atualiza os dados
+                    if (itemEncontrado) {
+                        setSelectedItem(itemEncontrado);
+                    } else {
+                        setSelectedItem(null);
+                    }
+                    await handleSaveEdit(itemEncontrado ? itemEncontrado.cod_item : formValues.cod_item); // Passa o serviço diretamente para atualização
+                    fetchItens();  // Recarrega os produtos
+                    clearInputs();
+                    setVisible(fecharTela);
+                    toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                        position: "top-right",
+                        autoClose: 10000,
+                        progressStyle: { background: "green" },
+                        icon: <span>♻️</span>, // Ícone de recarga
+                    });
+                    return;
+                }
+            }
+
+            // Se o nome não existir, cadastra o item normalmente
+            const response = await axios.post("http://localhost:9009/api/itens/register",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
             if (response.status >= 200 && response.status < 300) {
-                setItemCreateDisabled(false)
-                setLoading(false);
                 clearInputs();
                 fetchItens();
                 toast.success("Item salvo com sucesso!", {
                     position: "top-right",
                     autoClose: 3000,
                 });
+                clearInputs();
+                setVisible(fecharTela);
             } else {
-                setItemCreateDisabled(false)
-                setLoading(false);
                 toast.error("Erro ao salvar item.", {
                     position: "top-right",
                     autoClose: 3000,
                 });
             }
         } catch (error) {
-            setItemCreateDisabled(false)
-            setLoading(false);
             console.error("Erro ao salvar item:", error);
         }
     };
-
-
-    const [rowData, setRowData] = useState<Item[]>([]);
-    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const handleSaveReturn = async (fecharTela: boolean) => {
         setItemCreateDisabledReturn(true);
@@ -639,6 +668,7 @@ const ItensPage: React.FC = () => {
                 dbs_unidades_medida: itens.dbs_unidades_medida || null,
                 situacao: itens.situacao || "",
                 valor_custo: itens.valor_custo,
+                valor_venda: itens.valor_venda,
                 cod_un: selectedUnit?.cod_un || null,
                 cod_familia: selectedFamily?.cod_familia || null,
                 cod_estabelecimento: selectedEstablishments.map((est: Establishment) => est.cod_estabelecimento.toString()) || [],
@@ -782,39 +812,59 @@ const ItensPage: React.FC = () => {
                     onHide={() => closeModal()}
                 >
                     <div className="p-fluid grid gap-3 mt-2">
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                             <div className="">
-                                <label htmlFor="code" className="block text-blue font-medium">
-                                    Código:
+                                <label htmlFor="cod_item" className="block text-blue font-medium">
+                                    Código
                                 </label>
                                 <input
                                     type="text"
-                                    id="code"
-                                    name="descricao"
+                                    id="cod_item"
+                                    name="cod_item"
                                     value={formValues.cod_item}
                                     onChange={(e) => setFormValues({ ...formValues, cod_item: e.target.value })}
-                                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="" />
+                                    className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-[50px] ${isEditing ? "!bg-gray-300 cursor-not-allowed" : ""}`}
+                                    disabled={isEditing}
+                                />
                             </div>
 
-                            <div className="">
-                                <label htmlFor="description" className="block text-blue  font-medium">
-                                    Descrição:
+                            <div className="col-span-3">
+                                <label htmlFor="situation" className="block text-blue  font-medium">
+                                    Situação
                                 </label>
-                                <input
-                                    type="text"
-                                    id="description"
-                                    name="descricao"
-                                    value={formValues.descricao}
-                                    onChange={(e) => setFormValues({ ...formValues, descricao: e.target.value })}
-                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="" />
+                                <Dropdown
+                                    id="situacao"
+                                    name="situacao"
+                                    value={formValues.situacao}
+                                    onChange={(e) => setFormValues({ ...formValues, situacao: e.value })}
+                                    options={[
+                                        { label: 'Ativo', value: 'ATIVO' },
+                                        { label: 'Inativo', value: 'DESATIVADO' }
+                                    ]}
+                                    placeholder="Selecione"
+                                    className="w-full md:w-14rem"
+                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
+
+                        </div>
+
+                        <div className="">
+                            <label htmlFor="description" className="block text-blue  font-medium">
+                                Descrição
+                            </label>
+                            <input
+                                type="text"
+                                id="description"
+                                name="descricao"
+                                value={formValues.descricao}
+                                onChange={(e) => setFormValues({ ...formValues, descricao: e.target.value })}
+                                className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                placeholder="" />
                         </div>
 
                         <div className="">
                             <label htmlFor="narrative" className="block text-blue  font-medium">
-                                Narrativa:
+                                Narrativa
                             </label>
                             <textarea
                                 id="narrative"
@@ -829,7 +879,7 @@ const ItensPage: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2">
                             <div className="">
                                 <label htmlFor="un" className="block text-blue  font-medium">
-                                    UN:
+                                    UN
                                 </label>
                                 <Dropdown
                                     id="un"
@@ -848,7 +898,7 @@ const ItensPage: React.FC = () => {
                             </div>
                             <div className="">
                                 <label htmlFor="family" className="block text-blue  font-medium">
-                                    Família:
+                                    Família
                                 </label>
                                 <Dropdown
                                     id="family"
@@ -868,44 +918,52 @@ const ItensPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
+
                             <div className="">
-                                <label htmlFor="situation" className="block text-blue  font-medium">
-                                    Situação:
+                                <label htmlFor="valor_venda" className="block text-blue  font-medium">
+                                    Valor Venda
                                 </label>
-                                <Dropdown
-                                    id="situacao"
-                                    name="situacao"
-                                    value={formValues.situacao}
-                                    onChange={(e) => setFormValues({ ...formValues, situacao: e.value })}
-                                    options={[
-                                        { label: 'Ativo', value: 'ATIVO' },
-                                        { label: 'Inativo', value: 'DESATIVADO' }
-                                    ]}
-                                    placeholder="Selecione"
-                                    className="w-full md:w-14rem"
-                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
+                                <input
+                                    id="valor_venda"
+                                    name="valor_venda"
+                                    type="text"
+                                    value={`R$ ${Number(formValues.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                                        setFormValues({ ...formValues, valor_venda: numericValue });
+                                    }}
+                                    placeholder="R$ 0,00"
+                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                                />
+
                             </div>
+
                             <div className="">
                                 <label htmlFor="valor_custo" className="block text-blue  font-medium">
-                                    Valor Unitário:
+                                    Valor Unitário
                                 </label>
                                 <input
                                     id="valor_custo"
                                     name="valor_custo"
-                                    type="number"
-                                    value={formValues.valor_custo}
-                                    onChange={(e) => setFormValues({ ...formValues, valor_custo: parseFloat(e.target.value) })}
-                                    placeholder="Selecione"
-                                    className="w-full md:w-14rem"
-                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }}
+                                    type="text"
+                                    value={`R$ ${Number(formValues.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                                        setFormValues({ ...formValues, valor_custo: numericValue });
+                                    }}
+                                    placeholder="R$ 0,00"
+                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
                                 />
+
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                             <div className="w-full">
                                 <label htmlFor="photo" className="block text-blue font-medium">
-                                    Foto:
+                                    Foto
                                 </label>
 
                                 <input
@@ -919,7 +977,7 @@ const ItensPage: React.FC = () => {
 
                                 <label
                                     htmlFor="photo"
-                                    className="custom-file-input w-full"
+                                    className="custom-file-input w-full hover:scale-95"
                                     style={{
                                         display: "inline-block",
                                         padding: "10px 20px",
@@ -946,7 +1004,7 @@ const ItensPage: React.FC = () => {
 
                             <div className="">
                                 <label htmlFor="estabilishments" className="block text-blue  font-medium">
-                                    Estabelecimentos:
+                                    Estabelecimentos
                                 </label>
 
                                 <MultiSelect
@@ -959,23 +1017,46 @@ const ItensPage: React.FC = () => {
                                     maxSelectedLabels={3}
                                     className="w-full border text-black" />
                             </div>
-
-
                         </div>
                     </div>
 
+                    <br></br>
 
 
-                    <div className="flex justify-center items-center mt-16">
-                        <div className={`grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
-                            {/* Botão Vermelho - Sempre Presente */}
+
+
+                    <div className={`grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
+                        {/* Botão Vermelho - Sempre Presente */}
+                        <Button
+                            label="Sair Sem Salvar"
+                            className="text-white"
+                            icon="pi pi-times"
+                            style={{
+                                height: "50px",
+                                backgroundColor: "#dc3545",
+                                border: "1px solid #dc3545",
+                                padding: "0.5rem 1.5rem",
+                                fontSize: "14px",
+                                fontWeight: "bold",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                            onClick={closeModal}
+                        />
+
+                        {/* Modo de Edição: Apenas Botão Verde */}
+                        {isEditing ? (
                             <Button
-                                label="Sair Sem Salvar"
+                                label="Salvar"
                                 className="text-white"
-                                icon="pi pi-times"
+                                icon="pi pi-check"
+                                onClick={() => { handleSaveEdit(selectedItem?.cod_item) }}
+                                disabled={isItemEdit}
                                 style={{
-                                    backgroundColor: "#dc3545",
-                                    border: "1px solid #dc3545",
+                                    height: "50px",
+                                    backgroundColor: "#28a745",
+                                    border: "1px solid #28a745",
                                     padding: "0.5rem 1.5rem",
                                     fontSize: "14px",
                                     fontWeight: "bold",
@@ -983,17 +1064,34 @@ const ItensPage: React.FC = () => {
                                     alignItems: "center",
                                     justifyContent: "center",
                                 }}
-                                onClick={closeModal}
                             />
-
-                            {/* Modo de Edição: Apenas Botão Verde */}
-                            {isEditing ? (
+                        ) : (
+                            // Modo de Criação: Três Botões (Vermelho, Azul, Verde)
+                            <>
                                 <Button
-                                    label="Salvar"
+                                    label="Salvar e Voltar à Listagem"
+                                    className="text-white"
+                                    icon="pi pi-refresh"
+                                    onClick={() => handleSaveReturnProdutos(false)}
+                                    disabled={isItemCreateDisabledReturn}
+                                    style={{
+                                        height: "50px",
+                                        backgroundColor: "#007bff",
+                                        border: "1px solid #007bff",
+                                        padding: "0.5rem 1.5rem",
+                                        fontSize: "14px",
+                                        fontWeight: "bold",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                />
+                                <Button
+                                    label="Salvar e Adicionar Outro"
                                     className="text-white"
                                     icon="pi pi-check"
-                                    onClick={() => { handleSaveEdit(formValues) }}
-                                    disabled={isItemEditDisabled}
+                                    disabled={isItemCreateDisabled}
+                                    onClick={() => handleSaveReturnProdutos(true)}
                                     style={{
                                         backgroundColor: "#28a745",
                                         border: "1px solid #28a745",
@@ -1005,47 +1103,10 @@ const ItensPage: React.FC = () => {
                                         justifyContent: "center",
                                     }}
                                 />
-                            ) : (
-                                // Modo de Criação: Três Botões (Vermelho, Azul, Verde)
-                                <>
-                                    <Button
-                                        label="Salvar e Voltar à Listagem"
-                                        className="text-white"
-                                        icon="pi pi-refresh"
-                                        onClick={() => handleSaveReturn(false)}
-                                        disabled={isItemCreateDisabledReturn}
-                                        style={{
-                                            backgroundColor: "#007bff",
-                                            border: "1px solid #007bff",
-                                            padding: "0.5rem 1.5rem",
-                                            fontSize: "14px",
-                                            fontWeight: "bold",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    />
-                                    <Button
-                                        label="Salvar e Adicionar Outro"
-                                        className="text-white"
-                                        icon="pi pi-check"
-                                        disabled={isItemCreateDisabled}
-                                        onClick={() => handleSaveReturn(true)}
-                                        style={{
-                                            backgroundColor: "#28a745",
-                                            border: "1px solid #28a745",
-                                            padding: "0.5rem 1.5rem",
-                                            fontSize: "14px",
-                                            fontWeight: "bold",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    />
-                                </>
-                            )}
-                        </div>
+                            </>
+                        )}
                     </div>
+
 
                 </Dialog>
 
@@ -1228,7 +1289,8 @@ const ItensPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
+                                            <button onClick={() => handleEdit(rowData)}
+                                                className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
                                                 <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                             </button>
 

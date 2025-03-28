@@ -91,6 +91,19 @@ const ClientsPage: React.FC = () => {
     documento: "",
   });
 
+  const [isValidEmail, setIsValidEmail] = useState(true);
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Formatação do email - aqui você pode implementar a formatação conforme necessário
+    setFormValues({ ...formValues, email: value });
+  };
+  const handleEmailBlur = () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const isValid = emailRegex.test(formValues.email);
+
+    setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
+  };
+
   const clearInputs = () => {
     setFormValues({
       cod_cliente: 0,
@@ -680,7 +693,7 @@ const ClientsPage: React.FC = () => {
                   <select
                     id="tipo"
                     name="tipo"
-                    value={formValues.tipo}
+                    value={formValues.tipo || "default"}
                     defaultValue={"default"}
                     onChange={(e) =>
                       setFormValues({ ...formValues, tipo: e.target.value })
@@ -696,10 +709,7 @@ const ClientsPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="email" className="block text-blue font-medium">
                     E-mail
                   </label>
                   <input
@@ -707,10 +717,15 @@ const ClientsPage: React.FC = () => {
                     id="email"
                     name="email"
                     value={formValues.email}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    onChange={handleEmailChange}
+                    onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
+                    className={`w-full border pl-1 rounded-sm h-8 ${isValidEmail ? "border-[#D9D9D9]" : "border-red500"}`} // Altera a cor do border se o email for inválido
+                    style={{ outline: "none" }}
+                    placeholder="nome@empresa.com"
                   />
+                  {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
                 </div>
+
                 <div>
                   <label htmlFor="documento" className="block text-blue font-medium">
                     Documento
@@ -919,7 +934,7 @@ const ClientsPage: React.FC = () => {
                     className="text-white"
                     icon="pi pi-refresh"
                     onClick={() => { handleSaveReturn(false) }}
-                    disabled={itemCreateReturnDisabled}
+                    disabled={itemCreateReturnDisabled || !isValidEmail}
                     style={{
                       backgroundColor: "#007bff",
                       border: "1px solid #007bff",
@@ -937,7 +952,7 @@ const ClientsPage: React.FC = () => {
                     className="text-white"
                     icon="pi pi-check"
                     onClick={() => { handleSaveReturn(true) }}
-                    disabled={itemCreateDisabled}
+                    disabled={itemCreateDisabled || !isValidEmail}
                     style={{
                       backgroundColor: "#28a745",
                       border: "1px solid #28a745",
@@ -957,7 +972,7 @@ const ClientsPage: React.FC = () => {
                   className="text-white"
                   icon="pi pi-check"
                   onClick={handleSaveEdit}
-                  disabled={itemEditDisabled}
+                  disabled={itemEditDisabled || !isValidEmail}
                   style={{
                     backgroundColor: "#28a745",
                     border: "1px solid #28a745",

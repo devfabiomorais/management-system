@@ -118,8 +118,8 @@ const UnMedidaPage: React.FC = () => {
             });
             return;
         }
-        if (nomeExists && situacaoInativo && unEncontrada?.cod_un) {
-            await editUnMedida(unEncontrada); // Passa o serviço diretamente
+        if (nomeExists && situacaoInativo && unEncontrada) {
+            await editUnMedida(unEncontrada.cod_un); // Passa o serviço diretamente
             fetchUnits();
             setIsUnMedidaCreateDisabled(false);
             setLoading(false);
@@ -167,8 +167,8 @@ const UnMedidaPage: React.FC = () => {
         }
     }
 
-    const editUnMedida = async (un: any = selectedUnidade) => {
-        if (!un?.cod_un) {
+    const editUnMedida = async (un: any) => {
+        if (!un) {
             toast.error("Unidade de Medida não selecionada ou inválida. Tente novamente.", {
                 position: "top-right",
                 autoClose: 3000,
@@ -193,8 +193,8 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${un.cod_un}`,
-                { ...bodyForm, situacao: "Ativo", cod_un: un.cod_un },
+            const response = await axios.put(`http://localhost:9009/api/unMedida/edit/${un}`,
+                { ...bodyForm, situacao: "Ativo" },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -569,23 +569,45 @@ const UnMedidaPage: React.FC = () => {
                                                 )}
 
                                                 {isEditing && (
-                                                    <Button
-                                                        label="Salvar Unidade"
-                                                        className="text-white"
-                                                        icon="pi pi-check"
-                                                        onClick={() => editUnMedida()}
-                                                        disabled={isUnMedidaEditDisabled}
-                                                        style={{
-                                                            backgroundColor: '#28a745',
-                                                            border: '1px solid #28a745',
-                                                            padding: '0.5rem 1.5rem',
-                                                            fontSize: '14px',
-                                                            fontWeight: 'bold',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        }}
-                                                    />
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <Button
+                                                            label="Cancelar"
+                                                            className="text-white"
+                                                            icon="pi pi-times"
+                                                            onClick={() => {
+                                                                setIsEditing(false);
+                                                                clearInputs();
+                                                            }}
+                                                            disabled={isUnMedidaEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#f87171', // Cor red400
+                                                                border: '1px solid #f87171',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            label="Salvar Edição"
+                                                            className="text-white"
+                                                            icon="pi pi-check"
+                                                            onClick={() => editUnMedida(selectedUnidade)}
+                                                            disabled={isUnMedidaEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
                                                 )}
+
                                             </>
                                         )}
                                     </div>
