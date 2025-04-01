@@ -161,7 +161,7 @@ const ClientsPage: React.FC = () => {
 
       const response = await axios.put(
         `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
-        { ...formValues, cod_cliente: selectedClient?.cod_cliente }, // Garante que cod_cliente é enviado
+        { ...formValues },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -231,15 +231,12 @@ const ClientsPage: React.FC = () => {
         return;
       }
 
-      // Verificar se o "nome" já existe no banco de dados no storedRowData
-      const nomeExists = rowData.some((item) => item.nome === formValues.nome);
-      const situacaoInativo = rowData.find((item) => item.nome === formValues.nome)?.situacao == "Inativo";
-      const clienteEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      console.log("Cliente encontrado:", clienteEncontrado);
+      // Buscar o cliente uma única vez
+      const clienteEncontrado = rowData.find((cliente) => cliente.nome === formValues.nome);
+      const situacaoInativo = clienteEncontrado?.situacao === "DESATIVADO";
 
 
-
-      if (nomeExists && !situacaoInativo) {
+      if (clienteEncontrado && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe, escolha outro!", {
@@ -250,8 +247,8 @@ const ClientsPage: React.FC = () => {
         });
         return;
 
-      } else if (nomeExists && situacaoInativo) {
-        setSelectedClient(clienteEncontrado ?? null);
+      } else if (clienteEncontrado && situacaoInativo) {
+        setSelectedClient(clienteEncontrado);
         handleSaveEdit();
         setItemCreateReturnDisabled(false);
         setLoading(false);

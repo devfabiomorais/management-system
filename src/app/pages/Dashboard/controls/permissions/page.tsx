@@ -24,7 +24,7 @@ import { useGroup } from "@/app/hook/acessGroup";
 import { debug } from "console";
 
 interface PermissionType {
-    situacao?: string;
+    situacao: string;
     cod_permissao_grupo: number;
     dbs_modulos?: {
         cod_modulo: number;
@@ -153,23 +153,6 @@ const PermissionsPage: React.FC = () => {
             return;
         }
 
-        // Verifica se o nome já existe no banco de dados na lista carregada
-        const nomeJaExiste = permissionsType.some((perm) =>
-            perm.dbs_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
-        );
-
-        if (nomeJaExiste) {
-            setLoading(false);
-            toast.info("Este nome já existe no banco de dados, escolha outro!!", {
-                position: "top-right",
-                autoClose: 3000,
-                progressStyle: { background: "yellow" }, // Cor do progresso
-                icon: <span>⚠️</span>, // Ícone de alerta
-            });
-            return;
-        }
-
-
         const permissionsToSend = linhas.map((linha) => ({
             cod_modulo: linha[1],
             descricao: linha[0],
@@ -185,6 +168,38 @@ const PermissionsPage: React.FC = () => {
                 permissoes: permissionsToSend,
             };
 
+            // Verifica se o nome já existe no banco de dados na lista carregada
+            const nomeJaExiste = permissionsType.find(
+                (perm) => perm.dbs_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
+            );
+            const situacaoInativo = nomeJaExiste?.dbs_grupos?.situacao?.toLowerCase() === 'inativo';
+            const cod_grupoParaEnvio = nomeJaExiste?.dbs_grupos?.cod_grupo
+
+            if (nomeJaExiste && !situacaoInativo) {
+                setLoading(false);
+                toast.info("Este nome já existe no banco de dados, escolha outro!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" }, // Cor do progresso
+                    icon: <span>⚠️</span>, // Ícone de alerta
+                });
+                return;
+            } else if (nomeJaExiste && situacaoInativo) {
+                setSelectedPermission(cod_grupoParaEnvio ?? 0);
+                await editPermission();
+                setLoading(false);
+                clearInputs();
+                fetchPermission();
+                fetchModules();
+                toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                    position: "top-right",
+                    autoClose: 10000,
+                    progressStyle: { background: "green" },
+                    icon: <span>♻️</span>,
+                });
+                return;
+            }
+
             const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -194,7 +209,8 @@ const PermissionsPage: React.FC = () => {
             if (response.status >= 200 && response.status < 300) {
                 setLoading(false);
                 clearInputs();
-                fetchPermission();  // Recarrega a lista de permissões após salvar
+                fetchPermission();
+                fetchModules();
                 toast.success("Grupo de Permissão salvo com sucesso!", {
                     position: "top-right",
                     autoClose: 3000,

@@ -125,7 +125,11 @@ const EstablishmentsPage: React.FC = () => {
         })
     }
 
-    const handleSaveEdit = async (estabelecimento: any = selectedEstabilishment) => {
+    const handleSaveEdit = async (cod_estabelecimento_recebido: any) => {
+        if (!cod_estabelecimento_recebido) {
+            console.log("cod_estabelecimento não recebido!")
+            return
+        }
         setLoading(true)
         setIsEditing(false);
         try {
@@ -154,7 +158,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${formValues.cod_estabelecimento}`,
+            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${cod_estabelecimento_recebido}`,
                 { ...formValues, situacao: "Ativo" },
                 {
                     headers: {
@@ -219,11 +223,10 @@ const EstablishmentsPage: React.FC = () => {
             }
 
 
-            const estabelecimentoEncontrado = rowData.find((item) => item.nome === formValues.nome);
-            const nomeExists = !!estabelecimentoEncontrado;
+            const estabelecimentoEncontrado = rowData.find((estabel) => estabel.nome === formValues.nome);
             const situacaoInativo = estabelecimentoEncontrado?.situacao === "Inativo";
 
-            if (nomeExists && !situacaoInativo) {
+            if (estabelecimentoEncontrado && !situacaoInativo) {
                 setEstabilishmentCreateReturnDisabled(false);
                 setLoading(false);
                 toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -235,8 +238,8 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            if (nomeExists && situacaoInativo && estabelecimentoEncontrado?.cod_estabelecimento) {
-                await handleSaveEdit(estabelecimentoEncontrado); // Passa o serviço diretamente
+            if (estabelecimentoEncontrado && situacaoInativo) {
+                await handleSaveEdit(estabelecimentoEncontrado.cod_estabelecimento); // Passa o serviço diretamente
                 fetchEstabilishments();
                 setEstabilishmentCreateReturnDisabled(false);
                 setLoading(false);
@@ -340,9 +343,9 @@ const EstablishmentsPage: React.FC = () => {
     };
 
 
-    const handleEdit = (estabeleshiment: Establishment) => {
-        setFormValues(estabeleshiment);
-        setSelectedEstabilishment(estabeleshiment);
+    const handleEdit = (estabelecimento: Establishment) => {
+        setFormValues(estabelecimento);
+        setSelectedEstabilishment(estabelecimento);
         setIsEditing(true);
         setVisible(true);
     };
@@ -371,8 +374,8 @@ const EstablishmentsPage: React.FC = () => {
         }
     };
 
-    const openDialog = (id: number) => {
-        setEstabilishmentIdToDelete(id);
+    const openDialog = (estabelecimento: Establishment) => {
+        setEstabilishmentIdToDelete(estabelecimento.cod_estabelecimento);
         setModalDeleteVisible(true);
     };
 
@@ -382,7 +385,10 @@ const EstablishmentsPage: React.FC = () => {
     };
 
     const handleCancelar = async () => {
-        if (estabilishmentIdToDelete === null) return;
+        if (!estabilishmentIdToDelete) {
+            console.log("estabilishmentIdToDelete está indefinido")
+            return
+        }
 
         try {
             const response = await axios.put(
@@ -532,19 +538,7 @@ const EstablishmentsPage: React.FC = () => {
                     onHide={() => closeModal()}
                 >
                     <div className="p-fluid grid gap-2 mt-2">
-                        <div className="grid grid-cols-2 gap-2">
-                            {/*<div>
-        <label htmlFor="code" className="block text-blue font-medium">
-            Código:
-        </label>
-        <input
-            type="text"
-            id="code"
-            className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-            placeholder=""
-        />
-    </div>*/}
-
+                        <div className="grid grid-cols-1 gap-2">
                             <div>
                                 <label htmlFor="name" className="block text-blue font-medium">
                                     Nome
@@ -576,20 +570,6 @@ const EstablishmentsPage: React.FC = () => {
 
                         <div className="grid grid-cols-3 gap-2">
                             <div>
-                                <label htmlFor="number" className="block text-blue font-medium">
-                                    Número
-                                </label>
-                                <input
-                                    type="text"
-                                    id="number"
-                                    name="numero"
-                                    value={formValues.numero}
-                                    onChange={handleInputChange}
-                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="" />
-                            </div>
-
-                            <div>
                                 <label htmlFor="cep" className="block text-blue font-medium">
                                     CEP
                                 </label>
@@ -601,6 +581,20 @@ const EstablishmentsPage: React.FC = () => {
                                     onChange={handleCepInputChange}
                                     onKeyPress={handleCepKeyPress}
                                     maxLength={9}
+                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                    placeholder="" />
+                            </div>
+
+                            <div>
+                                <label htmlFor="number" className="block text-blue font-medium">
+                                    Número
+                                </label>
+                                <input
+                                    type="text"
+                                    id="number"
+                                    name="numero"
+                                    value={formValues.numero}
+                                    onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
                             </div>
@@ -740,7 +734,7 @@ const EstablishmentsPage: React.FC = () => {
                                     label="Salvar"
                                     className="text-white"
                                     icon="pi pi-check"
-                                    onClick={handleSaveEdit}
+                                    onClick={() => handleSaveEdit(formValues.cod_estabelecimento)}
                                     disabled={estabilishmentEditDisabled}
                                     style={{
                                         backgroundColor: '#28a745',
@@ -982,7 +976,7 @@ const EstablishmentsPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => openDialog(rowData.cod_estabelecimento)}
+                                            <button onClick={() => openDialog(rowData)}
                                                 className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                                             >
                                                 <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

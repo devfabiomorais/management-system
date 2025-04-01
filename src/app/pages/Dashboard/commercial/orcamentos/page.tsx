@@ -184,6 +184,7 @@ interface Orcamento {
   situacao?: string;
   garantia?: number;
   tipo_garantia?: string;
+  dbs_estrutura_orcamento?: number;
   dbs_pagamentos_orcamento: any[];
   dbs_produtos_orcamento: any[];
   dbs_servicos_orcamento: any[];
@@ -279,6 +280,7 @@ const OrcamentosPage: React.FC = () => {
 
 
   // #region ESTRUTURAS 
+  const [estruturaUtilizada, setEstruturaUtilizada] = useState<number>();
   const [modalUsarEstruturaVisible, setModalUsarEstruturaVisible] = useState(false);
   const handleModalUsarEstruturaClose = () => {
     setModalUsarEstruturaVisible(false); // Fecha o modal
@@ -2012,7 +2014,7 @@ const OrcamentosPage: React.FC = () => {
     valor_total: 0.0,
     situacao: "Pendente",
     garantia: 0,
-    tipo_garantia: "",
+    tipo_garantia: "dias",
     dbs_pagamentos_orcamento: [],
     dbs_produtos_orcamento: [],
     dbs_servicos_orcamento: [],
@@ -2082,8 +2084,6 @@ const OrcamentosPage: React.FC = () => {
   useEffect(() => {
     formattedDocumento();  // Garante que a função seja chamada assim que o estado do "documento" mudar
   }, [selectedClient?.documento, formValuesClients.documento]);
-
-
 
 
   const gerarPDF = () => {
@@ -2198,9 +2198,10 @@ const OrcamentosPage: React.FC = () => {
       //-------------------------------------------------------------------------------------------------------------------------------------
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(0, 0, 0); // Preto
-      doc.text(`Canal de venda: ${formValues.canal_venda}`, 5, 55);
+      doc.text(`Canal de venda: ${formValues.canal_venda}`, 5, 55); // Alinhado à esquerda
+      doc.text(`Estrutura utilizada: ${estruturaUtilizada}`, (doc.internal.pageSize.getWidth() - 5), 55, { align: "right" }); // Alinhado à direita
 
       // #region previsao de entrega
       // Definir a posição e dimensões do retângulo
@@ -2894,6 +2895,13 @@ const OrcamentosPage: React.FC = () => {
     setServicosSelecionados([]);
     setPagamentos([]);
     setFrete(0);
+    setFreteInput("0.0");
+    setValorTotalTotal(0);
+    setFormValuesEstruturas((prev) => ({
+      ...prev,
+      nome: "",
+      descricao: "",
+    }));
   };
   const clearInputsProd = () => {
     setFormValuesCadastroProdutos({
@@ -2993,6 +3001,7 @@ const OrcamentosPage: React.FC = () => {
         ...formValues,
         data_venda: formatDate(formValues.data_venda),
         prazo: formatDate(formValues.prazo),
+        dbs_estrutura_orcamento: estruturaUtilizada,
         produtos: produtosSelecionados.map((produto) => ({
           ...produto,
           valor_venda: produto.valor_unitario
@@ -3053,6 +3062,16 @@ const OrcamentosPage: React.FC = () => {
 
 
   const handleSaveReturn = async (fecharTela: boolean) => {
+    if (restanteAserPago != 0) {
+      toast.info(`O "Restante" deve ser igual a zero!`, {
+        position: "top-right",
+        autoClose: 4000,
+        progressStyle: { background: "red" },
+        icon: <span>❗</span>,
+      });
+      return;
+    }
+
     if (!isEstrutura) {
       setItemCreateReturnDisabled(true);
       setLoading(true);
@@ -3070,6 +3089,7 @@ const OrcamentosPage: React.FC = () => {
           data_venda: formatDate(formValues.data_venda),
           prazo: formatDate(formValues.prazo),
           situacao: "Pendente",
+          dbs_estrutura_orcamento: estruturaUtilizada,
           parcelas: pagamentos.map((parcela) => ({
             ...parcela,
             data_parcela: formatDate(parcela.data_parcela),
@@ -3238,6 +3258,8 @@ const OrcamentosPage: React.FC = () => {
 
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
+    setFreteInput(orcamento.frete.toString());
+
 
     // Atualiza os selects com os valores corretos
     setSelectedClient(clients.find(c => c.cod_cliente === orcamento.cod_cliente) || null);
@@ -3743,9 +3765,9 @@ const OrcamentosPage: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModalProd()}
-            style={{ width: "60vw", maxHeight: "75vh", overflowY: "auto" }}
+            style={{ width: "60vw", maxHeight: "80vh", overflowY: "auto" }}
           >
-            <div className="p-fluid grid gap-3 mt-2">
+            <div className="p-fluid grid gap-3 mt-2 space-y-0">
               <div className="grid grid-cols-4 gap-2">
                 <div className="">
                   <label htmlFor="code" className="block text-blue font-medium">
@@ -3757,7 +3779,7 @@ const OrcamentosPage: React.FC = () => {
                     name="descricao"
                     value={formValuesCadastroProdutos.cod_item}
                     onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_item: e.target.value })}
-                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[50px]"
+                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                   />
                 </div>
 
@@ -3775,7 +3797,7 @@ const OrcamentosPage: React.FC = () => {
                       { label: 'Inativo', value: 'DESATIVADO' }
                     ]}
                     placeholder="Selecione"
-                    className="w-full md:w-14rem"
+                    className="w-full md:w-14rem h-[35px] flex items-center"
                     style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                 </div>
 
@@ -3827,7 +3849,7 @@ const OrcamentosPage: React.FC = () => {
                     placeholder="Selecione"
                     filter
 
-                    className="w-full" />
+                    className="w-full h-[35px] flex items-center" />
                 </div>
                 <div className="">
                   <label htmlFor="family" className="block text-blue  font-medium">
@@ -3846,7 +3868,7 @@ const OrcamentosPage: React.FC = () => {
                     optionLabel="nome"
                     placeholder="Selecione a Família"
                     filter
-                    className="w-full md:w-14rem" />
+                    className="w-full md:w-14rem h-[35px] flex items-center" />
                 </div>
               </div>
 
@@ -3867,7 +3889,7 @@ const OrcamentosPage: React.FC = () => {
                       setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_venda: numericValue });
                     }}
                     placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                   />
 
                 </div>
@@ -3887,7 +3909,7 @@ const OrcamentosPage: React.FC = () => {
                       setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_custo: numericValue });
                     }}
                     placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                   />
 
                 </div>
@@ -3922,6 +3944,7 @@ const OrcamentosPage: React.FC = () => {
                       cursor: "pointer",
                       border: "2px solid #D1D5DB",  // Borda cinza escuro
                       transition: "background-color 0.3s ease",
+                      lineHeight: "12.5px",
                     }}
                   >
                     <span>Escolher arquivo</span>
@@ -3929,7 +3952,7 @@ const OrcamentosPage: React.FC = () => {
 
                   {/* Exibe o nome do arquivo selecionado, se houver */}
                   {fileName && (
-                    <div className="mt-2 text-blue-500">
+                    <div className="mt-2 text-blue-500 ">
                       <strong>Arquivo selecionado: </strong> {fileName}
                     </div>
                   )}
@@ -3948,11 +3971,14 @@ const OrcamentosPage: React.FC = () => {
                     filter
                     placeholder="Selecione os Estabelecimentos"
                     maxSelectedLabels={3}
-                    className="w-full border text-black" />
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+
                 </div>
               </div>
             </div>
 
+            <br></br>
             <br></br>
 
             {/* Botões */}
@@ -4069,19 +4095,21 @@ const OrcamentosPage: React.FC = () => {
                       Valor de Custo
                     </label>
                     <input
-                      type="text"
                       id="valor_custo"
                       name="valor_custo"
-                      value={formValuesCadastroServicos.valor_custo}
-                      onChange={(e) =>
-                        setFormValuesCadastroServicos((prevValues) => ({
-                          ...prevValues,
-                          valor_custo: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      type="text"
+                      value={`R$ ${Number(formValuesCadastroServicos.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_custo: numericValue.toString() });
+                      }}
+                      placeholder="R$ 0,00"
+                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
+
                   </div>
+
                   <div>
                     <label htmlFor="valor_venda" className="block text-blue font-medium">
                       Valor de Venda
@@ -4090,16 +4118,17 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="valor_venda"
                       name="valor_venda"
-                      value={formValuesCadastroServicos.valor_venda}
-                      onChange={(e) =>
-                        setFormValuesCadastroServicos((prevValues) => ({
-                          ...prevValues,
-                          valor_venda: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      value={`R$ ${Number(formValuesCadastroServicos.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_venda: numericValue.toString() });
+                      }}
+                      placeholder="R$ 0,00"
+                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
+
                   <div>
                     <label htmlFor="comissao" className="block text-blue font-medium">
                       Comissão
@@ -4108,16 +4137,17 @@ const OrcamentosPage: React.FC = () => {
                       type="text"
                       id="comissao"
                       name="comissao"
-                      value={formValuesCadastroServicos.comissao}
-                      onChange={(e) =>
-                        setFormValuesCadastroServicos((prevValues) => ({
-                          ...prevValues,
-                          comissao: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      value={`${Number(formValuesCadastroServicos.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
+                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, comissao: numericValue.toString() });
+                      }}
+                      placeholder="0,00 %"
+                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
                   </div>
+
                 </div>
               </div>
             </div>
@@ -4275,21 +4305,22 @@ const OrcamentosPage: React.FC = () => {
                       padding: "10px",
                     }}
                     body={(rowData) => {
-                      // Verifica se a data de dtCadastro está presente e é válida
                       if (rowData.dtCadastro) {
-                        // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
                         const date = new Date(rowData.dtCadastro);
 
-                        // Verifica se a data é válida
                         if (!isNaN(date.getTime())) {
-                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                          // Ajustando para o fuso horário de Brasília
+                          const formattedDate = date.toLocaleString("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                            hour12: false, // Formato de 24 horas
-                          }).format(date);
+                            second: "2-digit",
+                            hour12: false, // Formato 24h
+                          });
+
                           return <span>{formattedDate}</span>;
                         } else {
                           return <span>Data inválida</span>;
@@ -4299,6 +4330,7 @@ const OrcamentosPage: React.FC = () => {
                       }
                     }}
                   />
+
 
                   <Column
                     header="Data Garantia"
@@ -4352,12 +4384,12 @@ const OrcamentosPage: React.FC = () => {
                     }}
                   />
 
-
                   <Column
                     field="situacao"
                     header="Situação"
+                    body={(rowData) => rowData.situacao.replace(/_/g, " ")} // Substitui "_" por espaço
                     style={{
-                      width: "1%",
+                      width: "2%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -4454,7 +4486,7 @@ const OrcamentosPage: React.FC = () => {
                     field="nome"
                     header="Nome"
                     style={{
-                      width: "0%",
+                      width: "2%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -4473,7 +4505,7 @@ const OrcamentosPage: React.FC = () => {
                     field="descricao"
                     header="Descrição"
                     style={{
-                      width: "0%",
+                      width: "2%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -4492,7 +4524,7 @@ const OrcamentosPage: React.FC = () => {
                     field="situacao"
                     header="Situação"
                     style={{
-                      width: "1%",
+                      width: "0%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -4511,7 +4543,7 @@ const OrcamentosPage: React.FC = () => {
                     field="dt_hr_criacao"
                     header="DT Cadastro"
                     style={{
-                      width: "4%",
+                      width: "1%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -4557,6 +4589,7 @@ const OrcamentosPage: React.FC = () => {
                         <button
                           onClick={() => {
                             handleUsarEstrutura(rowData);
+                            setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
                           }}
                           className="hover:scale-125 hover:bg-green-700 p-2 bg-green-500 transform transition-all duration-50  rounded-2xl"
                           title="Usar para um criar um novo orçamento"
@@ -4583,70 +4616,7 @@ const OrcamentosPage: React.FC = () => {
                     }}
                   />
 
-                  {permissions?.edicao === "SIM" && (
-                    <Column
-                      header=""
-                      body={(rowData) => (
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handleEditEstrutura(rowData, false)}
-                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                            title="Editar"
-                          >
-                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
-                        </div>
-                      )}
-                      className="text-black"
-                      style={{
-                        width: "0%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                    />
-                  )}
-                  {permissions?.delecao === "SIM" && (
-                    <Column
-                      header=""
-                      body={(rowData) => (
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
-                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                            title="Cancelar"
-                          >
-                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
-                        </div>
-                      )}
-                      className="text-black"
-                      style={{
-                        width: "0%",
-                        textAlign: "center",
-                        border: "1px solid #ccc",
-                      }}
-                      headerStyle={{
-                        fontSize: "1.2rem",
-                        color: "#1B405D",
-                        fontWeight: "bold",
-                        border: "1px solid #ccc",
-                        textAlign: "center",
-                        backgroundColor: "#D9D9D980",
-                        verticalAlign: "middle",
-                        padding: "10px",
-                      }}
-                    />
-                  )}
+
                 </DataTable>
               </div>
 
@@ -4691,13 +4661,18 @@ const OrcamentosPage: React.FC = () => {
 
 
                 <button
-                  className={`!bg-yellow-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-yellow-700 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
+                  className={`!bg-yellow500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-yellow-700 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
                   onClick={() => {
                     setVisualizar(false);
                     setIsEditing(false);
+                    setFrete(Number(freteInput));
+                    setFormValues((prev) => ({
+                      ...prev,
+                      cod_orcamento: 0
+                    }));
                   }}
                 >
-                  <div className="bg-yellow-700 w-10 h-10 flex items-center justify-center rounded">
+                  <div className="!bg-yellow700 w-10 h-10 flex items-center justify-center rounded">
                     <MdContentCopy className="text-white" style={{ fontSize: "24px" }} />
                   </div>
                   <span className="whitespace-nowrap">Copiar Orçamento&nbsp;&nbsp;</span>
@@ -4817,21 +4792,22 @@ const OrcamentosPage: React.FC = () => {
                         onChange={(e) => {
                           const user = users.find((u) => u.cod_usuario === parseInt(e.target.value));
                           setSelectedUser(user || null);
-                          // Atualizando formValues com o valor de cod_responsavel
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            cod_responsavel: user?.cod_usuario || 0, // Garantir que cod_responsavel seja atualizado
+                            cod_responsavel: user?.cod_usuario || 0,
                           }));
                         }}
                       >
                         <option value='' disabled selected>
                           Selecione
                         </option>
-                        {users.map((user) => (
-                          <option key={user.cod_usuario} value={user.cod_usuario}>
-                            {user.nome}
-                          </option>
-                        ))}
+                        {users
+                          .filter((user) => user.situacao !== "DESATIVADO") // Remove usuários desativados
+                          .map((user) => (
+                            <option key={user.cod_usuario} value={user.cod_usuario}>
+                              {user.nome}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   )}
@@ -4997,7 +4973,8 @@ const OrcamentosPage: React.FC = () => {
               }
               <button
                 onClick={() => setModalUsarEstruturaVisible(true)}
-                className="mr-4 flex items-center bg-blue p-2 rounded-md transition-all duration-300 w-10 hover:w-[315px] overflow-hidden"
+                className={`mr-4 flex items-center bg-blue p-2 rounded-md transition-all duration-300 w-10 hover:w-[315px] overflow-hidden ${visualizando ? 'hidden' : ''
+                  }`}
                 title="Visualizar estruturas"
               >
                 <FaRegBuilding className="text-white text-2xl transition-all duration-300 flex-shrink-0" />
@@ -5277,7 +5254,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="flex items-center">
                   <h3 className="text-blue font-medium text-xl mr-2">Serviços</h3>
                   <button
-                    className={`bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400`}
+                    className="bg-green200 rounded-2xl transform transition-all duration-50 hover:scale-150 hover:bg-green400"
                     onClick={() => setVisibleServ(true)}
                     disabled={visualizando}
                     style={{
@@ -5640,6 +5617,7 @@ const OrcamentosPage: React.FC = () => {
                           // Remove o "R$" inicial e caracteres não numéricos para facilitar a digitação
                           const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
                           setFreteInput(`R$ ${rawValue.replace('.', ',')}`); // Adiciona "R$" novamente enquanto o usuário digita
+
                         }}
                         onBlur={(e) => {
                           // Remove o "R$" e formata o valor final
@@ -6412,7 +6390,7 @@ const OrcamentosPage: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
-                  {isEstrutura ? 'Estrutura de Orçamentos' : (isPedido ? 'Pedidos de Venda' : 'Orçamentos')}
+                  {isEstrutura ? 'Estruturas de Orçamento' : (isPedido ? 'Pedidos de Venda' : 'Orçamentos')}
                 </h2>
 
               </div>
@@ -6441,7 +6419,7 @@ const OrcamentosPage: React.FC = () => {
                 <div className="mb-4 flex items-center justify-end">
                   <button
                     onClick={() => router.push("/pages/Dashboard/commercial/orcamentos?tipo=estrutura")}
-                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50  rounded-2xl"
+                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50 rounded-md"
                     title="Visualizar estruturas"
                   >
                     <FaRegBuilding style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
@@ -6587,7 +6565,7 @@ const OrcamentosPage: React.FC = () => {
                     field="dtCadastro"
                     header="DT Cadastro"
                     style={{
-                      width: "4%",
+                      width: "5%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -6602,21 +6580,21 @@ const OrcamentosPage: React.FC = () => {
                       padding: "10px",
                     }}
                     body={(rowData) => {
-                      // Verifica se a data de dtCadastro está presente e é válida
                       if (rowData.dtCadastro) {
-                        // Certifica-se de que rowData.dtCadastro é um número de timestamp (se for uma string ISO)
                         const date = new Date(rowData.dtCadastro);
 
-                        // Verifica se a data é válida
                         if (!isNaN(date.getTime())) {
-                          const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                          // Ajustando para o fuso horário de Brasília
+                          const formattedDate = date.toLocaleString("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                            hour12: false, // Formato de 24 horas
-                          }).format(date);
+                            hour12: false, // Formato 24h
+                          });
+
                           return <span>{formattedDate}</span>;
                         } else {
                           return <span>Data inválida</span>;
@@ -6627,12 +6605,17 @@ const OrcamentosPage: React.FC = () => {
                     }}
                   />
 
+
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData, true)}
+                          onClick={() => {
+                            handleEdit(rowData, true);
+                            setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
+                          }
+                          }
                           className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
                           title="Visualizar"
                         >
@@ -6784,7 +6767,7 @@ const OrcamentosPage: React.FC = () => {
                     field="nome"
                     header="Nome"
                     style={{
-                      width: "0%",
+                      width: "2%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -6803,7 +6786,7 @@ const OrcamentosPage: React.FC = () => {
                     field="descricao"
                     header="Descrição"
                     style={{
-                      width: "0%",
+                      width: "2%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -6822,7 +6805,7 @@ const OrcamentosPage: React.FC = () => {
                     field="situacao"
                     header="Situação"
                     style={{
-                      width: "1%",
+                      width: "0%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -6841,7 +6824,7 @@ const OrcamentosPage: React.FC = () => {
                     field="dt_hr_criacao"
                     header="DT Cadastro"
                     style={{
-                      width: "4%",
+                      width: "1%",
                       textAlign: "center",
                       border: "1px solid #ccc",
                     }}
@@ -6990,10 +6973,10 @@ const OrcamentosPage: React.FC = () => {
                 <div className="mb-4 flex items-center justify-end">
                   <button
                     onClick={() => router.push("/pages/Dashboard/commercial/orcamentos")}
-                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50  rounded-2xl"
+                    className="mr-4 hover:scale-125 hover:bg-blue600 p-2 bg-blue transform transition-all duration-50 rounded-md"
                     title="Visualizar orçamentos"
                   >
-                    <MdRequestQuote style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                    <MdRequestQuote style={{ fontSize: "1.4rem" }} className="text-white text-2xl" />
                   </button>
                   <p className="text-blue font-bold text-lg">Busca:</p>
                   <InputText

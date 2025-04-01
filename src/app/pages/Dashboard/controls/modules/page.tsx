@@ -44,13 +44,16 @@ const ModulePage: React.FC = () => {
     const [rows, setRows] = useState(10);
     const [descricao, setDescricao] = useState("");
     const [codModuloPai, setCodModuloPai] = useState("");
-    const [editMode, setEditMode] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
-
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedModule, setSelectedModule] = useState(0);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [moduleIdToDelete, setModuleIdToDelete] = useState<number | null>(null);
+
+
+
+    useEffect(() => {
+        setFirst(0);
+    }, [rows]);
 
     useEffect(() => {
         fetchModules();
@@ -334,6 +337,8 @@ const ModulePage: React.FC = () => {
     });
 
 
+
+
     return (
         <><SidebarLayout>
             <div className="flex justify-center">
@@ -389,8 +394,12 @@ const ModulePage: React.FC = () => {
                                     value={filteredItens.slice(first, first + rows)}
                                     paginator={true}
                                     rows={rows}
-                                    rowsPerPageOptions={[5, 10]}
                                     rowClassName={(data) => 'hover:bg-gray-200'}
+                                    rowsPerPageOptions={[5, 10]}
+                                    scrollHeight="80vh"
+                                    totalRecords={filteredItens.length}
+                                    lazy={true}  // Controla manualmente a paginação
+                                    first={first} // Mantém a página correta
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);

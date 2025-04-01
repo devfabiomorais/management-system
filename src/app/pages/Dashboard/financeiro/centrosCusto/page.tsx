@@ -73,7 +73,7 @@ const CentrosCustoPage: React.FC = () => {
     });
   };
 
-  const handleSaveEdit = async (centro: any = selectedCentroCusto) => {
+  const handleSaveEdit = async (cod_centro_custo: any) => {
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
@@ -99,8 +99,8 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/edit/${formValues.cod_centro_custo}`,
-        { ...formValues, situacao: "Ativo" },
+        `http://localhost:9009/api/centrosCusto/edit/${cod_centro_custo}`,
+        { ...formValues },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -217,10 +217,9 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const centroEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const nomeExists = !!centroEncontrado;
       const situacaoInativo = centroEncontrado?.situacao === "Inativo";
 
-      if (nomeExists && !situacaoInativo) {
+      if (centroEncontrado && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -232,8 +231,8 @@ const CentrosCustoPage: React.FC = () => {
         return;
       }
 
-      if (nomeExists && situacaoInativo && centroEncontrado?.cod_centro_custo) {
-        await handleSaveEdit(centroEncontrado); // Passa o serviço diretamente
+      if (centroEncontrado && situacaoInativo) {
+        await handleSaveEdit(centroEncontrado.cod_centro_custo);
         fetchCentrosCusto();
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -587,7 +586,7 @@ const CentrosCustoPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
+                    onClick={() => handleSaveEdit(formValues.cod_centro_custo)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
