@@ -29,7 +29,6 @@ import { MultiSelect } from "primereact/multiselect";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AiFillFilePdf } from "react-icons/ai";
 import { GiCalculator } from "react-icons/gi";
-import loadingGif from "../../../assets/imgs/loading.gif";
 
 interface PedidosVenda {
   cod_pedido_venda: number;
@@ -7281,7 +7280,7 @@ export default function Page() {
     <Suspense
       fallback={
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-          <img src={loadingGif.src} alt="Carregando..." style={{ width: 100, height: 100 }} />
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
         </div>
       }
     >
