@@ -559,6 +559,7 @@ const OrcamentosPage: React.FC = () => {
       );
 
       setPedidosVenda(response.data.pedidos);
+
     } catch (error) {
       console.error("Erro ao carregar pedidos de venda:", error);
     }
@@ -612,7 +613,8 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
-  const handleGerarPedidoVenda = async () => {
+  const handleGerarPedidoVenda = async (codOrcamento?: number) => {
+    const cod_orcamento = codOrcamento ?? formValues.cod_orcamento;
 
     try {
       const updatedFormValues = {
@@ -624,7 +626,6 @@ const OrcamentosPage: React.FC = () => {
 
       // Lista de campos obrigatórios
       const requiredFields = [
-        "cod_orcamento",
         "cod_cliente",
         "valor_total",
         "cod_nota_fiscal",
@@ -2041,7 +2042,7 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-  const fetchOrcamentos = async () => {
+  const fetchOrcamentos = async (): Promise<any[]> => {
     setLoading(true);
     try {
       const response = await axios.get(
@@ -2052,16 +2053,17 @@ const OrcamentosPage: React.FC = () => {
           },
         }
       );
-
-      // Tras somente os orçamentos que NÃO têm situacao "Cancelado"      
       setOrcamentos(response.data.orcamentos);
-
       setLoading(false);
+      return response.data.orcamentos; // <-- isso é essencial
     } catch (error) {
       setLoading(false);
       console.error("Erro ao carregar orçamentos:", error);
+      return []; // em caso de erro, retorna array vazio
     }
   };
+
+
 
   // #region PDF
   const [DOCformatado, setDOCformatado] = useState<string>('');
@@ -3070,7 +3072,9 @@ const OrcamentosPage: React.FC = () => {
 
 
   const handleSaveReturn = async (fecharTela: boolean) => {
-    if (restanteAserPago != 0 && !isEstrutura) {
+
+    if (Number(restanteAserPago) !== 0 && !isEstrutura) {
+      console.log("Restante:", restanteAserPago);
       toast.info(`O "Restante" deve ser igual a zero!`, {
         position: "top-right",
         autoClose: 4000,
@@ -3096,7 +3100,7 @@ const OrcamentosPage: React.FC = () => {
           ...formValues,
           data_venda: formatDate(formValues.data_venda),
           prazo: formatDate(formValues.prazo),
-          situacao: "Pendente",
+          situacao: isPedido ? "Pedido_Gerado" : "Pendente",
           dbs_estrutura_orcamento: estruturaUtilizada,
           parcelas: pagamentos.map((parcela) => ({
             ...parcela,
@@ -3152,15 +3156,33 @@ const OrcamentosPage: React.FC = () => {
         );
 
         if (response.status >= 200 && response.status < 300) {
-          setItemCreateReturnDisabled(false);
-          setLoading(false);
-          clearInputs();
-          fetchOrcamentos();
-          toast.success("Orçamento salvo com sucesso!", {
-            position: "top-right",
-            autoClose: 3000,
-          });
-          setVisible(fecharTela);
+          const orcamentosAtualizados = await fetchOrcamentos();
+
+          const orcamentoMaisNovo = orcamentosAtualizados.reduce((maisNovo, atual) =>
+            atual.cod_orcamento > maisNovo.cod_orcamento ? atual : maisNovo
+          );
+
+          // Atualiza selectedOrcamento e formValues antes de gerar o pedido
+          setSelectedOrcamento(orcamentoMaisNovo);
+          setFormValues((prev) => ({
+            ...prev,
+            cod_orcamento: orcamentoMaisNovo.cod_orcamento,
+          }));
+
+          if (isPedido) {
+            await handleGerarPedidoVenda(orcamentoMaisNovo.cod_orcamento);
+          } else {
+            setItemCreateReturnDisabled(false);
+            setLoading(false);
+            clearInputs();
+            fetchOrcamentos();
+            fetchPedidosVenda();
+            toast.success("Orçamento salvo com sucesso!", {
+              position: "top-right",
+              autoClose: 3000,
+            });
+            setVisible(fecharTela);
+          }
         } else {
           throw new Error("Erro ao salvar orçamento.");
         }
@@ -3334,10 +3356,11 @@ const OrcamentosPage: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         fetchOrcamentos();
         setModalDeleteVisible(false);
-        toast.success("Situação mudou: pedido gerado!", {
+        toast.success(`${!isPedido ? "Situação mudou: pedido gerado!" : "Pedido Gerado com sucesso!"}`, {
           position: "top-right",
           autoClose: 3000,
         });
+
       } else {
         toast.error("Erro ao mudar para Pedido_Gerado.", {
           position: "top-right",
@@ -4637,7 +4660,11 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL PRINCIPAL
           }
           <Dialog
-            header={isEstrutura ? "Criar Estrutura de Orçamento" : (visualizando ? (isPedido ? "Visualizando Pedido de Venda" : "Visualizando Orçamento") : (isEditing ? "Editar Orçamento" : "Novo Orçamento"))}
+            header={isEstrutura
+              ? "Criar Estrutura de Orçamento"
+              : (visualizando
+                ? (isPedido ? "Visualizando Pedido de Venda" : "Visualizando Orçamento")
+                : (isEditing ? "Editar Orçamento" : (isPedido ? "Novo Pedido de Venda" : "Novo Orçamento")))}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -4667,7 +4694,7 @@ const OrcamentosPage: React.FC = () => {
 
 
                 <button
-                  className={`!bg-yellow500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-yellow-700 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
+                  className={`!bg-yellow500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-yellow-700 hover:scale-125 `}
                   onClick={() => {
                     setVisualizar(false);
                     setIsEditing(false);
@@ -4681,7 +4708,9 @@ const OrcamentosPage: React.FC = () => {
                   <div className="!bg-yellow700 w-10 h-10 flex items-center justify-center rounded">
                     <MdContentCopy className="text-white" style={{ fontSize: "24px" }} />
                   </div>
-                  <span className="whitespace-nowrap">Copiar Orçamento&nbsp;&nbsp;</span>
+                  <span className="whitespace-nowrap">
+                    {isPedido ? "Copiar Pedido de Venda" : "Copiar Orçamento"}&nbsp;&nbsp;
+                  </span>
                 </button>
 
 
@@ -6403,7 +6432,7 @@ const OrcamentosPage: React.FC = () => {
               {permissions?.insercao === "SIM" && (
                 <div>
                   <button
-                    className={`bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 ${isPedido ? 'hidden' : ''}`}
+                    className={`bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 `}
                     onClick={() => setVisible(true)}
                   >
                     <IoAddCircleOutline
