@@ -668,8 +668,8 @@ const ClientsPage: React.FC = () => {
             onHide={() => closeModal()}
           >
             <div className="p-fluid grid gap-2 mt-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
                   <label htmlFor="nome" className="block text-blue font-medium">
                     Nome Completo
                   </label>
@@ -778,7 +778,7 @@ const ClientsPage: React.FC = () => {
                 </div>
 
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label htmlFor="cep" className="block text-blue font-medium">
                     CEP
@@ -809,8 +809,7 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
+
                 <div>
                   <label
                     htmlFor="numero"
@@ -827,12 +826,15 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+
                 <div>
                   <label
                     htmlFor="estado"
                     className="block text-blue font-medium"
                   >
-                    Estado (sigla)
+                    Estado
                   </label>
                   <input
                     type="text"
@@ -873,6 +875,20 @@ const ClientsPage: React.FC = () => {
                     value={formValues.cidade}
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="complemento" className="block text-blue font-medium">
+                    Complemento
+                  </label>
+                  <input
+                    type="text"
+                    id="complemento"
+                    name="complemento"
+                    value={formValues.complemento}
+                    onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>

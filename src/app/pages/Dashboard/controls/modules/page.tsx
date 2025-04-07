@@ -380,9 +380,11 @@ const ModulePage: React.FC = () => {
                     <div className="flex justify-between ">
                         <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Módulos</h2>
                     </div>
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                        style={{ height: "95%", overflow: "auto" }}>
                         <div className="flex justify-around">
-                            <div className="border border-[##D9D9D980] h-screen rounded-md p-5 w-full">
+                            <div className="border border-[##D9D9D980] h-screen rounded-md p-5 w-full"
+                                style={{ overflow: "auto" }}>
                                 <div className="mb-4 flex justify-end">
                                     <p className="text-blue font-bold text-lg">Busca:</p>
                                     <InputText
@@ -396,7 +398,6 @@ const ModulePage: React.FC = () => {
                                     rows={rows}
                                     rowClassName={(data) => 'hover:bg-gray-200'}
                                     rowsPerPageOptions={[5, 10]}
-                                    scrollHeight="80vh"
                                     totalRecords={filteredItens.length}
                                     lazy={true}  // Controla manualmente a paginação
                                     first={first} // Mantém a página correta
@@ -404,8 +405,9 @@ const ModulePage: React.FC = () => {
                                         setFirst(e.first);
                                         setRows(e.rows);
                                     }}
-                                    className="w-full"
+                                    className="w-full h-full"
                                     responsiveLayout="scroll"
+                                    scrollHeight="flex" // Permite ajustar a altura conforme necessário
                                     tableStyle={{
                                         borderCollapse: "collapse",
                                         width: "100%",

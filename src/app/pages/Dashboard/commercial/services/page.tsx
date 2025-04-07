@@ -454,19 +454,7 @@ const ServicosPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-                {/* <div>
-                  <label htmlFor="cod_servico" className="block text-blue font-medium">
-                    Código
-                  </label>
-                  <input
-                    type="text"
-                    id="cod_servico"
-                    name="cod_servico"
-                    value={formValues.cod_servico}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div> */}
+
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -475,15 +463,19 @@ const ServicosPage: React.FC = () => {
                     Valor de Custo
                   </label>
                   <input
-                    type="text"
                     id="valor_custo"
                     name="valor_custo"
-                    value={formValues.valor_custo}
-                    onChange={handleNumericInputChange} // Não permite letras
-                    onKeyPress={handleNumericKeyPress} // Bloqueia letras
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={25}
+                    type="text"
+                    value={`R$ ${Number(formValues.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValues({ ...formValues, valor_custo: numericValue.toString() });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
+
                 </div>
                 <div>
                   <label htmlFor="valor_venda" className="block text-blue font-medium">
@@ -493,11 +485,14 @@ const ServicosPage: React.FC = () => {
                     type="text"
                     id="valor_venda"
                     name="valor_venda"
-                    value={formValues.valor_venda}
-                    onChange={handleNumericInputChange} // Não permite letras
-                    onKeyPress={handleNumericKeyPress} // Bloqueia letras
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={25}
+                    value={`R$ ${Number(formValues.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValues({ ...formValues, valor_venda: numericValue.toString() });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
                 <div>
@@ -508,11 +503,14 @@ const ServicosPage: React.FC = () => {
                     type="text"
                     id="comissao"
                     name="comissao"
-                    value={formValues.comissao}
-                    onChange={handleNumericInputChange} // Não permite letras
-                    onKeyPress={handleNumericKeyPress} // Bloqueia letras
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={25}
+                    value={`${Number(formValues.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
+                      setFormValues({ ...formValues, comissao: numericValue.toString() });
+                    }}
+                    placeholder="0,00 %"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
               </div>
@@ -522,13 +520,18 @@ const ServicosPage: React.FC = () => {
                   <label htmlFor="descricao" className="block text-blue font-medium">
                     Descrição
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     id="descricao"
                     name="descricao"
-                    value={formValues.descricao}
-                    onChange={handleInputChange}
-                    className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
+                    value={formValues.descricao || ""}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        descricao: e.target.value, // Atualiza o campo descricao
+                      }));
+                    }}
                   />
                 </div>
               </div>
@@ -817,7 +820,7 @@ const ServicosPage: React.FC = () => {
                   field="dtCadastro"
                   header="DT Cadastro"
                   style={{
-                    width: "1%",
+                    width: "2%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -844,6 +847,8 @@ const ServicosPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+
+
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""

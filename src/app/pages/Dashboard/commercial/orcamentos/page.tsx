@@ -1872,15 +1872,23 @@ const OrcamentosPage: React.FC = () => {
     setJuros(0);
     setDataParcela("");
     setvalorParcela(0);
+    setValorParcelaInput("");
   };
 
   const handleAdicionarMultiplasParcelas = () => {
     if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) return;
 
+
     const novasParcelas: Pagamento[] = Array.from({ length: quantidadeParcelas }, (_, i) => {
       const dataInicial = new Date(data_parcela + 'T00:00:00');
       const dataParcelaAtual = new Date(dataInicial);
       dataParcelaAtual.setMonth(dataInicial.getMonth() + i);
+
+      setSelectedFormaPagamento(null);
+      setJuros(0);
+      setDataParcela("");
+      setvalorParcela(0);
+      setValorParcelaInput("");
 
       return {
         id: Date.now() + i, // Garantindo IDs únicos
@@ -3062,7 +3070,7 @@ const OrcamentosPage: React.FC = () => {
 
 
   const handleSaveReturn = async (fecharTela: boolean) => {
-    if (restanteAserPago != 0) {
+    if (restanteAserPago != 0 && !isEstrutura) {
       toast.info(`O "Restante" deve ser igual a zero!`, {
         position: "top-right",
         autoClose: 4000,
@@ -3765,10 +3773,11 @@ const OrcamentosPage: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModalProd()}
-            style={{ width: "60vw", maxHeight: "80vh", overflowY: "auto" }}
+          // style={{ width: "60vw", maxHeight: "80vh", overflowY: "auto" }}
           >
             <div className="p-fluid grid gap-3 mt-2 space-y-0">
               <div className="grid grid-cols-4 gap-2">
+
                 <div className="">
                   <label htmlFor="code" className="block text-blue font-medium">
                     Código
@@ -3781,24 +3790,6 @@ const OrcamentosPage: React.FC = () => {
                     onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_item: e.target.value })}
                     className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                   />
-                </div>
-
-                <div className="col-span-3">
-                  <label htmlFor="situation" className="block text-blue  font-medium">
-                    Situação
-                  </label>
-                  <Dropdown
-                    id="situacao"
-                    name="situacao"
-                    value={formValuesCadastroProdutos.situacao}
-                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, situacao: e.value })}
-                    options={[
-                      { label: 'Ativo', value: 'ATIVO' },
-                      { label: 'Inativo', value: 'DESATIVADO' }
-                    ]}
-                    placeholder="Selecione"
-                    className="w-full md:w-14rem h-[35px] flex items-center"
-                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                 </div>
 
               </div>
@@ -3827,11 +3818,11 @@ const OrcamentosPage: React.FC = () => {
                   name="narrativa"
                   value={formValuesCadastroProdutos.narrativa}
                   onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, narrativa: e.target.value })}
-                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-16"
                   placeholder="" />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="">
                   <label htmlFor="un" className="block text-blue  font-medium">
                     UN
@@ -3870,6 +3861,25 @@ const OrcamentosPage: React.FC = () => {
                     filter
                     className="w-full md:w-14rem h-[35px] flex items-center" />
                 </div>
+
+                <div>
+                  <label htmlFor="situation" className="block text-blue  font-medium">
+                    Situação
+                  </label>
+                  <Dropdown
+                    id="situacao"
+                    name="situacao"
+                    value={formValuesCadastroProdutos.situacao}
+                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, situacao: e.value })}
+                    options={[
+                      { label: 'Ativo', value: 'ATIVO' },
+                      { label: 'Inativo', value: 'DESATIVADO' }
+                    ]}
+                    placeholder="Selecione"
+                    className="w-full md:w-14rem h-[35px] flex items-center"
+                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
+                </div>
+
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -4031,7 +4041,7 @@ const OrcamentosPage: React.FC = () => {
             //#region MODAL SERVIÇOS
           }
           <Dialog
-            header={"Novo serviço"}
+            header={"Novo Serviço"}
             visible={visibleServ}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -4041,157 +4051,153 @@ const OrcamentosPage: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModalServ()}
-            style={{ width: "60vw", maxHeight: "60vh", overflowY: "auto" }} // Added styles for scroll
           >
             <div className="p-fluid grid gap-2 mt-2">
               {/* Primeira Linha */}
-              <div className="border border-white p-2 rounded">
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label htmlFor="nome" className="block text-blue font-medium">
-                      Nome
-                    </label>
-                    <input
-                      type="text"
-                      id="nome"
-                      name="nome"
-                      value={formValuesCadastroServicos.nome}
-                      onChange={(e) =>
-                        setFormValuesCadastroServicos((prevValues) => ({
-                          ...prevValues,
-                          nome: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label htmlFor="descricao" className="block text-blue font-medium">
-                      Descrição
-                    </label>
-                    <textarea
-                      id="descricao"
-                      name="descricao"
-                      value={formValuesCadastroServicos.descricao}
-                      onChange={(e) =>
-                        setFormValuesCadastroServicos((prevValues) => ({
-                          ...prevValues,
-                          descricao: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm resize-y"
-                      rows={4}
-                      maxLength={255}
-                    />
-                  </div>
-                </div>
+              <div className="border border-white p-2 rounded">                <div>
+                <label htmlFor="nome" className="block text-blue font-medium">
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  id="nome"
+                  name="nome"
+                  value={formValuesCadastroServicos.nome}
+                  onChange={(e) =>
+                    setFormValuesCadastroServicos((prevValues) => ({
+                      ...prevValues,
+                      nome: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-[#D9D9D9] rounded-sm h-8"
+                />
+              </div>
               </div>
 
               {/* Segunda Linha */}
-              <div className="border border-white p-2 rounded mt-2">
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label htmlFor="valor_custo" className="block text-blue font-medium">
-                      Valor de Custo
-                    </label>
-                    <input
-                      id="valor_custo"
-                      name="valor_custo"
-                      type="text"
-                      value={`R$ ${Number(formValuesCadastroServicos.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_custo: numericValue.toString() });
-                      }}
-                      placeholder="R$ 0,00"
-                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-
-                  </div>
-
-                  <div>
-                    <label htmlFor="valor_venda" className="block text-blue font-medium">
-                      Valor de Venda
-                    </label>
-                    <input
-                      type="text"
-                      id="valor_venda"
-                      name="valor_venda"
-                      value={`R$ ${Number(formValuesCadastroServicos.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_venda: numericValue.toString() });
-                      }}
-                      placeholder="R$ 0,00"
-                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="comissao" className="block text-blue font-medium">
-                      Comissão
-                    </label>
-                    <input
-                      type="text"
-                      id="comissao"
-                      name="comissao"
-                      value={`${Number(formValuesCadastroServicos.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                        const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
-                        setFormValuesCadastroServicos({ ...formValuesCadastroServicos, comissao: numericValue.toString() });
-                      }}
-                      placeholder="0,00 %"
-                      className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
+              <div className="grid grid-cols-3 p-2 gap-2">
+                <div>
+                  <label htmlFor="valor_custo" className="block text-blue font-medium">
+                    Valor de Custo
+                  </label>
+                  <input
+                    id="valor_custo"
+                    name="valor_custo"
+                    type="text"
+                    value={`R$ ${Number(formValuesCadastroServicos.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_custo: numericValue.toString() });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
 
                 </div>
+
+                <div>
+                  <label htmlFor="valor_venda" className="block text-blue font-medium">
+                    Valor de Venda
+                  </label>
+                  <input
+                    type="text"
+                    id="valor_venda"
+                    name="valor_venda"
+                    value={`R$ ${Number(formValuesCadastroServicos.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
+                      setFormValuesCadastroServicos({ ...formValuesCadastroServicos, valor_venda: numericValue.toString() });
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="comissao" className="block text-blue font-medium">
+                    Comissão
+                  </label>
+                  <input
+                    type="text"
+                    id="comissao"
+                    name="comissao"
+                    value={`${Number(formValuesCadastroServicos.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
+                      setFormValuesCadastroServicos({ ...formValuesCadastroServicos, comissao: numericValue.toString() });
+                    }}
+                    placeholder="0,00 %"
+                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
               </div>
+
+              <div className="p-2">
+                <label htmlFor="descricao" className="block text-blue font-medium">
+                  Descrição
+                </label>
+                <textarea
+                  id="descricao"
+                  name="descricao"
+                  value={formValuesCadastroServicos.descricao}
+                  onChange={(e) =>
+                    setFormValuesCadastroServicos((prevValues) => ({
+                      ...prevValues,
+                      descricao: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-[#D9D9D9] pl-1 rounded-sm resize-y"
+                  rows={4}
+                  maxLength={255}
+                />
+              </div>
+
             </div>
 
             {/* Botões */}
-            <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-2 gap-3 w-full">
 
-                {!isEditing && (
-                  <>
-                    <Button
-                      label="Salvar e Voltar à Listagem"
-                      className="text-white"
-                      icon="pi pi-refresh"
-                      onClick={() => { handleSaveReturnServicos(false) }}
-                      style={{
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.75rem 2rem",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    />
-                    <Button
-                      label="Salvar e Adicionar Outro"
-                      className="text-white"
-                      icon="pi pi-check"
-                      onClick={() => { handleSaveReturnServicos(true) }}
-                      style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.75rem 2rem",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    />
-                  </>
-                )}
-              </div>
+            <div className="grid grid-cols-2 gap-3 p-2 w-full">
+
+              {!isEditing && (
+                <>
+                  <Button
+                    label="Salvar e Voltar à Listagem"
+                    className="text-white"
+                    icon="pi pi-refresh"
+                    onClick={() => { handleSaveReturnServicos(false) }}
+                    style={{
+                      backgroundColor: "#007bff",
+                      border: "1px solid #007bff",
+                      padding: "0.75rem 2rem",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  />
+                  <Button
+                    label="Salvar e Adicionar Outro"
+                    className="text-white"
+                    icon="pi pi-check"
+                    onClick={() => { handleSaveReturnServicos(true) }}
+                    style={{
+                      backgroundColor: "#28a745",
+                      border: "1px solid #28a745",
+                      padding: "0.75rem 2rem",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  />
+                </>
+              )}
             </div>
+
 
           </Dialog>
           {
@@ -6870,6 +6876,7 @@ const OrcamentosPage: React.FC = () => {
                         <button
                           onClick={() => {
                             handleUsarEstrutura(rowData);
+                            setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
                           }}
                           className="hover:scale-125 hover:bg-green-700 p-2 bg-green-500 transform transition-all duration-50  rounded-2xl"
                           title="Usar para um criar um novo orçamento"

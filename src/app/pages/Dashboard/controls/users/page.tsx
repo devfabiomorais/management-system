@@ -78,7 +78,7 @@ const UsersPage: React.FC = () => {
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [groupPermissions, setGroupPermissions] = useState<Group[]>([]);
     const [selectedGroupPermissions, setSelectedGroupPermissions] = useState<Group>();
-    const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment>();
+    const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [formValues, setFormValues] = useState<User>({
@@ -123,8 +123,10 @@ const UsersPage: React.FC = () => {
             email: "",
             situacao: "",
             nomeGrupo: "",
-            cod_grupo: 0
+            cod_grupo: 0,
         })
+        setSelectedEstablishments([]);
+        setSelectedGroupPermissions(undefined);
     }
 
     const filteredUsers = users.filter((user) => {
@@ -179,11 +181,13 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`http://localhost:9009/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`http://localhost:9009/api/users/edit/${selectedUser?.cod_usuario}`,
+                { ...formValues, estabelecimentos: selectedEstablishments },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setUserEditDisabled(false)
                 setLoading(false)
@@ -209,11 +213,9 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleEdit = async (users: User) => {
-        console.log(users);
+    const handleEdit = async (rowData: any, users: User) => {
 
         try {
-            //if(users.cod_grupo !== null){
             const groups = await axios.get("http://localhost:9009/api/groupPermission/groups/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -223,26 +225,15 @@ const UsersPage: React.FC = () => {
                 (group: Group) => group.cod_grupo === users.cod_grupo
             );
 
-            const estabilishmentResponse = await axios.get("http://localhost:9009/api/estabilishment/", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            // Encontrar o estabelecimento correspondente pelo ID
-            const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
-                (es: Establishment) =>
-                    Array.isArray(users.dbs_estabelecimentos_usuario) &&
-                    users.dbs_estabelecimentos_usuario.some(
-                        (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
-                    )
-            );
-            setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
+            // Filtra os estabelecimentos com base no cod_estabel
+            const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_usuario.map(({ cod_estabel }: any) =>
+                establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+            )
+                .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+            setSelectedEstablishments(selectedEstablishmentsWithNames);
+
             setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
-            setEstablishments(estabilishmentResponse.data.estabelecimentos);
-            // }
-
-
-
 
             setFormValues(users);
             setSelectedUser(users);
@@ -274,9 +265,7 @@ const UsersPage: React.FC = () => {
                 return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
             });
 
-            if (selectedEstablishments?.cod_estabelecimento === null) {
-                setUserCreateReturnDisabled(false);
-                setLoading(false);
+            if (selectedEstablishments.length === 0) {
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
                     autoClose: 3000,
@@ -334,7 +323,7 @@ const UsersPage: React.FC = () => {
                 senha: "1234",
                 cod_grupo: selectedGroupPermissions?.cod_grupo,
                 situacao: formValues.situacao,
-                cod_estabel: selectedEstablishments?.cod_estabelecimento,
+                estabelecimentos: selectedEstablishments,
             };
 
             const response = await axios.post("http://localhost:9009/api/users/register", payload, {
@@ -345,6 +334,8 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
+                setLoading(true);
+                setUserCreateReturnDisabled(true);
                 const emailBody = `
                             <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #ddd;">
                             <!-- Cabeçalho -->
@@ -419,90 +410,9 @@ const UsersPage: React.FC = () => {
                 position: "top-right",
                 autoClose: 3000,
             });
-        }
-    };
-
-
-    const handleSave = async () => {
-        setUserCreateDisabled(true)
-        setLoading(true);
-        try {
-            const requiredFields = [
-                "nome",
-                "email",
-                "usuario",
-                "cod_grupo",
-                "situacao",
-            ];
-
-            const isEmptyField = requiredFields.some((field) => {
-                const value = formValues[field as keyof typeof formValues];
-                return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
-            });
-
-            if (selectedEstablishments?.cod_estabelecimento === null) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.info("Você deve selecionar pelo menos um estabelecimento!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            if (isEmptyField) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.info("Todos os campos devem ser preenchidos!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            const payload = {
-                nome: formValues.nome,
-                email: formValues.email,
-                usuario: formValues.usuario,
-                senha: "1234",
-                cod_grupo: selectedGroupPermissions?.cod_grupo,
-                situacao: formValues.situacao,
-                cod_estabel: selectedEstablishments?.cod_estabelecimento,
-            };
-
-            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.status >= 200 && response.status < 300) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                clearInputs();
-                fetchUsers();
-                toast.success("Usuário salvo com sucesso!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-
-            } else {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.error("Erro ao salvar o usuário:" + response.data.msg, {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            }
-        } catch (error) {
-            setUserCreateDisabled(false)
+        } finally {
+            setUserCreateReturnDisabled(false);
             setLoading(false);
-            console.error("Erro ao salvar usuário:", error);
-            toast.error("Erro ao salvar o usuário", {
-                position: "top-right",
-                autoClose: 3000,
-            });
         }
     };
 
@@ -558,12 +468,16 @@ const UsersPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.estabelecimentos)
-            setEstablishments(response.data.estabelecimentos);
-            setLoading(false);
+
+            const ativos = response.data.estabelecimentos.filter(
+                (estab: any) => estab.situacao === "Ativo"
+            );
+
+            setEstablishments(ativos);
         } catch (error) {
-            setLoading(false);
             console.error("Erro ao carregar estabelecimentos:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -697,17 +611,21 @@ const UsersPage: React.FC = () => {
             <div className="flex justify-center">
 
                 {loading && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                        <BeatLoader
-                            color={color}
-                            loading={loading}
-                            size={30}
-                            aria-label="Loading Spinner"
-                            data-testid="loader"
-                        />
+                    <div style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        backgroundColor: "rgba(255, 255, 255, 0.7)",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 9999
+                    }}>
+                        <img src="/logo-birigui-bgtransparent.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
                     </div>
                 )}
-
 
 
                 <Dialog
@@ -780,13 +698,15 @@ const UsersPage: React.FC = () => {
                             <label htmlFor="estabelecimento" className="block text-blue font-medium">
                                 Estabelecimento
                             </label>
-                            <Dropdown
+                            <MultiSelect
                                 value={selectedEstablishments}
                                 onChange={(e) => setSelectedEstablishments(e.value)}
                                 options={establishments}
                                 optionLabel="nome"
                                 filter
-                                className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]"
+                                placeholder="Selecione os Estabelecimentos"
+                                maxSelectedLabels={3}
+                                className="w-full border text-black h-[35px] flex items-center"
                             />
                         </div>
 
@@ -1097,7 +1017,7 @@ const UsersPage: React.FC = () => {
                                     body={(rowData) => (
                                         <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
                                             <button
-                                                onClick={() => handleEdit(rowData)}
+                                                onClick={() => handleEdit(rowData, rowData)}
                                                 className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                                             >
                                                 <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />

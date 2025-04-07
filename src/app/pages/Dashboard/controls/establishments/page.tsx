@@ -474,6 +474,53 @@ const EstablishmentsPage: React.FC = () => {
         }
     };
 
+    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+
+        // Remove caracteres não numéricos
+        const numericValue = value.replace(/\D/g, '');
+
+        // Formata o CEP como 'XXXXX-XXX'
+        let formattedValue = numericValue;
+        if (numericValue.length > 5) {
+            formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+        }
+
+        // Atualiza o estado do formulário
+        setFormValues(prevValues => ({
+            ...prevValues,
+            [name]: formattedValue,
+        }));
+
+        // Se o CEP tiver 8 dígitos, faz a busca do endereço
+        if (numericValue.length === 8) {
+            try {
+                const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
+
+                if (!response.data.erro) {
+                    setFormValues(prevValues => ({
+                        ...prevValues,
+                        logradouro: response.data.logradouro || "",
+                        bairro: response.data.bairro || "",
+                        cidade: response.data.localidade || "",
+                        estado: response.data.uf || "",
+                    }));
+                } else {
+                    alert("CEP não encontrado!");
+                    setFormValues(prevValues => ({
+                        ...prevValues,
+                        logradouro: "",
+                        bairro: "",
+                        cidade: "",
+                        estado: "",
+                    }));
+                }
+            } catch (error) {
+                console.error("Erro ao buscar o CEP:", error);
+            }
+        }
+    };
+
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -535,6 +582,7 @@ const EstablishmentsPage: React.FC = () => {
                         padding: "0.8rem",
                         height: "3rem",
                     }}
+                    className="w-[750px]"
                     onHide={() => closeModal()}
                 >
                     <div className="p-fluid grid gap-2 mt-2">
@@ -554,19 +602,6 @@ const EstablishmentsPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="street" className="block text-blue font-medium">
-                                Logradouro
-                            </label>
-                            <input
-                                type="text"
-                                id="street"
-                                name="logradouro"
-                                value={formValues.logradouro}
-                                onChange={handleInputChange}
-                                className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder="" />
-                        </div>
 
                         <div className="grid grid-cols-3 gap-2">
                             <div>
@@ -577,10 +612,23 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="cep"
                                     name="cep"
-                                    value={formValues.cep || ""} // Garante que o valor seja atualizado corretamente
-                                    onChange={handleCepInputChange}
-                                    onKeyPress={handleCepKeyPress}
-                                    maxLength={9}
+                                    value={formValues.cep}
+                                    onChange={handleCepChange}
+                                    maxLength={15}
+                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                    placeholder="" />
+                            </div>
+
+                            <div>
+                                <label htmlFor="street" className="block text-blue font-medium">
+                                    Logradouro
+                                </label>
+                                <input
+                                    type="text"
+                                    id="street"
+                                    name="logradouro"
+                                    value={formValues.logradouro}
+                                    onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
                             </div>
@@ -599,22 +647,10 @@ const EstablishmentsPage: React.FC = () => {
                                     placeholder="" />
                             </div>
 
-                            <div>
-                                <label htmlFor="complement" className="block text-blue font-medium">
-                                    Complemento
-                                </label>
-                                <input
-                                    type="text"
-                                    id="complement"
-                                    name="complemento"
-                                    value={formValues.complemento}
-                                    onChange={handleInputChange}
-                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                    placeholder="" />
-                            </div>
+
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                             <div>
                                 <label htmlFor="state" className="block text-blue font-medium">
                                     Estado
@@ -660,6 +696,20 @@ const EstablishmentsPage: React.FC = () => {
                                     id="neighborHood"
                                     name="bairro"
                                     value={formValues.bairro}
+                                    onChange={handleInputChange}
+                                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                    placeholder="" />
+                            </div>
+
+                            <div>
+                                <label htmlFor="complement" className="block text-blue font-medium">
+                                    Complemento
+                                </label>
+                                <input
+                                    type="text"
+                                    id="complement"
+                                    name="complemento"
+                                    value={formValues.complemento}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />

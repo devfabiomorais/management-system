@@ -19,6 +19,7 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { MultiSelect } from "primereact/multiselect";
 
 interface Transportadora {
   cod_transportadora: number;
@@ -37,7 +38,7 @@ interface Transportadora {
   celular: string;
   telefone: string;
   dtCadastro?: string;
-  estabelecimento: number;
+  estabelecimentos: [];
   situacao?: string;
 }
 
@@ -86,7 +87,7 @@ const TransportadorasPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedTransportadora, setSelectedTransportadora] = useState<Transportadora | null>(null);
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
-  const [selectedEstabilishment, setSelectedEstabilishment] = useState<Establishment | null>(null);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
   const [formValues, setFormValues] = useState<Transportadora>({
     cod_transportadora: 0,
     nome: "",
@@ -103,8 +104,7 @@ const TransportadorasPage: React.FC = () => {
     complemento: "",
     numero: undefined,
     cep: "",
-    // situacao: "",        
-    estabelecimento: 0,
+    estabelecimentos: [],
   });
   const [tipos, setTipos] = useState<string[]>([]);
 
@@ -147,20 +147,8 @@ const TransportadorasPage: React.FC = () => {
 
 
 
-  const [formValuesEstablishments, setFormValuesEstablishments] = useState<Establishment>({
-    cod_estabelecimento: 0,
-    nome: "",
-    logradouro: "",
-    cidade: "",
-    bairro: "",
-    estado: "",
-    complemento: "",
-    numero: 0,
-    cep: "",
-  });
-
   const clearInputs = () => {
-    setSelectedEstabilishment(null);
+    setSelectedEstablishments([]);
     setFormValues({
       cod_transportadora: 0,
       nome: "",
@@ -177,8 +165,7 @@ const TransportadorasPage: React.FC = () => {
       complemento: "",
       numero: 0,
       cep: "",
-      // situacao: "",        
-      estabelecimento: 0,
+      estabelecimentos: [],
     });
   };
 
@@ -200,7 +187,7 @@ const TransportadorasPage: React.FC = () => {
     try {
       const response = await axios.put(
         `http://localhost:9009/api/transportadoras/edit/${transportadora.cod_transportadora}`,
-        { ...formValues, situacao: "Ativo", cod_transportadora: transportadora.cod_transportadora },
+        { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -234,102 +221,6 @@ const TransportadorasPage: React.FC = () => {
   };
 
 
-  // ---------------------------------------------------------------------------------------------------------------
-
-  const handleSave = async () => {
-    setItemCreateReturnDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "nome",
-        "tipo",
-        "telefone",
-        "celular",
-        "responsavel",
-        "complemento",
-        "email",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "numero",
-        "cep",
-        "cod_estabel",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      // Verifica se o código do estabelecimento é válido
-      const estabelecimento = selectedEstabilishment?.cod_estabelecimento;
-      if (!estabelecimento) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Por favor, selecione um estabelecimento válido.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      // Envia os dados para o backend
-      const response = await axios.post(
-        "http://localhost:9009/api/transportadoras/register",
-        {
-          ...formValues,
-          dbs_estabelecimentos_transportadora: {
-            create: {
-              cod_estabel: estabelecimento, // Agora usando 'cod_estabel' para o relacionamento correto
-              dbs_estabelecimentos: {
-                connect: {
-                  cod_estabelecimento: estabelecimento, // Conectando com o estabelecimento correto
-                },
-              },
-            },
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchTransportadoras();
-        toast.success("Transportadora salva com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar transportadora.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar transportadora:", error);
-    }
-  };
 
   // ---------------------------------------------------------------------------------------------------------------
   const [rowData, setRowData] = useState<Transportadora[]>([]);
@@ -354,7 +245,6 @@ const TransportadorasPage: React.FC = () => {
         "estado",
         "numero",
         "cep",
-        "cod_estabel",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -372,16 +262,6 @@ const TransportadorasPage: React.FC = () => {
         return;
       }
 
-      const estabelecimento = selectedEstabilishment?.cod_estabelecimento;
-      if (!estabelecimento) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Por favor, selecione um estabelecimento válido.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
 
       const transportadoraEncontrada = rowData.find((item) => item.nome === formValues.nome);
       const nomeExists = !!transportadoraEncontrada;
@@ -417,22 +297,25 @@ const TransportadorasPage: React.FC = () => {
         return;
       }
 
+      if (selectedEstablishments.length === 0) {
+        toast.info("Você deve selecionar pelo menos um estabelecimento!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+
+      const updatedFormValues = {
+        ...formValues,
+        estabelecimentos: selectedEstablishments,
+      };
+
+
       // Se o nome não existir, cadastra a transportadora normalmente
       const response = await axios.post(
         "http://localhost:9009/api/transportadoras/register",
-        {
-          ...formValues,
-          dbs_estabelecimentos_transportadora: {
-            create: {
-              cod_estabel: estabelecimento,
-              dbs_estabelecimentos: {
-                connect: {
-                  cod_estabelecimento: estabelecimento,
-                },
-              },
-            },
-          },
-        },
+        updatedFormValues,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -469,11 +352,19 @@ const TransportadorasPage: React.FC = () => {
 
   // ---------------------------------------------------------------------------------------------------------------
 
-  const handleEdit = (transportadora: Transportadora) => {
+  const handleEdit = (rowData: any, transportadora: Transportadora) => {
     setFormValues(transportadora);
     setSelectedTransportadora(transportadora);
     setIsEditing(true);
     setVisible(true);
+
+    // Filtra os estabelecimentos com base no cod_estabel
+    const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_transportadora.map(({ cod_estabel }: any) =>
+      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+    )
+      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+    setSelectedEstablishments(selectedEstablishmentsWithNames);
   };
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -486,22 +377,26 @@ const TransportadorasPage: React.FC = () => {
 
 
   const fetchEstabilishments = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-
       const response = await axios.get("http://localhost:9009/api/estabilishment", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data.estabelecimentos)
-      setEstablishments(response.data.estabelecimentos);
-      setLoading(false)
+
+      const ativos = response.data.estabelecimentos.filter(
+        (estab: any) => estab.situacao === "Ativo"
+      );
+
+      setEstablishments(ativos);
     } catch (error) {
-      setLoading(false)
       console.error("Erro ao carregar estabelecimentos:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
 
   // ---------------------------------------------------------------------------------------------------------------
 
@@ -588,6 +483,53 @@ const TransportadorasPage: React.FC = () => {
     setFormValues({ ...formValues, [name]: value });
   };
 
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/\D/g, '');
+
+    // Formata o CEP como 'XXXXX-XXX'
+    let formattedValue = numericValue;
+    if (numericValue.length > 5) {
+      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+    }
+
+    // Atualiza o estado do formulário
+    setFormValues(prevValues => ({
+      ...prevValues,
+      [name]: formattedValue,
+    }));
+
+    // Se o CEP tiver 8 dígitos, faz a busca do endereço
+    if (numericValue.length === 8) {
+      try {
+        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
+
+        if (!response.data.erro) {
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: response.data.logradouro || "",
+            bairro: response.data.bairro || "",
+            cidade: response.data.localidade || "",
+            estado: response.data.uf || "",
+          }));
+        } else {
+          alert("CEP não encontrado!");
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: "",
+            bairro: "",
+            cidade: "",
+            estado: "",
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar o CEP:", error);
+      }
+    }
+  };
+
   const closeModal = () => {
     clearInputs();
     setIsEditing(false);
@@ -664,6 +606,98 @@ const TransportadorasPage: React.FC = () => {
     }
   };
 
+  const formatTelefoneFixo = (telefone: string) => {
+    if (!telefone) return "";
+
+    let value = telefone.replace(/\D/g, ""); // Remove tudo que não for número
+
+    if (value.length === 10) {
+      // Formato telefone fixo: (99) 9999-9999
+      return value.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+    }
+
+    return telefone; // Retorna como está se não tiver 10 dígitos
+  };
+
+
+  const formatCelular = (celular: string) => {
+    if (!celular) return "";
+
+    let value = celular.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length === 11) {
+      // Formato celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = value.replace(/^(\d{2})(\d)(\d{4})(\d{4})$/, "($1) $2 $3-$4");
+    } else if (value.length === 10) {
+      // Formato telefone fixo com 8 dígitos: (99) 9999-9999
+      formattedValue = value.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+    }
+
+    return formattedValue;
+  };
+
+  const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length > 2) {
+      // Adiciona o DDD entre parênteses
+      formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    }
+
+    if (value.length === 11) {
+      // Formato para celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d)(\d{4})(\d{4})$/, "$1 $2 $3-$4");
+    } else if (value.length >= 10) {
+      // Formato para telefone fixo (8 dígitos após o DDD): (99) 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d{4})(\d{4})$/, "$1 $2-$3");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      celular: formattedValue,
+    }));
+  };
+
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length > 2) {
+      // Adiciona o DDD entre parênteses
+      formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    }
+
+    if (value.length === 11) {
+      // Formato para celular com 9 dígitos: (99) 9 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d)(\d{4})(\d{4})$/, "$1 $2 $3-$4");
+    } else if (value.length >= 10) {
+      // Formato para telefone fixo (8 dígitos após o DDD): (99) 9999-9999
+      formattedValue = formattedValue.replace(/^(\(\d{2}\)) (\d{4})(\d{4})$/, "$1 $2-$3");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      telefone: formattedValue,
+    }));
+  };
+
+  const [isValidEmail, setIsValidEmail] = useState(true);
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Formatação do email - aqui você pode implementar a formatação conforme necessário
+    setFormValues({ ...formValues, email: value });
+  };
+  const handleEmailBlur = () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const isValid = emailRegex.test(formValues.email);
+
+    setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
+  };
+
 
   return (
     <>
@@ -719,7 +753,8 @@ const TransportadorasPage: React.FC = () => {
             onHide={() => closeModal()}
           >
             <div className="p-fluid grid gap-2 mt-2">
-              <div className="grid grid-cols-3 gap-2">
+
+              <div className="grid gap-2">
                 <div className="col-span-2">
                   <label htmlFor="nome" className="block text-blue font-medium">
                     Nome
@@ -734,6 +769,9 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label htmlFor="tipo" className="block text-blue font-medium">
                     Tipo
@@ -752,40 +790,7 @@ const TransportadorasPage: React.FC = () => {
                     <option value="PessoaJuridica">Pessoa Jurídica</option>
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label htmlFor="telefone" className="block text-blue font-medium">
-                    Telefone
-                  </label>
-                  <input
-                    type="text"
-                    id="telefone"
-                    name="telefone"
-                    value={formValues.telefone}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="celular" className="block text-blue font-medium">
-                    Celular
-                  </label>
-                  <input
-                    type="text"
-                    id="celular"
-                    name="celular"
-                    value={formValues.celular}
-                    onChange={handleNumericInputChange} // Permite apenas números
-                    onKeyPress={handleNumericKeyPress} // Bloqueia teclas que não sejam números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
+
                 <div>
                   <label htmlFor="responsavel" className="block text-blue font-medium">
                     Responsável
@@ -799,6 +804,55 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento
+                  </label>
+                  <MultiSelect
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione os Estabelecimentos"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="celular" className="block text-blue font-medium">
+                    Celular
+                  </label>
+                  <input
+                    type="text"
+                    id="celular"
+                    name="celular"
+                    value={formValues.celular}
+                    onChange={handleCelularChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={15}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="telefone" className="block text-blue font-medium">
+                    Telefone
+                  </label>
+                  <input
+                    type="text"
+                    id="telefone"
+                    name="telefone"
+                    value={formValues.telefone}
+                    onChange={handleTelefoneChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={14}
+                  />
+                </div>
+
                 <div>
                   <label htmlFor="email" className="block text-blue font-medium">
                     E-mail
@@ -808,71 +862,40 @@ const TransportadorasPage: React.FC = () => {
                     id="email"
                     name="email"
                     value={formValues.email}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    onChange={handleEmailChange}
+                    onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
+                    className={`w-full border pl-1 rounded-sm h-8 ${isValidEmail ? "border-[#D9D9D9]" : "border-red500"}`} // Altera a cor do border se o email for inválido
+                    style={{ outline: "none" }}
+                    placeholder="nome@empresa.com"
                   />
-                </div>
-                <div>
-                  <label htmlFor="complemento" className="block text-blue font-medium">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    id="complemento"
-                    name="complemento"
-                    value={formValues.complemento}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
-                    Estabelecimento
-                  </label>
-                  <select
-                    id="estabelecimento"
-                    name="cod_estabel"
-                    value={selectedEstabilishment ? selectedEstabilishment.cod_estabelecimento : ''}
-                    onChange={(e) => {
-                      const selected = establishments.find(
-                        (est) => est.cod_estabelecimento === Number(e.target.value)
-                      );
-                      setSelectedEstabilishment(selected || null);
-                      if (selected) {
-                        setFormValuesEstablishments(selected); // Atualiza os dados do estabelecimento
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          cod_estabel: selected.cod_estabelecimento, // Atualiza o campo de estabelecimento
-                        }));
-                      }
-                    }}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>Selecione</option>
-                    {establishments.map((estabelecimento) => (
-                      <option key={estabelecimento.cod_estabelecimento} value={estabelecimento.cod_estabelecimento}>
-                        {estabelecimento.nome}
-                      </option>
-                    ))}
-                  </select>
+                  {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
+
                 </div>
               </div>
+
               <div className="grid grid-cols-1 gap-2">
                 <div>
                   <label htmlFor="observacoes" className="block text-blue font-medium">
                     Observações
                   </label>
-                  <input
-                    type="text"
-                    id="observacoes"
-                    name="observacoes"
-                    value={formValues.observacoes}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  <textarea
+                    id="obervacoes_gerais"
+                    name="obervacoes_gerais"
+                    value={formValues.observacoes || ""}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        observacoes: e.target.value, // Atualiza o campo observacoes
+                      }));
+                    }}
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              <div className="grid grid-cols-3 gap-2">
+
                 <div>
                   <label htmlFor="cep" className="block text-blue font-medium">
                     CEP
@@ -882,12 +905,12 @@ const TransportadorasPage: React.FC = () => {
                     id="cep"
                     name="cep"
                     value={formValues.cep}
-                    onChange={handleCepInputChange} // Formata o CEP enquanto digita
-                    onKeyPress={handleCepKeyPress} // Bloqueia qualquer caractere não numérico
+                    onChange={handleCepChange}
+                    maxLength={15}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={9} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
                   />
                 </div>
+
                 <div>
                   <label htmlFor="logradouro" className="block text-blue font-medium">
                     Logradouro
@@ -901,8 +924,7 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
+
                 <div>
                   <label htmlFor="numero" className="block text-blue font-medium">
                     Número
@@ -917,9 +939,13 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+
                 <div>
                   <label htmlFor="estado" className="block text-blue font-medium">
-                    Estado (sigla)
+                    Estado
                   </label>
                   <input
                     type="text"
@@ -930,6 +956,7 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
                 <div>
                   <label htmlFor="bairro" className="block text-blue font-medium">
                     Bairro
@@ -943,6 +970,7 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
                 <div>
                   <label htmlFor="cidade" className="block text-blue font-medium">
                     Cidade
@@ -957,7 +985,23 @@ const TransportadorasPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="complemento" className="block text-blue font-medium">
+                    Complemento
+                  </label>
+                  <input
+                    type="text"
+                    id="complemento"
+                    name="complemento"
+                    value={formValues.complemento}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
               </div>
+
             </div>
 
 
@@ -1272,7 +1316,7 @@ const TransportadorasPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => handleEdit(rowData, rowData)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

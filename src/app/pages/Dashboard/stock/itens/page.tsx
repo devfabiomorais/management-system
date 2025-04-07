@@ -296,27 +296,27 @@ const ItensPage: React.FC = () => {
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", { position: "top-right", autoClose: 3000 });
                 return;
             }
+            if (isNaN(formValues.valor_custo) || isNaN(formValues.valor_venda)) {
+                toast.error("Os valores de custo e venda devem ser números válidos!", { position: "top-right", autoClose: 3000 });
+                return;
+            }
 
             const formData = new FormData();
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
-
-            if (formValues.cod_un !== null) {
-                formData.append("cod_un", formValues.cod_un.toString());
-            }
-
-            if (formValues.cod_familia !== null) {
-                formData.append("cod_familia", formValues.cod_familia.toString());
-            }
+            formData.append("valor_venda", formValues.valor_venda.toString());
+            formData.append("valor_custo", formValues.valor_custo.toString());
+            formData.append("cod_un", String(formValues.cod_un ?? ""));
+            formData.append("cod_familia", String(formValues.cod_familia ?? ""));
             formData.append("situacao", formValues.situacao);
-
-            // Enviar os estabelecimentos como um array serializado
-            formData.append("cod_estabelecimento", JSON.stringify(selectedEstablishments.map(e => e.cod_estabelecimento)));
-
+            selectedEstablishments.forEach(e => {
+                formData.append("cod_estabelecimento", e.cod_estabelecimento.toString());
+            });
             // Adicionar arquivo de anexo, se presente
-            if (formValues.anexo) {
+            if (formValues.anexo && formValues.anexo instanceof File) {
                 formData.append("anexo", formValues.anexo);
             }
+
 
 
             // Caso a situação seja "DESATIVADO", atualiza os dados do item
@@ -392,16 +392,14 @@ const ItensPage: React.FC = () => {
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
             formData.append("cod_item", formValues.cod_item);
-            if (formValues.cod_un && formValues.cod_un.cod_un !== undefined) {
-                formData.append("cod_un", formValues.cod_un.cod_un.toString());
+            if (formValues.cod_un !== null) {
+                formData.append("cod_un", formValues.cod_un.toString());
             }
-
             formData.append("situacao", formValues.situacao);
             formData.append("valor_custo", formValues.valor_custo.toString());
             formData.append("valor_venda", formValues.valor_venda.toString());
-
-            if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
-                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
+            if (formValues.cod_familia !== null) {
+                formData.append("cod_familia", formValues.cod_familia.toString());
             }
 
             selectedEstablishments.forEach((establishment) => {
@@ -662,23 +660,22 @@ const ItensPage: React.FC = () => {
 
             // Atualizar os valores do formulário
             setFormValues({
-                cod_item: itens.cod_item || "",
-                descricao: itens.descricao || "",
-                narrativa: itens.narrativa || "",
-                dbs_unidades_medida: itens.dbs_unidades_medida || null,
-                situacao: itens.situacao || "",
-                valor_custo: itens.valor_custo,
-                valor_venda: itens.valor_venda,
-                cod_un: selectedUnit?.cod_un || null,
-                cod_familia: selectedFamily?.cod_familia || null,
-                cod_estabelecimento: selectedEstablishments.map((est: Establishment) => est.cod_estabelecimento.toString()) || [],
+                cod_item: itens.cod_item ?? "",
+                descricao: itens.descricao ?? "",
+                narrativa: itens.narrativa ?? "",
+                dbs_unidades_medida: itens.dbs_unidades_medida ?? null,
+                situacao: itens.situacao ?? "",
+                valor_custo: itens.valor_custo ?? 0,
+                valor_venda: itens.valor_venda ?? 0,
+                cod_un: selectedUnit?.cod_un ?? null,
+                cod_familia: selectedFamily?.cod_familia ?? null,
+                cod_estabelecimento: selectedEstablishments?.map((est: any) => est.cod_estabelecimento.toString()) ?? [],
             });
 
-
             // Atualizar estados de seleção
-            setSelectedEstablishments(selectedEstablishments);
-            setSelectedFamily(selectedFamily || null);
-            setSelectedUnit(selectedUnit || null);
+            setSelectedEstablishments(selectedEstablishments ?? []);
+            setSelectedFamily(selectedFamily ?? null);
+            setSelectedUnit(selectedUnit ?? null);
             setSelectedItem(itens);
 
             // Exibir modal de edição
@@ -689,6 +686,7 @@ const ItensPage: React.FC = () => {
             toast.error("Erro ao carregar dados para edição.", { position: "top-right", autoClose: 3000 });
         }
     };
+
 
 
     const [fileName, setFileName] = useState("");
@@ -715,14 +713,20 @@ const ItensPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.estabelecimentos)
-            setEstablishments(response.data.estabelecimentos);
-            setLoading(false);
+
+            const estabelecimentosAtivos = response.data.estabelecimentos.filter(
+                (estabelecimento: any) => estabelecimento.situacao === "Ativo"
+            );
+
+            console.log(estabelecimentosAtivos);
+            setEstablishments(estabelecimentosAtivos);
         } catch (error) {
-            setLoading(false);
             console.error("Erro ao carregar estabelecimentos:", error);
+        } finally {
+            setLoading(false);
         }
     };
+
 
     const fetchUnits = async () => {
         setLoading(true);
@@ -732,13 +736,20 @@ const ItensPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setUnits(response.data.units);
-            setLoading(false);
+
+            const unidadesAtivas = response.data.units.filter(
+                (unidade: any) => unidade.situacao === "Ativo"
+            );
+
+            console.log(unidadesAtivas);
+            setUnits(unidadesAtivas);
         } catch (error) {
-            setLoading(false);
             console.error("Erro ao carregar unidades de medida:", error);
+        } finally {
+            setLoading(false);
         }
     };
+
 
     const fetchFamilias = async () => {
         setLoading(true);
@@ -748,7 +759,12 @@ const ItensPage: React.FC = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setFamilies(response.data.families);
+
+            const familiasAtivas = response.data.families.filter(
+                (familia: any) => familia.situacao === "Ativo"
+            );
+
+            setFamilies(familiasAtivas);
             setLoading(false);
         } catch (error) {
             setLoading(false);
@@ -811,39 +827,21 @@ const ItensPage: React.FC = () => {
                     }}
                     onHide={() => closeModal()}
                 >
-                    <div className="p-fluid grid gap-3 mt-2">
+                    <div className="p-fluid grid gap-3 mt-2 space-y-0">
                         <div className="grid grid-cols-4 gap-2">
+
                             <div className="">
-                                <label htmlFor="cod_item" className="block text-blue font-medium">
+                                <label htmlFor="code" className="block text-blue font-medium">
                                     Código
                                 </label>
                                 <input
                                     type="text"
-                                    id="cod_item"
-                                    name="cod_item"
+                                    id="code"
+                                    name="descricao"
                                     value={formValues.cod_item}
                                     onChange={(e) => setFormValues({ ...formValues, cod_item: e.target.value })}
-                                    className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-[50px] ${isEditing ? "!bg-gray-300 cursor-not-allowed" : ""}`}
-                                    disabled={isEditing}
+                                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                                 />
-                            </div>
-
-                            <div className="col-span-3">
-                                <label htmlFor="situation" className="block text-blue  font-medium">
-                                    Situação
-                                </label>
-                                <Dropdown
-                                    id="situacao"
-                                    name="situacao"
-                                    value={formValues.situacao}
-                                    onChange={(e) => setFormValues({ ...formValues, situacao: e.value })}
-                                    options={[
-                                        { label: 'Ativo', value: 'ATIVO' },
-                                        { label: 'Inativo', value: 'DESATIVADO' }
-                                    ]}
-                                    placeholder="Selecione"
-                                    className="w-full md:w-14rem"
-                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
 
                         </div>
@@ -872,11 +870,11 @@ const ItensPage: React.FC = () => {
                                 name="narrativa"
                                 value={formValues.narrativa}
                                 onChange={(e) => setFormValues({ ...formValues, narrativa: e.target.value })}
-                                className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                                className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-16"
                                 placeholder="" />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <div className="">
                                 <label htmlFor="un" className="block text-blue  font-medium">
                                     UN
@@ -886,15 +884,16 @@ const ItensPage: React.FC = () => {
                                     name="cod_un"
                                     value={selectedUnit}
                                     onChange={(e) => {
-                                        setSelectedUnit(e.value);
-                                        setFormValues({ ...formValues, cod_un: e.value });
+                                        setSelectedUnit(e.value)
+                                        setFormValues({ ...formValues, cod_un: e.value.cod_un });
+                                        console.log(formValues.cod_un);
                                     }}
                                     options={units}
                                     optionLabel="descricao"
                                     placeholder="Selecione"
                                     filter
 
-                                    className="w-full" />
+                                    className="w-full h-[35px] flex items-center" />
                             </div>
                             <div className="">
                                 <label htmlFor="family" className="block text-blue  font-medium">
@@ -905,16 +904,34 @@ const ItensPage: React.FC = () => {
                                     name="cod_familia"
                                     value={selectedFamily}
                                     onChange={(e) => {
-                                        console.log(e.value);
                                         setSelectedFamily(e.value);
-                                        setFormValues({ ...formValues, cod_familia: e.value });
+                                        setFormValues({ ...formValues, cod_familia: e.value.cod_familia });
                                     }}
                                     options={families}
                                     optionLabel="nome"
                                     placeholder="Selecione a Família"
                                     filter
-                                    className="w-full md:w-14rem" />
+                                    className="w-full md:w-14rem h-[35px] flex items-center" />
                             </div>
+
+                            <div>
+                                <label htmlFor="situation" className="block text-blue  font-medium">
+                                    Situação
+                                </label>
+                                <Dropdown
+                                    id="situacao"
+                                    name="situacao"
+                                    value={formValues.situacao}
+                                    onChange={(e) => setFormValues({ ...formValues, situacao: e.value })}
+                                    options={[
+                                        { label: 'Ativo', value: 'ATIVO' },
+                                        { label: 'Inativo', value: 'DESATIVADO' }
+                                    ]}
+                                    placeholder="Selecione"
+                                    className="w-full md:w-14rem h-[35px] flex items-center"
+                                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
+                            </div>
+
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -934,7 +951,7 @@ const ItensPage: React.FC = () => {
                                         setFormValues({ ...formValues, valor_venda: numericValue });
                                     }}
                                     placeholder="R$ 0,00"
-                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                                 />
 
                             </div>
@@ -954,7 +971,7 @@ const ItensPage: React.FC = () => {
                                         setFormValues({ ...formValues, valor_custo: numericValue });
                                     }}
                                     placeholder="R$ 0,00"
-                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[51px]"
+                                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                                 />
 
                             </div>
@@ -977,7 +994,7 @@ const ItensPage: React.FC = () => {
 
                                 <label
                                     htmlFor="photo"
-                                    className="custom-file-input w-full hover:scale-95"
+                                    className="custom-file-input w-full"
                                     style={{
                                         display: "inline-block",
                                         padding: "10px 20px",
@@ -989,6 +1006,7 @@ const ItensPage: React.FC = () => {
                                         cursor: "pointer",
                                         border: "2px solid #D1D5DB",  // Borda cinza escuro
                                         transition: "background-color 0.3s ease",
+                                        lineHeight: "12.5px",
                                     }}
                                 >
                                     <span>Escolher arquivo</span>
@@ -996,7 +1014,7 @@ const ItensPage: React.FC = () => {
 
                                 {/* Exibe o nome do arquivo selecionado, se houver */}
                                 {fileName && (
-                                    <div className="mt-2 text-blue-500">
+                                    <div className="mt-2 text-blue-500 ">
                                         <strong>Arquivo selecionado: </strong> {fileName}
                                     </div>
                                 )}
@@ -1015,15 +1033,15 @@ const ItensPage: React.FC = () => {
                                     filter
                                     placeholder="Selecione os Estabelecimentos"
                                     maxSelectedLabels={3}
-                                    className="w-full border text-black" />
+                                    className="w-full border text-black h-[35px] flex items-center"
+                                />
+
                             </div>
                         </div>
                     </div>
 
                     <br></br>
-
-
-
+                    <br></br>
 
                     <div className={`grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
                         {/* Botão Vermelho - Sempre Presente */}
@@ -1120,7 +1138,9 @@ const ItensPage: React.FC = () => {
 
                         {permissions?.insercao === "SIM" && (
                             <div>
-                                <button className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none" onClick={() => setVisible(true)}>
+                                <button
+                                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
+                                    onClick={() => setVisible(true)}>
                                     <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
                                 </button>
                             </div>

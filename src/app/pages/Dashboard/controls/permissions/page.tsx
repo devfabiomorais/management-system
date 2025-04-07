@@ -519,13 +519,14 @@ const PermissionsPage: React.FC = () => {
                 </Dialog>
 
                 <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
-                    <div className="flex justify-between ">
+                    <div className="flex justify-between">
                         <div>
                             <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Grupo de Permissões</h2>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                        style={{ height: "95%" }}>
 
                         <div className="flex justify-around">
 
@@ -551,8 +552,9 @@ const PermissionsPage: React.FC = () => {
                                         setFirst(e.first);
                                         setRows(e.rows);
                                     }}
-                                    className="w-full"
+                                    className="w-full h-full"
                                     responsiveLayout="scroll"
+                                    scrollHeight="flex" // Permite ajustar a altura conforme necessário
                                     tableStyle={{
                                         borderCollapse: "collapse",
                                         width: "100%",
@@ -661,7 +663,8 @@ const PermissionsPage: React.FC = () => {
                                 </DataTable>
                             </div>
 
-                            <div className="border border-[#D9D9D9] h-screen rounded-md p-5 w-full ml-5">
+                            <div className="border border-[#D9D9D9] h-screen rounded-md p-5 w-full ml-5"
+                                style={{ overflow: "auto" }}>
 
                                 <div className="p-5">
                                     <div className="">
