@@ -1,5 +1,5 @@
 "use client";
-import React, { ChangeEvent, useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useState, Suspense } from "react";
 import { MdContentCopy, MdRequestQuote, MdVisibility } from "react-icons/md";
 import { FaTimes, FaPlus, FaBan, FaRegCopy, FaRegBuilding, FaSuse } from "react-icons/fa";
 import SidebarLayout from "@/app/components/Sidebar";
@@ -29,6 +29,7 @@ import { MultiSelect } from "primereact/multiselect";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AiFillFilePdf } from "react-icons/ai";
 import { GiCalculator } from "react-icons/gi";
+import loadingGif from "../../../assets/imgs/loading.gif";
 
 interface PedidosVenda {
   cod_pedido_venda: number;
@@ -7274,4 +7275,18 @@ const OrcamentosPage: React.FC = () => {
 };
 // #endregion
 
-export default OrcamentosPage;
+// ESTE É O COMPONENTE PRINCIPAL (default)
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src={loadingGif.src} alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
+      <OrcamentosPage />
+    </Suspense>
+  );
+}
+
