@@ -6,6 +6,10 @@ import { TbWallet } from "react-icons/tb";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import loadingGif from "../../../assets/imgs/loading.gif";
+import { BsClipboard2DataFill } from "react-icons/bs";
+import { BiSolidBank } from "react-icons/bi";
+import { FaCreditCard } from "react-icons/fa";
+import { FaSackDollar } from "react-icons/fa6";
 
 export default function CommercialPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -42,9 +46,109 @@ export default function CommercialPage() {
                       onClick={() => handleRedirect("financeiro/centrosCusto")}
                       className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
                     >
-                      <TbWallet className="text-5xl" />
+                      <FaSackDollar className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Centro de Custo</span>
                       {loadingButton === "financeiro/centrosCusto" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/planoContas")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <BsClipboard2DataFill className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Plano de Contas</span>
+                      {loadingButton === "financeiro/planoContas" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/contasBancarias")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <BiSolidBank className="text-6xl" />
+                      <span className="text-sm mt-3 font-bold">Contas Bancárias</span>
+                      {loadingButton === "financeiro/contasBancarias" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/formasPagamento")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <FaCreditCard className="text-5xl " />
+                      <span className="text-sm mt-3 font-bold">Formas de</span>
+                      <span className="text-sm font-bold">Pagamento</span>
+                      {loadingButton === "financeiro/formasPagamento" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  onClick={checkOpen}
+                  className={`relative flex flex-col justify-center items-center w-40 h-40 ${openedCategory ? "bg-green100" : "bg-blue"} cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
+                >
+                  <FaFolderPlus className="text-5xl" />
+                  <span className="text-lg mt-2 font-bold">Cadastros</span>
+                </div>
+                <hr className="w-full border-t border-gray-300 my-6" />
+                {openedCategory && (
+                  <div className="flex gap-4">
+                    <div
+                      onClick={() => handleRedirect("financeiro/centrosCusto")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <FaSackDollar className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Centro de Custo</span>
+                      {loadingButton === "financeiro/centrosCusto" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/planoContas")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <BsClipboard2DataFill className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Plano de Contas</span>
+                      {loadingButton === "financeiro/planoContas" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/contasBancarias")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <BiSolidBank className="text-6xl" />
+                      <span className="text-sm mt-3 font-bold">Contas Bancárias</span>
+                      {loadingButton === "financeiro/contasBancarias" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("financeiro/formasPagamento")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <FaCreditCard className="text-5xl " />
+                      <span className="text-sm mt-3 font-bold">Formas de</span>
+                      <span className="text-sm font-bold">Pagamento</span>
+                      {loadingButton === "financeiro/formasPagamento" && (
                         <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
                           <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
                         </div>

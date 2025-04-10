@@ -1822,7 +1822,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchFormasPagamento = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/formas_pagamento",
+        "http://localhost:9009/api/formasPagamento",
         {
           headers: {
             Authorization: `Bearer ${token}`,
