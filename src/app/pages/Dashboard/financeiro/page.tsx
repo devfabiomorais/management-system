@@ -2,19 +2,18 @@
 import React, { useState, Suspense } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { FaArrowsRotate, FaFolderPlus } from "react-icons/fa6";
-import { TbWallet } from "react-icons/tb";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import loadingGif from "../../../assets/imgs/loading.gif";
 import { BsClipboard2DataFill } from "react-icons/bs";
 import { BiSolidBank } from "react-icons/bi";
-import { FaCreditCard, FaDollarSign, FaMoneyBillWave } from "react-icons/fa";
+import { FaCreditCard } from "react-icons/fa";
 import { FaSackDollar } from "react-icons/fa6";
 import { GiPayMoney, GiReceiveMoney } from "react-icons/gi";
 import { useSearchParams } from 'next/navigation';
 
 
-export function CommercialPage() {
+export const CommercialPage: React.FC = () => {
   const searchParams = useSearchParams();
   const tipo = searchParams.get('tipo'); // "aPagar" ou "aReceber"
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -164,13 +163,18 @@ export function CommercialPage() {
     </div>
   );
 
-}
+};
 
 export default function Page() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-      <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
       <CommercialPage />
-    </div>
+    </Suspense>
   );
 }
