@@ -168,14 +168,9 @@ export function CommercialPage() {
 
 export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
-        </div>
-      }
-    >
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
       <CommercialPage />
-    </Suspense>
+    </div>
   );
 }
