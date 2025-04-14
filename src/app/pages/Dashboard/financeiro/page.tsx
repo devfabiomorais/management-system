@@ -13,7 +13,7 @@ import { GiPayMoney, GiReceiveMoney } from "react-icons/gi";
 import { useSearchParams } from 'next/navigation';
 
 
-export const CommercialPage: React.FC = () => {
+const CommercialPage: React.FC = () => {
   const searchParams = useSearchParams();
   const tipo = searchParams.get('tipo'); // "aPagar" ou "aReceber"
   const [openedCategory, setOpenedCategory] = useState(false);
