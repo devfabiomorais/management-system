@@ -97,7 +97,7 @@ const ServicosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/servicos/edit/${cod_servico}`,
+        `https://api-birigui-teste.comviver.cloud/api/servicos/edit/${cod_servico}`,
         { ...formValues, situacao: "Ativo" },
         {
           headers: {
@@ -194,7 +194,7 @@ const ServicosPage: React.FC = () => {
 
       // Se o nome não existir, cadastra o serviço normalmente
       const response = await axios.post(
-        "http://localhost:9009/api/servicos/register",
+        "https://api-birigui-teste.comviver.cloud/api/servicos/register",
         formValues,
         {
           headers: {
@@ -246,7 +246,7 @@ const ServicosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/servicos",
+        "https://api-birigui-teste.comviver.cloud/api/servicos",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -279,7 +279,7 @@ const ServicosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/servicos/cancel/${servicoIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/servicos/cancel/${servicoIdToDelete}`,
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -316,7 +316,7 @@ const ServicosPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/servicos/${servicoIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/servicos/${servicoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -113,7 +113,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/contasFinanceiro",
+        "https://api-birigui-teste.comviver.cloud/api/contasFinanceiro",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -156,7 +156,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/planoContas",
+        "https://api-birigui-teste.comviver.cloud/api/planoContas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -189,7 +189,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/centrosCusto",
+        "https://api-birigui-teste.comviver.cloud/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -228,7 +228,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const fetchFormasPagamento = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/formasPagamento",
+        "https://api-birigui-teste.comviver.cloud/api/formasPagamento",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -424,7 +424,7 @@ const ContasFinanceiroPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/contasFinanceiro/edit/${cod_centro_custo}`,
+        `https://api-birigui-teste.comviver.cloud/api/contasFinanceiro/edit/${cod_centro_custo}`,
         { ...formValues },
         {
           headers: {
@@ -482,7 +482,7 @@ const ContasFinanceiroPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/contasFinanceiro/register",
+        "https://api-birigui-teste.comviver.cloud/api/contasFinanceiro/register",
         formValues,
         {
           headers: {
@@ -622,7 +622,7 @@ const ContasFinanceiroPage: React.FC = () => {
       const tipoConta = tipo === "aPagar" ? "PAGAR" : "RECEBER";
 
       const response = await axios.post(
-        "http://localhost:9009/api/contasFinanceiro/register",
+        "https://api-birigui-teste.comviver.cloud/api/contasFinanceiro/register",
         { formValues, tipo_conta: tipoConta },
         {
           headers: {
@@ -684,7 +684,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/contasFinanceiro/cancel/${contasFinanceiroIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/contasFinanceiro/cancel/${contasFinanceiroIdToDelete}`,
         {},
         {
           headers: {
@@ -721,7 +721,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/contasFinanceiro/${contasFinanceiroIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/contasFinanceiro/${contasFinanceiroIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

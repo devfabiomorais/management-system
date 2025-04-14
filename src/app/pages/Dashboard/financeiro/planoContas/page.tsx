@@ -54,7 +54,7 @@ const PlanoContasPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/planoContas",
+        "https://api-birigui-teste.comviver.cloud/api/planoContas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -173,7 +173,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/planoContas/register",
+        "https://api-birigui-teste.comviver.cloud/api/planoContas/register",
         formValues,
         {
           headers: {
@@ -246,7 +246,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/planoContas/edit/${cod_plano_conta}`,
+        `https://api-birigui-teste.comviver.cloud/api/planoContas/edit/${cod_plano_conta}`,
         { ...selectedPlanoContas, descricao: formValues.descricao, classificacao: formValues.classificacao },
         {
           headers: {
@@ -285,7 +285,7 @@ const PlanoContasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/planoContas/cancel/${planoContasIdToDelete}`,
+        `https://api-birigui-teste.comviver.cloud/api/planoContas/cancel/${planoContasIdToDelete}`,
         {},
         {
           headers: {
@@ -342,7 +342,7 @@ const PlanoContasPage: React.FC = () => {
   const fetchGruposDRE = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/gruposDRE", {
+      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/gruposDRE", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
