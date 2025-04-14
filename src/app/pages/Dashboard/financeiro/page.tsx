@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { FaArrowsRotate, FaFolderPlus } from "react-icons/fa6";
 import { TbWallet } from "react-icons/tb";
@@ -14,7 +14,7 @@ import { GiPayMoney, GiReceiveMoney } from "react-icons/gi";
 import { useSearchParams } from 'next/navigation';
 
 
-export default function CommercialPage() {
+export function CommercialPage() {
   const searchParams = useSearchParams();
   const tipo = searchParams.get('tipo'); // "aPagar" ou "aReceber"
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -164,4 +164,18 @@ export default function CommercialPage() {
     </div>
   );
 
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
+      <CommercialPage />
+    </Suspense>
+  );
 }
