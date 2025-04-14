@@ -882,6 +882,7 @@ const TransportadorasPage: React.FC = () => {
                     id="obervacoes_gerais"
                     name="obervacoes_gerais"
                     value={formValues.observacoes || ""}
+                    maxLength={255}
                     className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
 
                     onChange={(e) => {

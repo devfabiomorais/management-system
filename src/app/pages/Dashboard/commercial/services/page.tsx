@@ -449,8 +449,7 @@ const ServicosPage: React.FC = () => {
                     id="nome"
                     name="nome"
                     value={formValues.nome}
-                    onChange={handleAlphabeticInputChange} // Não permite números
-                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                    onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>

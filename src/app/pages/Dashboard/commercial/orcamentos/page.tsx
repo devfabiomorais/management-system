@@ -1829,8 +1829,8 @@ const OrcamentosPage: React.FC = () => {
           },
         }
       );
-      console.log(response.data.forma_pagamento);
-      setFormasPagamento(response.data.forma_pagamento);
+      console.log(response.data.formas_pagamento);
+      setFormasPagamento(response.data.formas_pagamento);
       setLoading(false);
     } catch (error) {
       console.error("Erro ao buscar formas de pagamento:", error);
@@ -4674,7 +4674,7 @@ const OrcamentosPage: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModal()}
-            style={{ width: "90vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
+            style={{ width: "70vw", maxHeight: "90vh", overflowY: "auto" }} // Added styles for scroll
           >
             <br></br>
             {visualizando && (
@@ -4987,7 +4987,8 @@ const OrcamentosPage: React.FC = () => {
                       id="descricao"
                       name="descricao"
                       value={formValuesEstruturas.descricao}
-                      className={`w-full border border-gray-400 pl-1 rounded-sm h-32 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
+                      maxLength={255}
+                      className={`w-full border border-gray-400 pl-1 rounded-sm h-16 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
 
                       onChange={(e) => {
                         setFormValuesEstruturas((prevValues) => ({

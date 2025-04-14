@@ -337,26 +337,17 @@ const UsersPage: React.FC = () => {
                 setLoading(true);
                 setUserCreateReturnDisabled(true);
                 const emailBody = `
-                            <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; border: 1px solid #ddd;">
-                            <!-- Cabeçalho -->
-                            <div style="background-color: #f0f0f0; padding: 20px; text-align: center;">
-                                <h2 style="margin: 0; color: #1e3a5f;">Portal Birigui</h2>
-                            </div>
+Portal Birigui
+                
+Olá ${formValues.nome}, seja bem-vindo(a) ao Portal Birigui!
 
-                            <!-- Corpo -->
-                            <div style="padding: 20px; text-align: center; color: #333;">
-                                <p style="font-size: 18px;">Olá ${formValues.nome}, seja bem-vindo ao Portal Birigui!</p>
-                                <p style="font-size: 16px;">Sua senha padrão é: <strong>1234</strong></p>
-                                <p style="font-size: 16px;">Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a></p>
+Sua senha padrão é: 1234
 
-                            </div>
+Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a>
 
-                            <!-- Rodapé -->
-                            <div style="background-color: #1e3a5f; padding: 10px; text-align: center;">
-                                <p style="margin: 0; font-size: 14px; color: #f0f0f0;">Copyright Grupo ComViver</p>
-                            </div>
-                            </div>
-                        `;
+________________________
+Copyright Grupo ComViver
+`;
 
                 // Enviar e-mail após salvar o usuário
                 const emailPayload = {

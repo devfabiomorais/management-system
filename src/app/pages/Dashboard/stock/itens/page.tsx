@@ -50,6 +50,7 @@ interface Item {
     situacao: string;
     valor_custo: number;
     valor_venda: number;
+    codigo: string;
 }
 
 interface ItemFamilia {
@@ -116,6 +117,7 @@ const ItensPage: React.FC = () => {
         situacao: "",
         valor_custo: 0,
         valor_venda: 0,
+        codigo: "",
     });
 
 
@@ -150,6 +152,7 @@ const ItensPage: React.FC = () => {
             situacao: "",
             valor_custo: 0,
             valor_venda: 0,
+            codigo: "",
         })
         console.log("Form values after clear:", formValues);
         setSelectedFamily(null);
@@ -275,7 +278,8 @@ const ItensPage: React.FC = () => {
                 "situacao",
                 "cod_familia",
                 "valor_custo",
-                "valor_venda"
+                "valor_venda",
+                "codigo"
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -306,6 +310,7 @@ const ItensPage: React.FC = () => {
             formData.append("narrativa", formValues.narrativa);
             formData.append("valor_venda", formValues.valor_venda.toString());
             formData.append("valor_custo", formValues.valor_custo.toString());
+            formData.append("codigo", formValues.codigo.toString());
             formData.append("cod_un", String(formValues.cod_un ?? ""));
             formData.append("cod_familia", String(formValues.cod_familia ?? ""));
             formData.append("situacao", formValues.situacao);
@@ -363,7 +368,8 @@ const ItensPage: React.FC = () => {
                 "situacao",
                 "cod_familia",
                 "valor_custo",
-                "valor_venda"
+                "valor_venda",
+                "codigo"
             ];
 
             const isEmptyField = requiredFields.some((field) => {
@@ -391,7 +397,7 @@ const ItensPage: React.FC = () => {
 
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
-            formData.append("cod_item", formValues.cod_item);
+            formData.append("codigo", formValues.codigo);
             if (formValues.cod_un !== null) {
                 formData.append("cod_un", formValues.cod_un.toString());
             }
@@ -670,6 +676,7 @@ const ItensPage: React.FC = () => {
                 cod_un: selectedUnit?.cod_un ?? null,
                 cod_familia: selectedFamily?.cod_familia ?? null,
                 cod_estabelecimento: selectedEstablishments?.map((est: any) => est.cod_estabelecimento.toString()) ?? [],
+                codigo: itens.codigo ?? "",
             });
 
             // Atualizar estados de seleção
@@ -831,15 +838,15 @@ const ItensPage: React.FC = () => {
                         <div className="grid grid-cols-4 gap-2">
 
                             <div className="">
-                                <label htmlFor="code" className="block text-blue font-medium">
+                                <label htmlFor="codigo" className="block text-blue font-medium">
                                     Código
                                 </label>
                                 <input
                                     type="text"
-                                    id="code"
-                                    name="descricao"
-                                    value={formValues.cod_item}
-                                    onChange={(e) => setFormValues({ ...formValues, cod_item: e.target.value })}
+                                    id="codigo"
+                                    name="codigo"
+                                    value={formValues.codigo}
+                                    onChange={(e) => setFormValues({ ...formValues, codigo: e.target.value })}
                                     className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
                                 />
                             </div>
@@ -1177,7 +1184,7 @@ const ItensPage: React.FC = () => {
                             }}
                         >
                             <Column
-                                field="cod_item"
+                                field="codigo"
                                 header="Código"
                                 className="text-black"
                                 style={{
