@@ -1,5 +1,5 @@
 "use client";
-import React, { ChangeEvent, useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useState, Suspense } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -868,7 +868,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="text"
                     id="nome"
                     name="nome"
-                    value={formValues.entidade}
+                    value={""}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -1762,4 +1762,17 @@ const ContasFinanceiroPage: React.FC = () => {
   );
 };
 
-export default ContasFinanceiroPage;
+// ESTE É O COMPONENTE PRINCIPAL (default)
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
+      <ContasFinanceiroPage />
+    </Suspense>
+  );
+}
