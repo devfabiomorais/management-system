@@ -112,7 +112,7 @@ const FornecedoresPage: React.FC = () => {
   const fetchTipos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/fornecedores", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/fornecedores", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -130,7 +130,7 @@ const FornecedoresPage: React.FC = () => {
   const fetchFornecedores = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/fornecedores", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/fornecedores", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -217,7 +217,7 @@ const FornecedoresPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/fornecedores/edit/${fornecedor.cod_fornecedor}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/fornecedores/edit/${fornecedor.cod_fornecedor}`,
         { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
@@ -345,7 +345,7 @@ const FornecedoresPage: React.FC = () => {
 
       // Se o nome não existir, cadastra a fornecedor normalmente
       const response = await axios.post(
-        "http://localhost:9009/api/fornecedores/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/fornecedores/register",
         updatedFormValues,
         {
           headers: {
@@ -410,7 +410,7 @@ const FornecedoresPage: React.FC = () => {
   const fetchEstabilishments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/estabilishment", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -448,7 +448,7 @@ const FornecedoresPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/fornecedores/cancel/${fornecedorIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/fornecedores/cancel/${fornecedorIdToDelete}`,
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -485,7 +485,7 @@ const FornecedoresPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/fornecedores/${fornecedorIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/fornecedores/${fornecedorIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

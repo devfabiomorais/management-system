@@ -94,7 +94,7 @@ const PermissionsPage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/module", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -120,7 +120,7 @@ const PermissionsPage: React.FC = () => {
 
     const fetchPermission = async () => {
         try {
-            const response = await axios.get("http://localhost:9009/api/groupPermission", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -200,7 +200,7 @@ const PermissionsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:9009/api/groupPermission/register", bodyForm, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -260,7 +260,7 @@ const PermissionsPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/groupPermission/edit/${selectedPermission}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/groupPermission/edit/${selectedPermission}`,
                 bodyForm,
                 {
                     headers: {
@@ -373,7 +373,7 @@ const PermissionsPage: React.FC = () => {
 
         try {
             await axios.put(
-                `http://localhost:9009/api/groupPermission/cancel/${permissionIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/groupPermission/cancel/${permissionIdToDelete}`,
                 {}, // Segundo argumento vazio pois PUT espera um body antes dos headers
                 {
                     headers: {
@@ -415,7 +415,7 @@ const PermissionsPage: React.FC = () => {
         if (permissionIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/groupPermission/${permissionIdToDelete}`, {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/groupPermission/${permissionIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -441,12 +441,12 @@ const PermissionsPage: React.FC = () => {
         setNomeGroup(nomeGrupo);
 
         try {
-            const responsePermissions = await axios.get("http://localhost:9009/api/groupPermission", {
+            const responsePermissions = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            const responseModules = await axios.get("http://localhost:9009/api/module", {
+            const responseModules = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

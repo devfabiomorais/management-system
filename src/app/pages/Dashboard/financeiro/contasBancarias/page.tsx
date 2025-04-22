@@ -46,7 +46,7 @@ const ContasBancariasPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/contasBancarias",
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasBancarias",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -165,7 +165,7 @@ const ContasBancariasPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/contasBancarias/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasBancarias/register",
         formValues,
         {
           headers: {
@@ -240,7 +240,7 @@ const ContasBancariasPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/contasBancarias/edit/${cod_conta_bancaria}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasBancarias/edit/${cod_conta_bancaria}`,
         { ...selectedContasBancarias, nome: formValues.nome, saldo: formValues.saldo, dt_saldo: formValues.dt_saldo },
         {
           headers: {
@@ -279,7 +279,7 @@ const ContasBancariasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/contasBancarias/cancel/${contasBancariasIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasBancarias/cancel/${contasBancariasIdToDelete}`,
         {},
         {
           headers: {

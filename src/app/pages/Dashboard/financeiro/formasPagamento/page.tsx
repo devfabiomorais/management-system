@@ -63,7 +63,7 @@ const FormasPagamentoPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/formasPagamento",
+        process.env.NEXT_PUBLIC_API_URL + "/api/formasPagamento",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -88,7 +88,7 @@ const FormasPagamentoPage: React.FC = () => {
   const fetchModalidades = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/modalidades", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/modalidades", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -215,7 +215,7 @@ const FormasPagamentoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/formasPagamento/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/formasPagamento/register",
         formValues,
         {
           headers: {
@@ -296,7 +296,7 @@ const FormasPagamentoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/formasPagamento/edit/${cod_forma_pagamento ?? formValues.cod_forma_pagamento}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/formasPagamento/edit/${cod_forma_pagamento ?? formValues.cod_forma_pagamento}`,
         { ...formValues },
         {
           headers: {
@@ -335,7 +335,7 @@ const FormasPagamentoPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/formasPagamento/cancel/${FormasPagamentoIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/formasPagamento/cancel/${FormasPagamentoIdToDelete}`,
         {},
         {
           headers: {
@@ -402,7 +402,7 @@ const FormasPagamentoPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/contasBancarias",
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasBancarias",
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -55,7 +55,7 @@ const PlanoContasPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/planoContas",
+        process.env.NEXT_PUBLIC_API_URL + "/api/planoContas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -173,7 +173,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/planoContas/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/planoContas/register",
         formValues,
         {
           headers: {
@@ -260,7 +260,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/planoContas/edit/${cod_plano_conta}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/planoContas/edit/${cod_plano_conta}`,
         { ...selectedPlanoContas, descricao: formValues.descricao, classificacao: formValues.classificacao },
         {
           headers: {
@@ -299,7 +299,7 @@ const PlanoContasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/planoContas/cancel/${planoContasIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/planoContas/cancel/${planoContasIdToDelete}`,
         {},
         {
           headers: {
@@ -356,7 +356,7 @@ const PlanoContasPage: React.FC = () => {
   const fetchGruposDRE = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/gruposDRE", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/gruposDRE", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

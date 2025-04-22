@@ -181,7 +181,7 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`http://localhost:9009/api/users/edit/${selectedUser?.cod_usuario}`,
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/edit/${selectedUser?.cod_usuario}`,
                 { ...formValues, estabelecimentos: selectedEstablishments },
                 {
                     headers: {
@@ -216,7 +216,7 @@ const UsersPage: React.FC = () => {
     const handleEdit = async (rowData: any, users: User) => {
 
         try {
-            const groups = await axios.get("http://localhost:9009/api/groupPermission/groups/", {
+            const groups = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -326,7 +326,7 @@ const UsersPage: React.FC = () => {
                 estabelecimentos: selectedEstablishments,
             };
 
-            const response = await axios.post("http://localhost:9009/api/users/register", payload, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -357,7 +357,7 @@ Copyright Grupo ComViver
                 };
 
                 // Chamar a API de envio de e-mail
-                const emailResponse = await axios.post("http://localhost:9009/api/email/send-email", emailPayload, {
+                const emailResponse = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/email/send-email", emailPayload, {
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
@@ -417,7 +417,7 @@ Copyright Grupo ComViver
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const responseUsers = await axios.get("http://localhost:9009/api/users/", {
+            const responseUsers = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/users/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -425,7 +425,7 @@ Copyright Grupo ComViver
             setRowData(responseUsers.data.users);
             setIsDataLoaded(true);
 
-            const responseGroup = await axios.get("http://localhost:9009/api/groupPermission/groups", {
+            const responseGroup = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -454,7 +454,7 @@ Copyright Grupo ComViver
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:9009/api/estabilishment", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -475,7 +475,7 @@ Copyright Grupo ComViver
     const fetchGroupPermissions = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:9009/api/groupPermission/groups", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -504,7 +504,7 @@ Copyright Grupo ComViver
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/users/cancel/${clientIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/users/cancel/${clientIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -540,7 +540,7 @@ Copyright Grupo ComViver
 
         setLoading(true)
         try {
-            const response = await axios.put(`http://localhost:9009/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -569,7 +569,7 @@ Copyright Grupo ComViver
         /*if (clientIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/users/${clientIdToDelete}`);
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${clientIdToDelete}`);
             toast.success("Usuario removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,

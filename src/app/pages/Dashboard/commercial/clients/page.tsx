@@ -160,7 +160,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/clients/edit/${selectedClient?.cod_cliente}`,
         { ...formValues },
         {
           headers: {
@@ -266,7 +266,7 @@ const ClientsPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/clients/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/clients/register",
         formValues,
         {
           headers: {
@@ -314,7 +314,7 @@ const ClientsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/clients",
+        process.env.NEXT_PUBLIC_API_URL + "/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -346,7 +346,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
+        `${process.env.NEXT_PUBLIC_API_URL}/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -383,7 +383,7 @@ const ClientsPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/clients/${clientIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/clients/${clientIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -167,7 +167,7 @@ const ItensPage: React.FC = () => {
     const fetchItens = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("http://localhost:9009/api/itens", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/itens", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -195,7 +195,7 @@ const ItensPage: React.FC = () => {
     const handleDelete = async () => {
         if (itensIdToDelete === null) return;
         try {
-            await axios.put(`http://localhost:9009/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
+            await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/itens/edit/${itensIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -220,7 +220,7 @@ const ItensPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/itens/edit/${itensIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/itens/edit/${itensIdToDelete}`,
                 { situacao: "DESATIVADO" }, // Enviar o corpo com a atualização
                 {
                     headers: {
@@ -325,7 +325,7 @@ const ItensPage: React.FC = () => {
 
 
             // Caso a situação seja "DESATIVADO", atualiza os dados do item
-            const response = await axios.put(`http://localhost:9009/api/itens/edit/${cod_item_recebido_para_edicao}`,
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/itens/edit/${cod_item_recebido_para_edicao}`,
                 formData,
                 {
                     headers: {
@@ -460,7 +460,7 @@ const ItensPage: React.FC = () => {
             }
 
             // Se o nome não existir, cadastra o item normalmente
-            const response = await axios.post("http://localhost:9009/api/itens/register",
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/itens/register",
                 formData,
                 {
                     headers: {
@@ -593,7 +593,7 @@ const ItensPage: React.FC = () => {
             }
 
             // Se o nome não existir, cadastra o item normalmente
-            const response = await axios.post("http://localhost:9009/api/itens/register", formData, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/itens/register", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
@@ -634,13 +634,13 @@ const ItensPage: React.FC = () => {
         try {
             // Fazer todas as requisições simultaneamente para melhorar o desempenho
             const [unitResponse, familyResponse, establishmentResponse] = await Promise.all([
-                axios.get("http://localhost:9009/api/unMedida", {
+                axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                axios.get("http://localhost:9009/api/familia/itens/", {
+                axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/familia/itens/", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                axios.get("http://localhost:9009/api/estabilishment", {
+                axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
             ]);
@@ -715,7 +715,7 @@ const ItensPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:9009/api/estabilishment", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -738,7 +738,7 @@ const ItensPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:9009/api/unMedida", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -761,7 +761,7 @@ const ItensPage: React.FC = () => {
     const fetchFamilias = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("http://localhost:9009/api/familia/itens/", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/familia/itens/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

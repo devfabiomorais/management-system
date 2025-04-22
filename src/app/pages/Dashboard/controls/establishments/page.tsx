@@ -158,7 +158,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.put(`http://localhost:9009/api/estabilishment/edit/${cod_estabelecimento_recebido}`,
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/estabilishment/edit/${cod_estabelecimento_recebido}`,
                 { ...formValues, situacao: "Ativo" },
                 {
                     headers: {
@@ -254,7 +254,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -313,7 +313,7 @@ const EstablishmentsPage: React.FC = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:9009/api/estabilishment/register", formValues, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment/register", formValues, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -359,7 +359,7 @@ const EstablishmentsPage: React.FC = () => {
         setLoading(true)
         try {
 
-            const response = await axios.get("http://localhost:9009/api/estabilishment", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -392,7 +392,7 @@ const EstablishmentsPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/estabilishment/cancel/${estabilishmentIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/estabilishment/cancel/${estabilishmentIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -428,7 +428,7 @@ const EstablishmentsPage: React.FC = () => {
         if (estabilishmentIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/estabilishment/${estabilishmentIdToDelete}`, {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/estabilishment/${estabilishmentIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

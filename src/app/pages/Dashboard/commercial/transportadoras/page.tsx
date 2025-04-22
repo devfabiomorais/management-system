@@ -112,7 +112,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchTipos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/transportadoras", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -130,7 +130,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchTransportadoras = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/transportadoras", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -186,7 +186,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/transportadoras/edit/${transportadora.cod_transportadora}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/transportadoras/edit/${transportadora.cod_transportadora}`,
         { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
@@ -314,7 +314,7 @@ const TransportadorasPage: React.FC = () => {
 
       // Se o nome não existir, cadastra a transportadora normalmente
       const response = await axios.post(
-        "http://localhost:9009/api/transportadoras/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/transportadoras/register",
         updatedFormValues,
         {
           headers: {
@@ -379,7 +379,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchEstabilishments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/estabilishment", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -417,7 +417,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/transportadoras/cancel/${transportadoraIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/transportadoras/cancel/${transportadoraIdToDelete}`,
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -454,7 +454,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/transportadoras/${transportadoraIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/transportadoras/${transportadoraIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

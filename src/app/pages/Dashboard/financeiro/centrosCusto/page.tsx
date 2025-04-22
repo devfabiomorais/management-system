@@ -99,7 +99,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/edit/${cod_centro_custo}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/edit/${cod_centro_custo}`,
         { ...formValues },
         {
           headers: {
@@ -157,7 +157,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/centrosCusto/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -248,7 +248,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/centrosCusto/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -296,7 +296,7 @@ const CentrosCustoPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/centrosCusto",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -328,7 +328,7 @@ const CentrosCustoPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
         {},
         {
           headers: {
@@ -365,7 +365,7 @@ const CentrosCustoPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/centrosCusto/${centrosCustoIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/${centrosCustoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

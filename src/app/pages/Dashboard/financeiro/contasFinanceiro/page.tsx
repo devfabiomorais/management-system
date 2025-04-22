@@ -167,7 +167,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/contasBancarias",
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasBancarias",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -196,7 +196,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/contasFinanceiro",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -209,7 +209,7 @@ const ContasFinanceiroPage: React.FC = () => {
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar centro de custos:", error);
+      console.error("Erro ao carregar conta financeiras:", error);
     }
   };
 
@@ -427,7 +427,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/fornecedores",
+        process.env.NEXT_PUBLIC_API_URL + "/api/fornecedores",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -451,7 +451,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/clients",
+        process.env.NEXT_PUBLIC_API_URL + "/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -475,7 +475,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const fetchTransportadoras = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:9009/api/transportadoras", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -505,7 +505,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/planoContas",
+        process.env.NEXT_PUBLIC_API_URL + "/api/planoContas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -536,7 +536,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/centrosCusto",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -548,7 +548,7 @@ const ContasFinanceiroPage: React.FC = () => {
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar centro de custos:", error);
+      console.error("Erro ao carregar conta financeiras:", error);
     }
   };
   useEffect(() => {
@@ -621,25 +621,53 @@ const ContasFinanceiroPage: React.FC = () => {
     setPagamentos([]);
   };
 
-  const handleSaveEdit = async (cod_centro_custo: any) => {
+  const handleSaveEdit = async (cod_conta: any) => {
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
     try {
       const requiredFields = [
-        "nome",
         "descricao",
+        "dt_vencimento",
+        "cod_conta",
+        "cod_conta_bancaria",
+        "cod_plano_conta",
+        "pagamento_quitado",
+        "dt_compensacao",
+        "nfe",
+        "valor_bruto",
+        "valor_final",
+        "desconto",
+        "juros",
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
+      // Dicionário de rótulos amigáveis
+      const fieldLabels: { [key: string]: string } = {
+        cod_conta: "Código da Conta",
+        descricao: "Descrição",
+        dt_vencimento: "Data de Vencimento",
+        cod_centro_custo: "Centro de Custo",
+        cod_conta_bancaria: "Conta Bancária",
+        cod_plano_conta: "Plano de Conta",
+        pagamento_quitado: "Pagamento Quitado",
+        dt_compensacao: "Data de Compensação",
+        nfe: "NFe",
+        valor_bruto: "Valor Bruto",
+        valor_final: "Valor Final",
+        desconto: "Desconto",
+        juros: "Juros",
+      };
+
+      const emptyField = requiredFields.find((field) => {
         const value = formValues[field as keyof typeof formValues];
         return value === "" || value === null || value === undefined;
       });
 
-      if (isEmptyField) {
-        setItemEditDisabled(false);
+      if (emptyField) {
+        const fieldName = fieldLabels[emptyField] || emptyField;
+        setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+        toast.info(`O campo "${fieldName}" deve ser preenchido!`, {
           position: "top-right",
           autoClose: 3000,
         });
@@ -647,8 +675,8 @@ const ContasFinanceiroPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/contasFinanceiro/edit/${cod_centro_custo}`,
-        { ...formValues },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/edit`,
+        { ...formValues, pagamentos: pagamentos },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -660,7 +688,7 @@ const ContasFinanceiroPage: React.FC = () => {
         setLoading(false);
         clearInputs();
         fetchContasFinanceiro();
-        toast.success("Centro de custo salvo com sucesso!", {
+        toast.success("Conta financeira salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -668,7 +696,7 @@ const ContasFinanceiroPage: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar centro de custo.", {
+        toast.error("Erro ao salvar conta financeira.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -676,7 +704,7 @@ const ContasFinanceiroPage: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar centro de custo:", error);
+      console.error("Erro ao salvar conta financeira:", error);
     }
   };
 
@@ -718,14 +746,14 @@ const ContasFinanceiroPage: React.FC = () => {
         setLoading(false);
         clearInputs();
         fetchContasFinanceiro();
-        toast.success("Centro de custo salvo com sucesso!", {
+        toast.success("Conta financeira salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
         setItemCreateDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar centro de custo.", {
+        toast.error("Erro ao salvar conta financeira.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -733,7 +761,7 @@ const ContasFinanceiroPage: React.FC = () => {
     } catch (error) {
       setItemCreateDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar centro de custo:", error);
+      console.error("Erro ao salvar conta financeira:", error);
     }
   };
 
@@ -750,7 +778,7 @@ const ContasFinanceiroPage: React.FC = () => {
         "cod_cliente",
         "descricao",
         "dt_vencimento",
-        "cod_centro_custo",
+        "cod_conta",
         "cod_conta_bancaria",
         "cod_plano_conta",
         "pagamento_quitado",
@@ -812,7 +840,7 @@ const ContasFinanceiroPage: React.FC = () => {
       }
 
       if (contaEncontrada && situacaoInativo) {
-        await handleSaveEdit(contaEncontrada.cod_centro_custo);
+        await handleSaveEdit(contaEncontrada.cod_conta);
         fetchContasFinanceiro();
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -836,7 +864,7 @@ const ContasFinanceiroPage: React.FC = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:9009/api/contasFinanceiro/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasFinanceiro/register",
         {
           ...updatedFormValues,
           pagamentos: pagamentos,
@@ -852,7 +880,7 @@ const ContasFinanceiroPage: React.FC = () => {
         setLoading(false);
         clearInputs();
         fetchContasFinanceiro();
-        toast.success("Centro de custo salvo com sucesso!", {
+        toast.success("Conta financeira salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -860,7 +888,7 @@ const ContasFinanceiroPage: React.FC = () => {
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar centro de custos.", {
+        toast.error("Erro ao salvar conta financeiras.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -868,7 +896,7 @@ const ContasFinanceiroPage: React.FC = () => {
     } catch (error) {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar centro de custos:", error);
+      console.error("Erro ao salvar conta financeiras:", error);
     }
   };
 
@@ -930,7 +958,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `http://localhost:9009/api/contasFinanceiro/cancel/${contasFinanceiroIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/cancel/${contasFinanceiroIdToDelete}`,
         {},
         {
           headers: {
@@ -942,19 +970,19 @@ const ContasFinanceiroPage: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         fetchContasFinanceiro(); // Aqui é necessário chamar a função que irá atualizar a lista de centros de custo
         setModalDeleteVisible(false);
-        toast.success("Centro de custo cancelado com sucesso!", {
+        toast.success("Conta financeira cancelado com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar centro de custo.", {
+        toast.error("Erro ao cancelar conta financeira.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao excluir centro de custo:", error);
-      toast.error("Erro ao excluir centro de custo. Tente novamente.", {
+      console.log("Erro ao excluir conta financeira:", error);
+      toast.error("Erro ao excluir conta financeira. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -967,22 +995,22 @@ const ContasFinanceiroPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/contasFinanceiro/${contasFinanceiroIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/${contasFinanceiroIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      toast.success("Centro de custo removido com sucesso!", {
+      toast.success("Conta financeira removido com sucesso!", {
         position: "top-right",
         autoClose: 3000,
       });
       fetchContasFinanceiro();
       setModalDeleteVisible(false);
     } catch (error) {
-      console.log("Erro ao excluir centro de custo:", error);
-      toast.error("Erro ao excluir centro de custo. Tente novamente.", {
+      console.log("Erro ao excluir conta financeira:", error);
+      toast.error("Erro ao excluir conta financeira. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -1080,7 +1108,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const fetchFormasPagamento = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/formasPagamento",
+        process.env.NEXT_PUBLIC_API_URL + "/api/formasPagamento",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1297,7 +1325,7 @@ const ContasFinanceiroPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este centro de custo?</p>
+            <p>Tem certeza que deseja cancelar este conta financeira?</p>
           </Dialog>
 
           <Dialog
@@ -2127,7 +2155,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     label="Salvar"
                     className="text-white ml-9 transition-all transform duration-150 hover:scale-125 relative z-10 hover:z-50"
                     icon="pi pi-check"
-                    onClick={() => handleSaveEdit(formValues.cod_centro_custo)}
+                    onClick={() => handleSaveEdit(formValues.cod_conta)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
@@ -2414,7 +2442,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => openDialog(rowData.cod_centro_custo)}
+                          onClick={() => openDialog(rowData.cod_conta)}
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
                           <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />

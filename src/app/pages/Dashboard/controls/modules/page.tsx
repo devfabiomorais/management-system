@@ -69,7 +69,7 @@ const ModulePage: React.FC = () => {
     const fetchModules = async () => {
         try {
 
-            const response = await axios.get("http://localhost:9009/api/module", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/module", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -146,7 +146,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             };
 
-            const response = await axios.post("http://localhost:9009/api/module/register", bodyForm, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/module/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -207,7 +207,7 @@ const ModulePage: React.FC = () => {
                 cod_modulo_pai: codModuloPai
             }
 
-            const response = await axios.put(`http://localhost:9009/api/module/edit/${(cod_modulo)}`, bodyForm, {
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/module/edit/${(cod_modulo)}`, bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -254,7 +254,7 @@ const ModulePage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `http://localhost:9009/api/module/cancel/${moduleIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/module/cancel/${moduleIdToDelete}`,
                 {}, // Enviar um corpo vazio, caso necessário para o endpoint
                 {
                     headers: {
@@ -290,7 +290,7 @@ const ModulePage: React.FC = () => {
         if (moduleIdToDelete === null) return;
 
         try {
-            await axios.delete(`http://localhost:9009/api/module/${moduleIdToDelete}`, {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/module/${moduleIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
