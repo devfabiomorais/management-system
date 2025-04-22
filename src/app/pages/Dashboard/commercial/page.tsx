@@ -7,6 +7,8 @@ import { MdRequestQuote } from "react-icons/md";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import loadingGif from "../../../assets/imgs/loading.gif";
+import { IoIosPeople } from "react-icons/io";
+
 
 export default function CommercialPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -58,6 +60,7 @@ export default function CommercialPage() {
                     {[{ path: "commercial/clients", icon: <TbUserScan className="text-5xl" />, label: "Clientes" },
                     { path: "commercial/services", icon: <TbTool className="text-5xl" />, label: "Serviços" },
                     { path: "commercial/transportadoras", icon: <TbTruck className="text-5xl" />, label: "Transportadoras" },
+                    { path: "commercial/fornecedores", icon: <IoIosPeople className="text-5xl" />, label: "Fornecedores" },
                     { path: "commercial/orcamentos?tipo=estrutura", icon: <TbBuilding className="text-5xl" />, label: <>Estruturas de <br />&nbsp;  Orçamento</> }].map((item) => (
                       <div
                         key={item.path}

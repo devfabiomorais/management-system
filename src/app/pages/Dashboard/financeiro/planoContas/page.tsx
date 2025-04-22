@@ -19,13 +19,14 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { unescape } from "querystring";
 
 interface PlanoContas {
   cod_plano_conta: number;
   descricao?: string;
   classificacao?: string;
   cod_plano_conta_mae?: number;
-  cod_grupo_dre?: number;
+  cod_grupo_dre?: number | null;
   situacao?: string;
 }
 
@@ -54,7 +55,7 @@ const PlanoContasPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/planoContas",
+        "http://localhost:9009/api/planoContas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -111,7 +112,7 @@ const PlanoContasPage: React.FC = () => {
       descricao: "",
       classificacao: "",
       cod_plano_conta_mae: 0,
-      cod_grupo_dre: 0,
+      cod_grupo_dre: null,
       situacao: "",
     });
   };
@@ -122,7 +123,6 @@ const PlanoContasPage: React.FC = () => {
     try {
       const requiredFields = [
         "cod_plano_conta_mae",
-        "classificacao",
         "descricao",
       ];
 
@@ -173,7 +173,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/planoContas/register",
+        "http://localhost:9009/api/planoContas/register",
         formValues,
         {
           headers: {
@@ -208,18 +208,32 @@ const PlanoContasPage: React.FC = () => {
 
   const handleEdit = (planoContas: PlanoContas) => {
     console.log("Editando plano de contas:", planoContas);
+
+    // Remover o último ".X" da classificação, se existir
+    let classificacao = planoContas.classificacao ?? '';
+    if (classificacao.includes('.')) {
+      const lastDotIndex = classificacao.lastIndexOf('.');
+      classificacao = classificacao.substring(0, lastDotIndex);
+    }
+
+    // Definir o estado
     setFormValues((prev) => ({
       ...prev,
       cod_plano_conta: planoContas.cod_plano_conta,
       descricao: planoContas.descricao,
       classificacao: planoContas.classificacao,
-      cod_plano_conta_mae: planoContas.cod_plano_conta_mae,
+      cod_plano_conta_mae: parseFloat(planoContas.classificacao ?? '0'),
       cod_grupo_dre: planoContas.cod_grupo_dre,
     }));
+
     setSelectedPlanoContas(planoContas);
     setIsEditing(true);
     setVisible(true);
   };
+
+
+
+
 
   const handleSaveEdit = async (cod_plano_conta: any) => {
     setItemEditDisabled(true);
@@ -246,7 +260,7 @@ const PlanoContasPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/planoContas/edit/${cod_plano_conta}`,
+        `http://localhost:9009/api/planoContas/edit/${cod_plano_conta}`,
         { ...selectedPlanoContas, descricao: formValues.descricao, classificacao: formValues.classificacao },
         {
           headers: {
@@ -285,7 +299,7 @@ const PlanoContasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/planoContas/cancel/${planoContasIdToDelete}`,
+        `http://localhost:9009/api/planoContas/cancel/${planoContasIdToDelete}`,
         {},
         {
           headers: {
@@ -342,7 +356,7 @@ const PlanoContasPage: React.FC = () => {
   const fetchGruposDRE = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/gruposDRE", {
+      const response = await axios.get("http://localhost:9009/api/gruposDRE", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -361,18 +375,18 @@ const PlanoContasPage: React.FC = () => {
   }, [token]);
 
 
-  const [selectedGrupoDRE, setSelectedGrupoDRE] = useState<GrupoDRE | null>(null);
+  const [selectedGrupoDRE, setSelectedGrupoDRE] = useState<GrupoDRE | undefined>(undefined);
   const handleGrupoDREChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = gruposDRE.find(
       (grupoDRE) => grupoDRE.cod_grupo_dre === Number(e.target.value)
     );
 
-    setSelectedGrupoDRE(selected || null);
+    setSelectedGrupoDRE(selected || undefined);
 
     if (selected) {
       setFormValues((prevValues) => ({
         ...prevValues,
-        cod_grupo_dre: selected.cod_grupo_dre,
+        cod_grupo_dre: selected.cod_grupo_dre ?? undefined,
       }));
     }
   };
@@ -456,7 +470,7 @@ const PlanoContasPage: React.FC = () => {
                     <option value="0" disabled hidden>
                       Selecione
                     </option>
-                    <option value="1" disabled>
+                    <option value="1">
                       1 - Pagamentos
                     </option>
                     <option value="1.1">&nbsp;&nbsp;1.1 - Despesas administrativas e comerciais</option>
@@ -464,35 +478,17 @@ const PlanoContasPage: React.FC = () => {
                     <option value="1.3">&nbsp;&nbsp;1.3 - Despesas financeiras</option>
                     <option value="1.4">&nbsp;&nbsp;1.4 - Investimentos</option>
                     <option value="1.5">&nbsp;&nbsp;1.5 - Outras despesas</option>
-                    <option value="2" disabled>
+                    <option value="2">
                       2 - Recebimentos
                     </option>
                     <option value="2.1">&nbsp;&nbsp;2.1 - Receitas de vendas</option>
                     <option value="2.2">&nbsp;&nbsp;2.2 - Receitas financeiras</option>
                     <option value="2.3">&nbsp;&nbsp;2.3 - Outras receitas</option>
-                    <option value="3">
-                      3 - Outros
-                    </option>
                   </select>
                 </div>
 
-                <div>
-                  <label htmlFor="descricao" className="block text-blue font-medium">
-                    Nome
-                  </label>
-                  <input
-                    type="text"
-                    id="descricao"
-                    name="descricao"
-                    value={formValues.descricao}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {(formValues.cod_plano_conta_mae ?? 999) > 2.3 && (
+                {[1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3].includes(formValues.cod_plano_conta_mae ?? 999) && (
                   <div>
                     <label htmlFor="cod_grupo_dre" className="block text-blue font-medium">
                       Grupo do DRE
@@ -500,12 +496,12 @@ const PlanoContasPage: React.FC = () => {
                     <select
                       id="cod_grupo_dre"
                       name="cod_grupo_dre"
-                      value={selectedGrupoDRE ? selectedGrupoDRE.cod_grupo_dre : ""}
+                      value={selectedGrupoDRE ? selectedGrupoDRE.cod_grupo_dre : "default"}
+                      disabled={isEditing}
                       onChange={handleGrupoDREChange}
                       className="w-full pl-1 rounded-sm h-8 border-[#D9D9D9]"
-                      disabled={loading}
                     >
-                      <option value="" disabled>
+                      <option value="default" disabled>
                         Selecione
                       </option>
 
@@ -539,16 +535,18 @@ const PlanoContasPage: React.FC = () => {
                     </select>
                   </div>
                 )}
+              </div>
 
-                <div>
-                  <label htmlFor="classificacao" className="block text-blue font-medium">
-                    Classificação
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col col-span-2">
+                  <label htmlFor="descricao" className="block text-blue font-medium">
+                    Nome
                   </label>
                   <input
                     type="text"
-                    id="classificacao"
-                    name="classificacao"
-                    value={formValues.classificacao}
+                    id="descricao"
+                    name="descricao"
+                    value={formValues.descricao}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -738,8 +736,12 @@ const PlanoContasPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="movimentacao"
+                  field="cod_plano_conta_mae"
                   header="Movimentação"
+                  body={(rowData) => {
+                    if (rowData.cod_plano_conta_mae === 1) return 'Pagamentos';
+                    if (rowData.cod_plano_conta_mae === 2) return 'Recebimentos';
+                  }}
                   style={{
                     width: "2%",
                     textAlign: "center",
@@ -756,9 +758,14 @@ const PlanoContasPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+
                 <Column
                   field="cod_grupo_dre"
                   header="Grupo do DRE"
+                  body={(rowData) => {
+                    const grupo = gruposDRE.find((g) => g.cod_grupo_dre === rowData.cod_grupo_dre);
+                    return grupo ? grupo.descricao : '-';
+                  }}
                   style={{
                     width: "2%",
                     textAlign: "center",
@@ -775,6 +782,7 @@ const PlanoContasPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+
                 <Column
                   field="situacao"
                   header="Situação"

@@ -46,7 +46,7 @@ const ContasBancariasPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/contasBancarias",
+        "http://localhost:9009/api/contasBancarias",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -165,7 +165,7 @@ const ContasBancariasPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/contasBancarias/register",
+        "http://localhost:9009/api/contasBancarias/register",
         formValues,
         {
           headers: {
@@ -240,7 +240,7 @@ const ContasBancariasPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/contasBancarias/edit/${cod_conta_bancaria}`,
+        `http://localhost:9009/api/contasBancarias/edit/${cod_conta_bancaria}`,
         { ...selectedContasBancarias, nome: formValues.nome, saldo: formValues.saldo, dt_saldo: formValues.dt_saldo },
         {
           headers: {
@@ -279,7 +279,7 @@ const ContasBancariasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/contasBancarias/cancel/${contasBancariasIdToDelete}`,
+        `http://localhost:9009/api/contasBancarias/cancel/${contasBancariasIdToDelete}`,
         {},
         {
           headers: {
@@ -425,15 +425,7 @@ const ContasBancariasPage: React.FC = () => {
                     placeholder="R$ 0,00"
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
-                  <button
-                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
-                    onClick={() => console.log("FORMVALUES:", formValues)}
-                  >
-                    <IoAddCircleOutline
-                      style={{ fontSize: "2.5rem" }}
-                      className="text-white text-center"
-                    />
-                  </button>
+
                 </div>
 
 

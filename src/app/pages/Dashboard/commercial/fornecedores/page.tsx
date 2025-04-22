@@ -19,29 +19,42 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
-import { FaBullseye } from "react-icons/fa6";
+import { MultiSelect } from "primereact/multiselect";
 
-interface Client {
-  cod_cliente: number;
-  codigo?: number;
+interface Fornecedor {
+  cod_fornecedor: number;
   nome: string;
   logradouro?: string;
   cidade?: string;
   bairro?: string;
   estado?: string;
   complemento?: string;
-  numero?: string;
+  numero?: number;
   cep?: string;
   tipo: string;
-  situacao: string;
+  responsavel: string;
+  observacoes: string;
   email: string;
   celular: string;
   telefone: string;
   dtCadastro?: string;
-  documento?: string;
+  estabelecimentos: [];
+  situacao?: string;
 }
 
-const ClientsPage: React.FC = () => {
+interface Establishment {
+  cod_estabelecimento: number;
+  nome: string;
+  cep: string;
+  logradouro: string;
+  numero: number;
+  bairro: string;
+  cidade: string;
+  complemento: string;
+  estado: string;
+}
+
+const FornecedoresPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
   const { permissions } = useUserPermissions(groupCode ?? 0, "Comercial");
@@ -52,369 +65,86 @@ const ClientsPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredClients = clients.filter((client) => {
-    // Verifica se a situação do cliente é "Ativo"
-    if (client.situacao !== 'ATIVO') {
+  const filteredFornecedores = fornecedores.filter((fornecedor) => {
+    // Apenas ATIVO aparecem
+    if (fornecedor.situacao !== 'Ativo') {
       return false;
     }
 
-    // Função de busca para os valores dos campos
-    return Object.values(client).some((value) =>
+    // Função de busca
+    return Object.values(fornecedor).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
   });
 
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
+  const [fornecedorIdToDelete, setFornecedorIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [formValues, setFormValues] = useState<Client>({
-    cod_cliente: 0,
+  const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
+  const [formValues, setFormValues] = useState<Fornecedor>({
+    cod_fornecedor: 0,
     nome: "",
+    observacoes: "",
+    tipo: "",
+    telefone: "",
+    celular: "",
+    responsavel: "",
+    email: "",
     logradouro: "",
     cidade: "",
     bairro: "",
     estado: "",
     complemento: "",
-    numero: "",
+    numero: undefined,
     cep: "",
-    email: "",
-    telefone: "",
-    celular: "",
-    situacao: "",
-    tipo: "",
-    documento: "",
+    estabelecimentos: [],
   });
+  const [tipos, setTipos] = useState<string[]>([]);
 
-  const [isValidEmail, setIsValidEmail] = useState(true);
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Formatação do email - aqui você pode implementar a formatação conforme necessário
-    setFormValues({ ...formValues, email: value });
-  };
-  const handleEmailBlur = () => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const isValid = emailRegex.test(formValues.email);
-
-    setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
-  };
-
-  const clearInputs = () => {
-    setFormValues({
-      cod_cliente: 0,
-      nome: "",
-      logradouro: "",
-      cidade: "",
-      bairro: "",
-      estado: "",
-      complemento: "",
-      numero: "",
-      cep: "",
-      email: "",
-      telefone: "",
-      celular: "",
-      situacao: "default",
-      tipo: "default",
-      documento: "",
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    setItemEditDisabled(true);
+  // Função para buscar os tipos
+  const fetchTipos = async () => {
     setLoading(true);
-    setIsEditing(false);
     try {
-      const requiredFields = [
-        "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
-        "documento"
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
+      const response = await axios.get("http://localhost:9009/api/fornecedores", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const response = await axios.put(
-        `http://localhost:9009/api/clients/edit/${selectedClient?.cod_cliente}`,
-        { ...formValues },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setVisible(false);
-      } else {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemEditDisabled(false);
+      console.log(response.data.tipos); // Verifique se o campo correto está sendo retornado
+      setTipos(response.data.tipos); // Armazena os tipos retornados
       setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar tipos:", error);
     }
   };
 
-
-  const [rowData, setRowData] = useState<Client[]>([]);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-  const handleSaveReturn = async (fecharTela: boolean) => {
-    setItemCreateReturnDisabled(true);
+  // Função para buscar fornecedores
+  const fetchFornecedores = async () => {
     setLoading(true);
     try {
-      const requiredFields = [
-        "nome",
-        "logradouro",
-        "cidade",
-        "bairro",
-        "estado",
-        "cep",
-        "email",
-        "telefone",
-        "celular",
-        "situacao",
-        "tipo",
-        "documento",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
+      const response = await axios.get("http://localhost:9009/api/fornecedores", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-
-      if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      // Buscar o cliente uma única vez
-      const clienteEncontrado = rowData.find((cliente) => cliente.nome === formValues.nome);
-      const situacaoInativo = clienteEncontrado?.situacao === "DESATIVADO";
-
-
-      if (clienteEncontrado && !situacaoInativo) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Esse nome já existe, escolha outro!", {
-          position: "top-right",
-          autoClose: 3000,
-          progressStyle: { background: "yellow" },
-          icon: <span>⚠️</span>, // Usa o emoji de alerta
-        });
-        return;
-
-      } else if (clienteEncontrado && situacaoInativo) {
-        setSelectedClient(clienteEncontrado);
-        handleSaveEdit();
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchClients();
-        setVisible(fecharTela);
-        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
-          position: "top-right",
-          autoClose: 10000,
-          progressStyle: { background: "green" },
-          icon: <span>♻️</span>, // Usa o emoji de alerta
-        });
-
-        return;
-      }
-
-      const response = await axios.post(
-        "http://localhost:9009/api/clients/register",
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchClients();
-        toast.success("Cliente salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setVisible(fecharTela);
-      } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar cliente.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
-      console.error("Erro ao salvar cliente:", error);
-    }
-  };
-
-  const handleEdit = (client: Client) => {
-    setFormValues(client);
-    setSelectedClient(client);
-    setIsEditing(true);
-    setVisible(true);
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "http://localhost:9009/api/clients",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.clients);
+      setRowData(response.data.fornecedores);
       setIsDataLoaded(true);
-      setClients(response.data.clients);
+      setFornecedores(response.data.fornecedores);
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar clientes:", error);
+      console.error("Erro ao carregar fornecedores:", error);
     }
   };
 
-  const openDialog = (id: number) => {
-    setClientIdToDelete(id);
-    setModalDeleteVisible(true);
-  };
-
-  const closeDialog = () => {
-    setModalDeleteVisible(false);
-    setClientIdToDelete(null);
-  };
-
-  const handleCancelar = async () => {
-    if (clientIdToDelete === null) return;
-
-    try {
-      const response = await axios.put(
-        `http://localhost:9009/api/clients/cancel/${clientIdToDelete}`, // Supondo que o endpoint de cancelamento seja PUT
-        {}, // Enviar um corpo vazio, caso necessário para o endpoint
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status >= 200 && response.status < 300) {
-        fetchClients(); // Atualiza a lista de clientes
-        setModalDeleteVisible(false);
-        toast.success("Cliente cancelado com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } else {
-        toast.error("Erro ao cancelar cliente.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      console.log("Erro ao cancelar cliente:", error);
-      toast.error("Erro ao cancelar cliente. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-
-  const handleDelete = async () => {
-    if (clientIdToDelete === null) return;
-
-    try {
-      await axios.delete(
-        `http://localhost:9009/api/clients/${clientIdToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Cliente removido com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchClients();
-      setModalDeleteVisible(false);
-    } catch (error) {
-      console.log("Erro ao excluir cliente:", error);
-      toast.error("Erro ao excluir cliente. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormValues({ ...formValues, [name]: value });
-  };
-
-  const closeModal = () => {
-    clearInputs();
-    setIsEditing(false);
-    setVisible(false);
-  };
 
   const formatTelefoneFixo = (telefone: string) => {
     if (!telefone) return "";
@@ -446,6 +176,468 @@ const ClientsPage: React.FC = () => {
 
     return formattedValue;
   };
+
+
+  const clearInputs = () => {
+    setSelectedEstablishments([]);
+    setFormValues({
+      cod_fornecedor: 0,
+      nome: "",
+      observacoes: "",
+      tipo: "",
+      telefone: "",
+      celular: "",
+      responsavel: "",
+      email: "",
+      logradouro: "",
+      cidade: "",
+      bairro: "",
+      estado: "",
+      complemento: "",
+      numero: 0,
+      cep: "",
+      estabelecimentos: [],
+    });
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleSaveEdit = async (fornecedor: any = selectedFornecedor) => {
+    if (!fornecedor?.cod_fornecedor) {
+      toast.error("Fornecedor não selecionada ou inválida. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setItemEditDisabled(true);
+    setLoading(true);
+    setIsEditing(false);
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/fornecedores/edit/${fornecedor.cod_fornecedor}`,
+        { ...formValues, estabelecimentos: selectedEstablishments },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchFornecedores();
+        toast.success("Fornecedor salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+      } else {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar fornecedor.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemEditDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar fornecedor:", error);
+    }
+  };
+
+
+
+  // ---------------------------------------------------------------------------------------------------------------
+  const [rowData, setRowData] = useState<Fornecedor[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const handleSaveReturn = async (fecharTela: boolean) => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+
+    try {
+      const requiredFields = [
+        "nome",
+        "tipo",
+        "telefone",
+        "celular",
+        "responsavel",
+        "complemento",
+        "email",
+        "logradouro",
+        "cidade",
+        "bairro",
+        "estado",
+        "numero",
+        "cep",
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (isEmptyField) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+
+      const fornecedorEncontrada = rowData.find((item) => item.nome === formValues.nome);
+      const nomeExists = !!fornecedorEncontrada;
+      const situacaoInativo = fornecedorEncontrada?.situacao === "Inativo";
+
+      console.log("Fornecedor encontrada:", fornecedorEncontrada);
+
+      if (nomeExists && !situacaoInativo) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>,
+        });
+        return;
+      }
+
+      if (nomeExists && situacaoInativo && fornecedorEncontrada?.cod_fornecedor) {
+        await handleSaveEdit(fornecedorEncontrada);
+        fetchFornecedores();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
+      if (selectedEstablishments.length === 0) {
+        toast.info("Você deve selecionar pelo menos um estabelecimento!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+
+      const updatedFormValues = {
+        ...formValues,
+        estabelecimentos: selectedEstablishments,
+      };
+
+
+      // Se o nome não existir, cadastra a fornecedor normalmente
+      const response = await axios.post(
+        "http://localhost:9009/api/fornecedores/register",
+        updatedFormValues,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchFornecedores();
+        toast.success("Fornecedor salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(fecharTela);
+      } else {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar fornecedor.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar fornecedor:", error);
+    }
+  };
+
+
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleEdit = (rowData: any, fornecedor: Fornecedor) => {
+    setFormValues(fornecedor);
+    setSelectedFornecedor(fornecedor);
+    setIsEditing(true);
+    setVisible(true);
+
+    // Filtra os estabelecimentos com base no cod_estabel
+    const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_fornecedor.map(({ cod_estabel }: any) =>
+      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+    )
+      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+    setSelectedEstablishments(selectedEstablishmentsWithNames);
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  useEffect(() => {
+    fetchFornecedores();
+    fetchEstabilishments();
+    fetchTipos();
+  }, [token]);
+
+
+  const fetchEstabilishments = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:9009/api/estabilishment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const ativos = response.data.estabelecimentos.filter(
+        (estab: any) => estab.situacao === "Ativo"
+      );
+
+      setEstablishments(ativos);
+    } catch (error) {
+      console.error("Erro ao carregar estabelecimentos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const openDialog = (id: number) => {
+    setFornecedorIdToDelete(id);
+    setModalDeleteVisible(true);
+  };
+
+  const closeDialog = () => {
+    setModalDeleteVisible(false);
+    setFornecedorIdToDelete(null);
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleCancelar = async () => {
+    if (fornecedorIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `http://localhost:9009/api/fornecedores/cancel/${fornecedorIdToDelete}`,
+        {}, // Enviar um corpo vazio, caso necessário para o endpoint
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchFornecedores(); // Atualizar a lista de fornecedores
+        setModalDeleteVisible(false);
+        toast.success("Fornecedor cancelada com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar fornecedor.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao cancelar fornecedor:", error);
+      toast.error("Erro ao cancelar fornecedor. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
+  const handleDelete = async () => {
+    if (fornecedorIdToDelete === null) return;
+
+    try {
+      await axios.delete(
+        `http://localhost:9009/api/fornecedores/${fornecedorIdToDelete}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success("Fornecedor removido com sucesso!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      fetchFornecedores();
+      setModalDeleteVisible(false);
+    } catch (error) {
+      console.log("Erro ao excluir fornecedor:", error);
+      toast.error("Erro ao excluir fornecedor. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues({ ...formValues, [name]: value });
+  };
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Remove caracteres não numéricos
+    const numericValue = value.replace(/\D/g, '');
+
+    // Formata o CEP como 'XXXXX-XXX'
+    let formattedValue = numericValue;
+    if (numericValue.length > 5) {
+      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+    }
+
+    // Atualiza o estado do formulário
+    setFormValues(prevValues => ({
+      ...prevValues,
+      [name]: formattedValue,
+    }));
+
+    // Se o CEP tiver 8 dígitos, faz a busca do endereço
+    if (numericValue.length === 8) {
+      try {
+        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
+
+        if (!response.data.erro) {
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: response.data.logradouro || "",
+            bairro: response.data.bairro || "",
+            cidade: response.data.localidade || "",
+            estado: response.data.uf || "",
+          }));
+        } else {
+          alert("CEP não encontrado!");
+          setFormValues(prevValues => ({
+            ...prevValues,
+            logradouro: "",
+            bairro: "",
+            cidade: "",
+            estado: "",
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar o CEP:", error);
+      }
+    }
+  };
+
+  const closeModal = () => {
+    clearInputs();
+    setIsEditing(false);
+    setVisible(false);
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target; // Obtém o "name" e o valor do input
+    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
+    setFormValues({
+      ...formValues,
+      [name]: Number(numericValue), // Atualiza dinamicamente o campo com base no "name"
+    });
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------  
+
+  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    if (!/[0-9]/.test(char)) {
+      e.preventDefault();
+    }
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target; // Obtém o "name" e o valor do input
+    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
+    setFormValues({
+      ...formValues,
+      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
+    });
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------  
+
+  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    // Permite qualquer caractere que não seja número
+    if (/[\d]/.test(char)) {
+      e.preventDefault(); // Bloqueia a inserção de números
+    }
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------
+
+  const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Remove qualquer caractere não numérico
+    const numericValue = value.replace(/[^0-9]/g, '');
+
+    // Formata o CEP com o formato 'XXXXX-XXX'
+    const formattedValue = numericValue.replace(
+      /(\d{5})(\d{0,3})/,
+      (match, p1, p2) => `${p1}-${p2}`
+    );
+
+    setFormValues({
+      ...formValues,
+      [name]: formattedValue, // Atualiza o campo de CEP com a formatação
+    });
+  };
+
+  // ---------------------------------------------------------------------------------------------------------------  
+
+  const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    if (!/[0-9]/.test(char)) {
+      e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
+    }
+  };
+
+
 
   const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
@@ -495,122 +687,17 @@ const ClientsPage: React.FC = () => {
     }));
   };
 
-
-  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/\D/g, '');
-
-    // Formata o CEP como 'XXXXX-XXX'
-    let formattedValue = numericValue;
-    if (numericValue.length > 5) {
-      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
-    }
-
-    // Atualiza o estado do formulário
-    setFormValues(prevValues => ({
-      ...prevValues,
-      [name]: formattedValue,
-    }));
-
-    // Se o CEP tiver 8 dígitos, faz a busca do endereço
-    if (numericValue.length === 8) {
-      try {
-        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
-
-        if (!response.data.erro) {
-          setFormValues(prevValues => ({
-            ...prevValues,
-            logradouro: response.data.logradouro || "",
-            bairro: response.data.bairro || "",
-            cidade: response.data.localidade || "",
-            estado: response.data.uf || "",
-          }));
-        } else {
-          alert("CEP não encontrado!");
-          setFormValues(prevValues => ({
-            ...prevValues,
-            logradouro: "",
-            bairro: "",
-            cidade: "",
-            estado: "",
-          }));
-        }
-      } catch (error) {
-        console.error("Erro ao buscar o CEP:", error);
-      }
-    }
+  const [isValidEmail, setIsValidEmail] = useState(true);
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Formatação do email - aqui você pode implementar a formatação conforme necessário
+    setFormValues({ ...formValues, email: value });
   };
+  const handleEmailBlur = () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const isValid = emailRegex.test(formValues.email);
 
-  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
-    setFormValues({
-      ...formValues,
-      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
-
-  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
-    let formattedValue = value;
-
-    if (value.length <= 11) {
-      // CPF: ###.###.###-##
-      formattedValue = value
-        .replace(/^(\d{3})(\d)/, "$1.$2")
-        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
-    } else {
-      // CNPJ: ##.###.###/####-##
-      formattedValue = value
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
-        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
-    }
-
-    // Atualiza o estado com a versão formatada
-    setFormValues((prevValues) => ({
-      ...prevValues,
-      documento: formattedValue,
-    }));
-  };
-
-
-
-  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    // Permite qualquer caractere que não seja número
-    if (/[\d]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de números
-    }
-  };
-
-  const handleCepInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    // Remove qualquer caractere não numérico
-    const numericValue = value.replace(/[^0-9]/g, '');
-
-    // Formata o CEP com o formato 'XXXXX-XXX'
-    const formattedValue = numericValue.replace(
-      /(\d{5})(\d{0,3})/,
-      (match, p1, p2) => `${p1}-${p2}`
-    );
-
-    setFormValues({
-      ...formValues,
-      [name]: formattedValue, // Atualiza o campo de CEP com a formatação
-    });
-  };
-
-  const handleCepKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de caracteres não numéricos
-    }
+    setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
   };
 
 
@@ -652,11 +739,11 @@ const ClientsPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este cliente?</p>
+            <p>Tem certeza que deseja excluir esta fornecedor?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Cliente" : "Novo Cliente"}
+            header={isEditing ? "Editar Fornecedor" : "Nova Fornecedor"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -668,10 +755,11 @@ const ClientsPage: React.FC = () => {
             onHide={() => closeModal()}
           >
             <div className="p-fluid grid gap-2 mt-2">
-              <div className="grid grid-cols-3 gap-2">
+
+              <div className="grid gap-2">
                 <div className="col-span-2">
                   <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome Completo
+                    Nome
                   </label>
                   <input
                     type="text"
@@ -683,6 +771,9 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label htmlFor="tipo" className="block text-blue font-medium">
                     Tipo
@@ -690,21 +781,80 @@ const ClientsPage: React.FC = () => {
                   <select
                     id="tipo"
                     name="tipo"
-                    value={formValues.tipo || "default"}
-                    defaultValue={"default"}
+                    value={formValues.tipo}
                     onChange={(e) =>
                       setFormValues({ ...formValues, tipo: e.target.value })
                     }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   >
-                    <option value="default" disabled>Selecione</option>
-                    <option value="Pessoa_F_sica">Pessoa Física</option>
-                    <option value="Pessoa_Jur_dica">Pessoa Jurídica</option>
-                    <option value="Estrangeiro">Pessoa Estrangeira</option>
+                    <option value="">Selecione</option>
+                    <option value="PessoaFisica">Pessoa Física</option>
+                    <option value="PessoaJuridica">Pessoa Jurídica</option>
                   </select>
                 </div>
+
+                <div>
+                  <label htmlFor="responsavel" className="block text-blue font-medium">
+                    Responsável
+                  </label>
+                  <input
+                    type="text"
+                    id="responsavel"
+                    name="responsavel"
+                    value={formValues.responsavel}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento
+                  </label>
+                  <MultiSelect
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione os Estabelecimentos"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="celular" className="block text-blue font-medium">
+                    Celular
+                  </label>
+                  <input
+                    type="text"
+                    id="celular"
+                    name="celular"
+                    value={formValues.celular}
+                    onChange={handleCelularChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={15}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="telefone" className="block text-blue font-medium">
+                    Telefone
+                  </label>
+                  <input
+                    type="text"
+                    id="telefone"
+                    name="telefone"
+                    value={formValues.telefone}
+                    onChange={handleTelefoneChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    maxLength={14}
+                  />
+                </div>
+
                 <div>
                   <label htmlFor="email" className="block text-blue font-medium">
                     E-mail
@@ -721,64 +871,34 @@ const ClientsPage: React.FC = () => {
                     placeholder="nome@empresa.com"
                   />
                   {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
-                </div>
 
-                <div>
-                  <label htmlFor="documento" className="block text-blue font-medium">
-                    Documento
-                  </label>
-                  <input
-                    type="text"
-                    id="documento"
-                    name="documento"
-                    placeholder="CPF ou CNPJ"
-                    value={formValues.documento}
-                    onChange={handleDocumentChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    minLength={14}
-                    maxLength={18}
-                  />
                 </div>
-
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label
-                    htmlFor="celular"
-                    className="block text-blue font-medium"
-                  >
-                    Celular
-                  </label>
-                  <input
-                    type="text"
-                    id="celular"
-                    name="celular"
-                    value={formValues.celular}
-                    onChange={handleCelularChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15}
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="telefone"
-                    className="block text-blue font-medium"
-                  >
-                    Telefone
-                  </label>
-                  <input
-                    type="text"
-                    id="telefone"
-                    name="telefone"
-                    value={formValues.telefone}
-                    onChange={handleTelefoneChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={14}
-                  />
-                </div>
 
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <label htmlFor="observacoes" className="block text-blue font-medium">
+                    Observações
+                  </label>
+                  <textarea
+                    id="obervacoes_gerais"
+                    name="obervacoes_gerais"
+                    value={formValues.observacoes || ""}
+                    maxLength={255}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        observacoes: e.target.value, // Atualiza o campo observacoes
+                      }));
+                    }}
+                  />
+                </div>
               </div>
+
               <div className="grid grid-cols-3 gap-2">
+
                 <div>
                   <label htmlFor="cep" className="block text-blue font-medium">
                     CEP
@@ -789,15 +909,13 @@ const ClientsPage: React.FC = () => {
                     name="cep"
                     value={formValues.cep}
                     onChange={handleCepChange}
+                    maxLength={15}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
                   />
                 </div>
+
                 <div>
-                  <label
-                    htmlFor="logradouro"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="logradouro" className="block text-blue font-medium">
                     Logradouro
                   </label>
                   <input
@@ -811,29 +929,25 @@ const ClientsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="numero"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="numero" className="block text-blue font-medium">
                     Número
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="numero"
                     name="numero"
                     value={formValues.numero}
-                    onChange={handleInputChange}
+                    onChange={handleNumericInputChange} // Não permite letras
+                    onKeyPress={handleNumericKeyPress} // Bloqueia letras
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-4 gap-2">
 
                 <div>
-                  <label
-                    htmlFor="estado"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="estado" className="block text-blue font-medium">
                     Estado
                   </label>
                   <input
@@ -845,11 +959,9 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
                 <div>
-                  <label
-                    htmlFor="bairro"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="bairro" className="block text-blue font-medium">
                     Bairro
                   </label>
                   <input
@@ -861,11 +973,9 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+
                 <div>
-                  <label
-                    htmlFor="cidade"
-                    className="block text-blue font-medium"
-                  >
+                  <label htmlFor="cidade" className="block text-blue font-medium">
                     Cidade
                   </label>
                   <input
@@ -892,80 +1002,78 @@ const ClientsPage: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-                <div>
-                  <div>
-                    <label
-                      htmlFor="situacao"
-                      className="block text-blue font-medium"
-                    >
-                      Situação
-                    </label>
-                    <select
-                      id="situacao"
-                      name="situacao"
-                      value={formValues.situacao}
-                      defaultValue={"default"}
-                      onChange={(e) =>
-                        setFormValues({ ...formValues, situacao: e.target.value })
-                      }
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    >
-                      <option value="default">Selecione</option>
-                      <option value="ATIVO">Ativo</option>
-                      <option value="DESATIVADO">Inativo</option>
-                    </select>
-                  </div>
-                </div>
+
               </div>
+
             </div>
 
-            <br></br>
 
-            <div className={`grid gap-3 h-[50px] w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
-              <Button
-                label="Sair Sem Salvar"
-                className="text-white"
-                icon="pi pi-times"
-                style={{
-                  backgroundColor: "#dc3545",
-                  border: "1px solid #dc3545",
-                  padding: "0.5rem 3.2rem",
-                  fontSize: "14px",
-                  fontWeight: "bold",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-                onClick={() => closeModal()}
-              />
+            <div className="flex justify-between items-center mt-16 w-full">
+              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+                <Button
+                  label="Sair Sem Salvar"
+                  className="text-white"
+                  icon="pi pi-times"
+                  style={{
+                    backgroundColor: "#dc3545",
+                    border: "1px solid #dc3545",
+                    padding: "0.5rem 1.5rem",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                  }}
+                  onClick={() => closeModal()}
+                />
 
-              {!isEditing ? (
-                <>
+                {!isEditing ? (
+                  <>
+                    <Button
+                      label="Salvar e Voltar à Listagem"
+                      className="text-white"
+                      icon="pi pi-refresh"
+                      onClick={() => { handleSaveReturn(false) }}
+                      disabled={itemCreateReturnDisabled}
+                      style={{
+                        backgroundColor: "#007bff",
+                        border: "1px solid #007bff",
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                      }}
+                    />
+                    <Button
+                      label="Salvar e Adicionar Outro"
+                      className="text-white"
+                      icon="pi pi-check"
+                      onClick={() => { handleSaveReturn(true) }}
+                      disabled={itemCreateDisabled}
+                      style={{
+                        backgroundColor: "#28a745",
+                        border: "1px solid #28a745",
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                      }}
+                    />
+                  </>
+                ) : (
                   <Button
-                    label="Salvar e Voltar à Listagem"
-                    className="text-white"
-                    icon="pi pi-refresh"
-                    onClick={() => { handleSaveReturn(false) }}
-                    disabled={itemCreateReturnDisabled || !isValidEmail}
-                    style={{
-                      backgroundColor: "#007bff",
-                      border: "1px solid #007bff",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "100%",
-                    }}
-                  />
-                  <Button
-                    label="Salvar e Adicionar Outro"
+                    label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => { handleSaveReturn(true) }}
-                    disabled={itemCreateDisabled || !isValidEmail}
+                    onClick={() => { handleSaveEdit(formValues) }}
+                    disabled={itemEditDisabled}
                     style={{
                       backgroundColor: "#28a745",
                       border: "1px solid #28a745",
@@ -978,29 +1086,9 @@ const ClientsPage: React.FC = () => {
                       width: "100%",
                     }}
                   />
-                </>
-              ) : (
-                <Button
-                  label="Salvar"
-                  className="text-white"
-                  icon="pi pi-check"
-                  onClick={handleSaveEdit}
-                  disabled={itemEditDisabled || !isValidEmail}
-                  style={{
-                    backgroundColor: "#28a745",
-                    border: "1px solid #28a745",
-                    padding: "0.5rem 5.5rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                  }}
-                />
-              )}
+                )}
+              </div>
             </div>
-
 
           </Dialog>
 
@@ -1008,7 +1096,7 @@ const ClientsPage: React.FC = () => {
             <div className="flex justify-between">
               <div>
                 <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
-                  Clientes
+                  Fornecedores
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -1042,7 +1130,7 @@ const ClientsPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredClients.slice(first, first + rows)}
+                value={filteredFornecedores.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -1060,7 +1148,7 @@ const ClientsPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_cliente"
+                  field="cod_fornecedor"
                   header="Código"
                   style={{
                     width: "0%",
@@ -1080,9 +1168,9 @@ const ClientsPage: React.FC = () => {
                 />
                 <Column
                   field="nome"
-                  header="Nome Completo"
+                  header="Nome"
                   style={{
-                    width: "20%",
+                    width: "2%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1098,10 +1186,10 @@ const ClientsPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="tipo"
-                  header="Tipo"
+                  field="observacoes"
+                  header="Observações"
                   style={{
-                    width: "11%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1115,30 +1203,13 @@ const ClientsPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData: {
-                    tipo: "Pessoa_Jur_dica" | "Pessoa_F_sica" | "Estrangeiro";
-                  }) => {
-                    // Mapeia os valores do tipo para os valores legíveis
-                    const tipoMap: Record<
-                      "Pessoa_Jur_dica" | "Pessoa_F_sica" | "Estrangeiro",
-                      string
-                    > = {
-                      Pessoa_Jur_dica: "Pessoa Jurídica",
-                      Pessoa_F_sica: "Pessoa Física",
-                      Estrangeiro: "Estrangeiro",
-                    };
-
-                    const tipoExibido = tipoMap[rowData.tipo] || rowData.tipo;
-
-                    return <span>{tipoExibido}</span>;
-                  }}
                 />
-
                 <Column
-                  field="email"
-                  header="E-mail"
+                  field="telefone"
+                  header="Telefone"
+                  body={(rowData) => formatTelefoneFixo(rowData.telefone)}
                   style={{
-                    width: "0%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1158,28 +1229,7 @@ const ClientsPage: React.FC = () => {
                   header="Celular"
                   body={(rowData) => formatCelular(rowData.celular)}
                   style={{
-                    width: "11%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-
-                <Column
-                  field="telefone"
-                  header="Telefone"
-                  body={(rowData) => formatTelefoneFixo(rowData.telefone)}
-                  style={{
-                    width: "11%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1195,8 +1245,8 @@ const ClientsPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="situacao"
-                  header="Situação"
+                  field="responsavel"
+                  header="Responsável"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -1214,10 +1264,10 @@ const ClientsPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="dt_hr_criacao"
+                  field="dtCadastro"
                   header="DT Cadastro"
                   style={{
-                    width: "12%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1232,7 +1282,7 @@ const ClientsPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const date = new Date(rowData.dt_hr_criacao);
+                    const date = new Date(rowData.dtCadastro);
                     const formattedDate = new Intl.DateTimeFormat("pt-BR", {
                       day: "2-digit",
                       month: "2-digit",
@@ -1244,13 +1294,34 @@ const ClientsPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+
+
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => handleEdit(rowData, rowData)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
@@ -1281,7 +1352,7 @@ const ClientsPage: React.FC = () => {
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => openDialog(rowData.cod_cliente)}
+                          onClick={() => openDialog(rowData.cod_fornecedor)}
                           className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
                         >
                           <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
@@ -1316,4 +1387,4 @@ const ClientsPage: React.FC = () => {
   );
 };
 
-export default ClientsPage;
+export default FornecedoresPage;

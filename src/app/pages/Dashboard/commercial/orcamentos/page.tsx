@@ -323,7 +323,7 @@ const OrcamentosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/estruturas",
+        "http://localhost:9009/api/estruturas",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -365,7 +365,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/estruturas/cancel/${estruturaIDtoCancel}`,
+        `http://localhost:9009/api/estruturas/cancel/${estruturaIDtoCancel}`,
         {},
         {
           headers: {
@@ -480,7 +480,7 @@ const OrcamentosPage: React.FC = () => {
 
       // Envio dos dados para a API
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/estruturas/edit/${formValuesEstruturas.cod_estrutura_orcamento}`,
+        `http://localhost:9009/api/estruturas/edit/${formValuesEstruturas.cod_estrutura_orcamento}`,
         updatedFormValuesEditEstruturas,
         {
           headers: {
@@ -550,7 +550,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchPedidosVenda = async () => {
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/pedidosvenda",
+        "http://localhost:9009/api/pedidosvenda",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -582,7 +582,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/pedidosvenda/cancel/${pedidoIDtoCancel}`,
+        `http://localhost:9009/api/pedidosvenda/cancel/${pedidoIDtoCancel}`,
         {},
         {
           headers: {
@@ -646,7 +646,7 @@ const OrcamentosPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/pedidosvenda/register",
+        "http://localhost:9009/api/pedidosvenda/register",
         updatedFormValues,
         {
           headers: {
@@ -712,7 +712,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchTransportadoras = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/transportadoras", {
+      const response = await axios.get("http://localhost:9009/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -736,13 +736,13 @@ const OrcamentosPage: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const responseUsers = await axios.get("https://api-birigui-teste.comviver.cloud/api/users/", {
+      const responseUsers = await axios.get("http://localhost:9009/api/users/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const responseGroup = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+      const responseGroup = await axios.get("http://localhost:9009/api/groupPermission/groups", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -811,7 +811,7 @@ const OrcamentosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/clients",
+        "http://localhost:9009/api/clients",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -913,7 +913,7 @@ const OrcamentosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/centrosCusto",
+        "http://localhost:9009/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1082,7 +1082,7 @@ const OrcamentosPage: React.FC = () => {
 
   const fetchProd = async () => {
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/itens", {
+      const response = await axios.get("http://localhost:9009/api/itens", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1157,7 +1157,7 @@ const OrcamentosPage: React.FC = () => {
       }
 
       // Caso a situação seja "DESATIVADO", atualiza os dados do item
-      const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/itens/edit/${produto.cod_item}`, formData, {
+      const response = await axios.put(`http://localhost:9009/api/itens/edit/${produto.cod_item}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -1282,7 +1282,7 @@ const OrcamentosPage: React.FC = () => {
       }
 
       // Se o nome não existir, cadastra o item normalmente
-      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/itens/register",
+      const response = await axios.post("http://localhost:9009/api/itens/register",
         formData,
         {
           headers: {
@@ -1321,7 +1321,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchEstabilishments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+      const response = await axios.get("http://localhost:9009/api/estabilishment", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1338,7 +1338,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchUnits = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+      const response = await axios.get("http://localhost:9009/api/unMedida", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1354,7 +1354,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchFamilias = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/familia/itens/", {
+      const response = await axios.get("http://localhost:9009/api/familia/itens/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1546,7 +1546,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/servicos/edit/${servico.cod_servico}`,
+        `http://localhost:9009/api/servicos/edit/${servico.cod_servico}`,
         { ...formValuesCadastroServicos, situacao: "Ativo", cod_servico: servico.cod_servico },
         {
           headers: {
@@ -1647,7 +1647,7 @@ const OrcamentosPage: React.FC = () => {
 
       // Se o nome não existir, cadastra o serviço normalmente
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/servicos/register",
+        "http://localhost:9009/api/servicos/register",
         formValuesCadastroServicos,
         {
           headers: {
@@ -1708,7 +1708,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchServicos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/servicos", {
+      const response = await axios.get("http://localhost:9009/api/servicos", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1822,7 +1822,7 @@ const OrcamentosPage: React.FC = () => {
   const fetchFormasPagamento = async () => {
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/formasPagamento",
+        "http://localhost:9009/api/formasPagamento",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1945,7 +1945,7 @@ const OrcamentosPage: React.FC = () => {
   const [selectedCanal, setSelectedCanal] = useState<string>('');
   const fetchCanaisVenda = async () => {
     try {
-      const response = await axios.get('https://api-birigui-teste.comviver.cloud/api/orcamentos/canais-venda');
+      const response = await axios.get('http://localhost:9009/api/orcamentos/canais-venda');
       setCanaisVenda(response.data.canaisVenda);
       console.log(response.data.canaisVenda);
     } catch (error) {
@@ -2046,7 +2046,7 @@ const OrcamentosPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://api-birigui-teste.comviver.cloud/api/orcamentos",
+        "http://localhost:9009/api/orcamentos",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -3028,7 +3028,7 @@ const OrcamentosPage: React.FC = () => {
       };
 
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
+        `http://localhost:9009/api/orcamentos/edit/${selectedOrcamento?.cod_orcamento}`,
         updatedFormValues,
         {
           headers: {
@@ -3146,7 +3146,7 @@ const OrcamentosPage: React.FC = () => {
         }
 
         const response = await axios.post(
-          "https://api-birigui-teste.comviver.cloud/api/orcamentos/register",
+          "http://localhost:9009/api/orcamentos/register",
           updatedFormValues,
           {
             headers: {
@@ -3229,7 +3229,7 @@ const OrcamentosPage: React.FC = () => {
         }
 
         const response = await axios.post(
-          "https://api-birigui-teste.comviver.cloud/api/estruturas/register",
+          "http://localhost:9009/api/estruturas/register",
           updatedFormValuesEstruturas,
           {
             headers: {
@@ -3312,7 +3312,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/orcamentos/cancel/${orcamentoIdToDelete}`,
+        `http://localhost:9009/api/orcamentos/cancel/${orcamentoIdToDelete}`,
         {},
         {
           headers: {
@@ -3344,7 +3344,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/orcamentos/pedido_gerado/${cod_orcamento}`,
+        `http://localhost:9009/api/orcamentos/pedido_gerado/${cod_orcamento}`,
         {},
         {
           headers: {
@@ -3377,7 +3377,7 @@ const OrcamentosPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/orcamentos/${orcamentoIdToDelete}`,
+        `http://localhost:9009/api/orcamentos/${orcamentoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

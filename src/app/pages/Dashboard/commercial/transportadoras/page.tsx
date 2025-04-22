@@ -112,7 +112,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchTipos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/transportadoras", {
+      const response = await axios.get("http://localhost:9009/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -130,7 +130,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchTransportadoras = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/transportadoras", {
+      const response = await axios.get("http://localhost:9009/api/transportadoras", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -186,7 +186,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/transportadoras/edit/${transportadora.cod_transportadora}`,
+        `http://localhost:9009/api/transportadoras/edit/${transportadora.cod_transportadora}`,
         { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
@@ -314,7 +314,7 @@ const TransportadorasPage: React.FC = () => {
 
       // Se o nome não existir, cadastra a transportadora normalmente
       const response = await axios.post(
-        "https://api-birigui-teste.comviver.cloud/api/transportadoras/register",
+        "http://localhost:9009/api/transportadoras/register",
         updatedFormValues,
         {
           headers: {
@@ -379,7 +379,7 @@ const TransportadorasPage: React.FC = () => {
   const fetchEstabilishments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+      const response = await axios.get("http://localhost:9009/api/estabilishment", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -417,7 +417,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `https://api-birigui-teste.comviver.cloud/api/transportadoras/cancel/${transportadoraIdToDelete}`,
+        `http://localhost:9009/api/transportadoras/cancel/${transportadoraIdToDelete}`,
         {}, // Enviar um corpo vazio, caso necessário para o endpoint
         {
           headers: {
@@ -454,7 +454,7 @@ const TransportadorasPage: React.FC = () => {
 
     try {
       await axios.delete(
-        `https://api-birigui-teste.comviver.cloud/api/transportadoras/${transportadoraIdToDelete}`,
+        `http://localhost:9009/api/transportadoras/${transportadoraIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
