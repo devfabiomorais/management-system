@@ -381,8 +381,14 @@ const ContasFinanceiroPage: React.FC = () => {
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   //--------------------------------
 
+  const [openedFiltros, setOpenedFiltros] = useState(false);
 
   const filteredContasFinanceiro = contasFinanceiro.filter((contaFinanceiro) => {
+
+    if (contaFinanceiro.situacao?.toLowerCase() !== 'ativo') {
+      return false;
+    }
+
     const searchFilter = Object.values(contaFinanceiro).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
@@ -558,7 +564,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [contasFinanceiroIdToDelete, setContaFinanceiroIdToDelete] = useState<number | null>(null);
+  const [contaFinanceiroIdToDelete, setContaFinanceiroIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedContaFinanceiro, setSelectedContaFinanceiro] = useState<ContaFinanceiro | null>(null);
   const [formValues, setFormValues] = useState<ContaFinanceiro>({
@@ -614,6 +620,7 @@ const ContasFinanceiroPage: React.FC = () => {
       pagamentos: [],
     });
     setEntidade("default");
+    setSelectedPlanoContas(null);
     setSelectedCentroCusto(null);
     setRestanteAserPago(0);
     setValorBruto(0);
@@ -954,11 +961,17 @@ const ContasFinanceiroPage: React.FC = () => {
   };
 
   const handleCancelar = async () => {
-    if (contasFinanceiroIdToDelete === null) return;
+    if (!contaFinanceiroIdToDelete) {
+      toast.error("Erro ao cancelar conta financeira. ID vazio.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/cancel/${contasFinanceiroIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/cancel/${contaFinanceiroIdToDelete}`,
         {},
         {
           headers: {
@@ -970,7 +983,7 @@ const ContasFinanceiroPage: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         fetchContasFinanceiro(); // Aqui é necessário chamar a função que irá atualizar a lista de centros de custo
         setModalDeleteVisible(false);
-        toast.success("Conta financeira cancelado com sucesso!", {
+        toast.success("Conta financeira cancelada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -991,11 +1004,11 @@ const ContasFinanceiroPage: React.FC = () => {
 
 
   const handleDelete = async () => {
-    if (contasFinanceiroIdToDelete === null) return;
+    if (contaFinanceiroIdToDelete === null) return;
 
     try {
       await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/${contasFinanceiroIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contasFinanceiro/${contaFinanceiroIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1147,8 +1160,8 @@ const ContasFinanceiroPage: React.FC = () => {
       nome: selectedFormaPagamento.nome,
       formaPagamento: selectedFormaPagamento,
       parcela: pagamentos.length + 1, // Garante que a parcela seja sempre sequencial
-      valor_parcela,
-      juros,
+      valor_parcela: valor_parcela * 100,
+      juros: jurosParcela,
       tipo_juros: "PERCENTUAL",
       dt_parcela,
     };
@@ -1206,14 +1219,15 @@ const ContasFinanceiroPage: React.FC = () => {
 
   useEffect(() => {
     const totalPago = pagamentos.reduce((acc, pagamento) => acc + (pagamento.valor_parcela ?? 0), 0);
-    setRestanteAserPago((formValues.valor_final ?? 0) - totalPago);
+    setRestanteAserPago(((formValues.valor_final ?? 0) * 100) - totalPago);
   }, [pagamentos, formValues.valor_final]);
 
   useEffect(() => {
     const totalComJuros = pagamentos.reduce((acc, pagamento) => {
       const valor_parcela = pagamento.valor_parcela ?? 0; // Garantir que valor_parcela não seja undefined
-      const juros = pagamento.juros ?? 0; // Garantir que juros não seja undefined
-      const valorComJuros = valor_parcela * (1 + juros / 100);
+      const jurosDaParcela = pagamento.juros ?? 0; // Garantir que juros não seja undefined
+      const valorComJuros = valor_parcela * (1 + jurosDaParcela / 100); // tudo em centavos
+
       return acc + valorComJuros;
     }, 0);
 
@@ -1557,9 +1571,9 @@ const ContasFinanceiroPage: React.FC = () => {
                     Plano de Contas
                   </label>
                   <select
-                    id="centrosCusto"
-                    name="centrosCusto"
-                    value={selectedPlanoContas ? selectedPlanoContas.cod_plano_conta : ''}
+                    id="cod_plano_conta"
+                    name="cod_plano_conta"
+                    value={selectedPlanoContas ? selectedPlanoContas.cod_plano_conta : 'default'}
                     disabled={visualizando}
                     onChange={(e) => {
                       const selected = planoContas.find(
@@ -1576,7 +1590,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     }}
                     className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
                   >
-                    <option value='' disabled selected>
+                    <option value='default' disabled selected>
                       Selecione
                     </option>
                     {planoContas.map((plano) => (
@@ -1838,10 +1852,12 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="text"
                     disabled
                     className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
-                    value={!isEditing
-                      ? restanteAserPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                      : (Number(formValues.valor_final)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                    value={
+                      !isEditing
+                        ? (restanteAserPago / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        : (Number(formValues.valor_final) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                     }
+
                   />
                   {/* <span>
                         R$ {!isEditing
@@ -1993,7 +2009,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
               <br />
 
-              {/* Pagamentos Parcelas Adicionados */}
+              {/* Pagamentos Parcelas Adicionadas */}
               {pagamentos.map((pagamento, index) => (
                 <div key={`${pagamento.id}-${index}`} className="grid grid-cols-6 gap-2 items-center mt-2">
                   <div> {/* Forma */}
@@ -2020,12 +2036,10 @@ const ContasFinanceiroPage: React.FC = () => {
                     <input
                       type="text"
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                      value={
-                        pagamento.valor_parcela
-                          ? (pagamento.valor_parcela * (1 + (pagamento.juros ? pagamento.juros / 100 : 0)))
-                            .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : 'R$ 0,00'
-                      }
+                      value={new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format((pagamento as any).valor_parcela / 100)}
                       disabled
                       readOnly
                     />
@@ -2079,9 +2093,14 @@ const ContasFinanceiroPage: React.FC = () => {
                     className="w-25 h-6 border border-gray-400 pl-1 rounded-sm !bg-gray-200"
                     value={
                       totalPagamentos
-                        ? `R$ ${Number(totalPagamentos).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : 'R$ 0,00'
+                        ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(totalPagamentos / 100) // Divide por 100 pra exibir
+
+                        : 'R$ 0,00'
                     }
+
 
                     readOnly
                   />
@@ -2486,6 +2505,9 @@ const ContasFinanceiroPage: React.FC = () => {
                   </div>
                 )}
               </Dialog>
+
+
+
 
             </div>
           </div>
