@@ -29,6 +29,10 @@ import { MultiSelect } from "primereact/multiselect";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AiFillFilePdf } from "react-icons/ai";
 import { GiCalculator } from "react-icons/gi";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
+import TransformButton from "@/app/components/Buttons/TransformButton";
 
 interface PedidosVenda {
   cod_pedido_venda: number;
@@ -3949,7 +3953,7 @@ const OrcamentosPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="w-full">
+                <div className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2">
                   <label htmlFor="photo" className="block text-blue font-medium">
                     Foto
                   </label>
@@ -4272,7 +4276,7 @@ const OrcamentosPage: React.FC = () => {
                     borderCollapse: "collapse",
                     width: "100%",
                   }}
-                  className="w-full"
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                   responsiveLayout="scroll"
                 >
                   <Column
@@ -4489,7 +4493,7 @@ const OrcamentosPage: React.FC = () => {
                     borderCollapse: "collapse",
                     width: "100%",
                   }}
-                  className="w-full"
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                   responsiveLayout="scroll"
                 >
                   <Column
@@ -4611,6 +4615,7 @@ const OrcamentosPage: React.FC = () => {
                       }
                     }}
                   />
+
                   <Column
                     header=""
                     body={(rowData) => (
@@ -4661,7 +4666,7 @@ const OrcamentosPage: React.FC = () => {
           }
           <Dialog
             header={isEstrutura
-              ? "Criar Estrutura de Orçamento"
+              ? (visualizando ? "Visualizando Estrutura" : "Criar Estrutura de Orçamento")
               : (visualizando
                 ? (isPedido ? "Visualizando Pedido de Venda" : "Visualizando Orçamento")
                 : (isEditing ? "Editar Orçamento" : (isPedido ? "Novo Pedido de Venda" : "Novo Orçamento")))}
@@ -4678,7 +4683,7 @@ const OrcamentosPage: React.FC = () => {
           >
             <br></br>
             {visualizando && (
-              <div className="flex gap-10 justify-center items-center">
+              <div className={`${isEstrutura ? "hidden" : ""} flex gap-10 justify-center items-center`}>
 
                 <button
                   className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
@@ -4748,7 +4753,9 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-            <div className="p-fluid grid gap-2 mt-2 ">
+            <div
+              className={`${(visualizando && isEstrutura) ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
 
               {
                 // #region primeira linha
@@ -4986,6 +4993,7 @@ const OrcamentosPage: React.FC = () => {
                     <textarea
                       id="descricao"
                       name="descricao"
+                      disabled={visualizando}
                       value={formValuesEstruturas.descricao}
                       maxLength={255}
                       className={`w-full border border-gray-400 pl-1 rounded-sm h-16 ${visualizando ? 'bg-gray-300 border-gray-400' : ''}`}
@@ -6486,7 +6494,7 @@ const OrcamentosPage: React.FC = () => {
                     borderCollapse: "collapse",
                     width: "100%",
                   }}
-                  className="w-full"
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                   responsiveLayout="scroll"
                 >
                   <Column
@@ -6646,17 +6654,10 @@ const OrcamentosPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => {
-                            handleEdit(rowData, true);
-                            setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
-                          }
-                          }
-                          className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
-                          title="Visualizar"
-                        >
-                          <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                        </button>
+                        <ViewButton onClick={() => {
+                          handleEdit(rowData, true);
+                          setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
+                        }} />
                       </div>
                     )}
                     className="text-black"
@@ -6682,13 +6683,7 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handleEdit(rowData, false)}
-                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                            title="Editar"
-                          >
-                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
+                          <EditButton onClick={() => handleEdit(rowData, false)} />
                         </div>
                       )}
                       className="text-black"
@@ -6714,13 +6709,7 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
-                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                            title="Cancelar"
-                          >
-                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
+                          <CancelButton onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))} />
                         </div>
                       )}
                       className="text-black"
@@ -6777,7 +6766,7 @@ const OrcamentosPage: React.FC = () => {
                     borderCollapse: "collapse",
                     width: "100%",
                   }}
-                  className="w-full"
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                   responsiveLayout="scroll"
                 >
                   <Column
@@ -6903,16 +6892,37 @@ const OrcamentosPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
+                        <ViewButton onClick={() => handleEditEstrutura(rowData, true)} />
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <TransformButton
                           onClick={() => {
                             handleUsarEstrutura(rowData);
                             setEstruturaUtilizada(rowData.cod_estrutura_orcamento);
                           }}
-                          className="hover:scale-125 hover:bg-green-700 p-2 bg-green-500 transform transition-all duration-50  rounded-2xl"
-                          title="Usar para um criar um novo orçamento"
-                        >
-                          <FaSuse style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                        </button>
+                          title="Usar esta estrutura para um novo orçamento"
+                        />
                       </div>
                     )}
                     className="text-black"
@@ -6938,13 +6948,7 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handleEditEstrutura(rowData, false)}
-                            className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                            title="Editar"
-                          >
-                            <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
+                          <EditButton onClick={() => handleEditEstrutura(rowData, false)} />
                         </div>
                       )}
                       className="text-black"
@@ -6970,13 +6974,7 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))}
-                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                            title="Cancelar"
-                          >
-                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
+                          <CancelButton onClick={() => openDialog((!isEstrutura ? rowData.cod_orcamento : rowData.cod_estrutura_orcamento))} />
                         </div>
                       )}
                       className="text-black"
@@ -7041,7 +7039,7 @@ const OrcamentosPage: React.FC = () => {
                     borderCollapse: "collapse",
                     width: "100%",
                   }}
-                  className="w-full"
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                   responsiveLayout="scroll"
                 >
                   <Column
@@ -7256,17 +7254,11 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => openDialog(isEstrutura
-                              ? rowData.cod_estrutura_orcamento
-                              : isPedido
-                                ? rowData.cod_pedido_venda
-                                : rowData.cod_orcamento)}
-                            className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                            title="Cancelar"
-                          >
-                            <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                          </button>
+                          <CancelButton onClick={() => openDialog(isEstrutura
+                            ? rowData.cod_estrutura_orcamento
+                            : isPedido
+                              ? rowData.cod_pedido_venda
+                              : rowData.cod_orcamento)} />
                         </div>
                       )}
                       className="text-black"

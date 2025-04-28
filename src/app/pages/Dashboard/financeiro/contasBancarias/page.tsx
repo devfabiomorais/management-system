@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -198,7 +198,11 @@ const ContasBancariasPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (contasBancarias: ContasBancarias) => {
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (contasBancarias: ContasBancarias, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     console.log("Editando contas bancárias:", contasBancarias);
     setFormValues((prev) => ({
       ...prev,
@@ -380,7 +384,7 @@ const ContasBancariasPage: React.FC = () => {
 
           {/* MODAL PRINCIPAL */}
           <Dialog
-            header={isEditing ? "Editar Conta bancária" : "Novo Conta bancária"}
+            header={isEditing ? (visualizando ? "Visualizando Conta bancária" : "Editar Conta bancária") : "Novo Conta bancária"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -391,7 +395,9 @@ const ContasBancariasPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div>
                 <label htmlFor="nome" className="block text-blue font-medium">
                   Nome
@@ -400,6 +406,7 @@ const ContasBancariasPage: React.FC = () => {
                   type="text"
                   id="nome"
                   name="nome"
+                  disabled={visualizando}
                   value={formValues.nome}
                   onChange={handleInputChange}
                   className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -416,6 +423,7 @@ const ContasBancariasPage: React.FC = () => {
                     type="text"
                     id="saldo"
                     name="saldo"
+                    disabled={visualizando}
                     value={`R$ ${Number(formValues.saldo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     onChange={(e) => {
                       const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
@@ -437,6 +445,7 @@ const ContasBancariasPage: React.FC = () => {
                     type="date"
                     id="dt_saldo"
                     name="dt_saldo"
+                    disabled={visualizando}
                     value={(formValues.dt_saldo ? new Date(formValues.dt_saldo).toISOString().split("T")[0] : "")}
                     onChange={(e) => {
                       const value = e.target.value;  // O valor já estará no formato correto
@@ -455,7 +464,7 @@ const ContasBancariasPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -591,7 +600,7 @@ const ContasBancariasPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -718,13 +727,43 @@ const ContasBancariasPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                        title="Visualizar"
+                      >
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => handleEdit(rowData, false)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

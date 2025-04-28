@@ -1,5 +1,5 @@
 "use client";
-import React, { ChangeEvent, useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -20,6 +20,9 @@ import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 import { FaBullseye } from "react-icons/fa6";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
 
 interface Client {
   cod_cliente: number;
@@ -299,7 +302,11 @@ const ClientsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (client: Client) => {
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (client: Client, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     setFormValues(client);
     setSelectedClient(client);
     setIsEditing(true);
@@ -614,6 +621,8 @@ const ClientsPage: React.FC = () => {
   };
 
 
+
+
   return (
     <>
       <SidebarLayout>
@@ -656,7 +665,7 @@ const ClientsPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Cliente" : "Novo Cliente"}
+            header={isEditing ? (visualizando ? "Visualizando Cliente" : "Editar Cliente") : "Novo Cliente"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -667,7 +676,9 @@ const ClientsPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
                   <label htmlFor="nome" className="block text-blue font-medium">
@@ -678,6 +689,7 @@ const ClientsPage: React.FC = () => {
                     id="nome"
                     name="nome"
                     value={formValues.nome}
+                    disabled={visualizando} // Desabilita o campo se visualizando
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -690,6 +702,7 @@ const ClientsPage: React.FC = () => {
                   <select
                     id="tipo"
                     name="tipo"
+                    disabled={visualizando}
                     value={formValues.tipo || "default"}
                     defaultValue={"default"}
                     onChange={(e) =>
@@ -713,6 +726,7 @@ const ClientsPage: React.FC = () => {
                     type="email"
                     id="email"
                     name="email"
+                    disabled={visualizando}
                     value={formValues.email}
                     onChange={handleEmailChange}
                     onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
@@ -731,6 +745,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="documento"
                     name="documento"
+                    disabled={visualizando}
                     placeholder="CPF ou CNPJ"
                     value={formValues.documento}
                     onChange={handleDocumentChange}
@@ -752,6 +767,7 @@ const ClientsPage: React.FC = () => {
                   <input
                     type="text"
                     id="celular"
+                    disabled={visualizando}
                     name="celular"
                     value={formValues.celular}
                     onChange={handleCelularChange}
@@ -770,6 +786,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="telefone"
                     name="telefone"
+                    disabled={visualizando}
                     value={formValues.telefone}
                     onChange={handleTelefoneChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -787,6 +804,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="cep"
                     name="cep"
+                    disabled={visualizando}
                     value={formValues.cep}
                     onChange={handleCepChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -804,6 +822,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="logradouro"
                     name="logradouro"
+                    disabled={visualizando}
                     value={formValues.logradouro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -821,6 +840,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="numero"
                     name="numero"
+                    disabled={visualizando}
                     value={formValues.numero}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -840,6 +860,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="estado"
                     name="estado"
+                    disabled={visualizando}
                     value={formValues.estado}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -856,6 +877,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="bairro"
                     name="bairro"
+                    disabled={visualizando}
                     value={formValues.bairro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -872,6 +894,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="cidade"
                     name="cidade"
+                    disabled={visualizando}
                     value={formValues.cidade}
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
@@ -887,6 +910,7 @@ const ClientsPage: React.FC = () => {
                     type="text"
                     id="complemento"
                     name="complemento"
+                    disabled={visualizando}
                     value={formValues.complemento}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -903,6 +927,7 @@ const ClientsPage: React.FC = () => {
                     <select
                       id="situacao"
                       name="situacao"
+                      disabled={visualizando}
                       value={formValues.situacao}
                       defaultValue={"default"}
                       onChange={(e) =>
@@ -921,7 +946,7 @@ const ClientsPage: React.FC = () => {
 
             <br></br>
 
-            <div className={`grid gap-3 h-[50px] w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+            <div className={`${visualizando ? "hidden" : ""} grid gap-3 h-[50px] w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
               <Button
                 label="Sair Sem Salvar"
                 className="text-white"
@@ -1056,7 +1081,7 @@ const ClientsPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -1244,17 +1269,36 @@ const ClientsPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <ViewButton onClick={() => handleEdit(rowData, true)} />
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEdit(rowData)}
-                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                        >
-                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                        </button>
+                        <EditButton onClick={() => handleEdit(rowData, false)} />
                       </div>
                     )}
                     className="text-black"
@@ -1280,12 +1324,7 @@ const ClientsPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => openDialog(rowData.cod_cliente)}
-                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                        >
-                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                        </button>
+                        <CancelButton onClick={() => openDialog(rowData.cod_cliente)} />
                       </div>
                     )}
                     className="text-black"

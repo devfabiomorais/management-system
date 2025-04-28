@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaTrash, FaBan, FaPlus, FaTimes } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -212,219 +212,6 @@ const ContasFinanceiroPage: React.FC = () => {
       console.error("Erro ao carregar conta financeiras:", error);
     }
   };
-
-  //#region filtros
-  const [isVencidos, setIsVencidos] = useState(false);
-  const [isVencemHoje, setIsVencemHoje] = useState(false);
-  const [isAVencer, setIsAVencer] = useState(false);
-  const [isPagos, setIsPagos] = useState(false);
-
-
-  const applyVencidosFilter = () => {
-    setIsVencidos((prev) => {
-      const novoEstado = !prev;
-
-      // Atualiza a cor de acordo com o estado do filtro
-      if (!novoEstado) {
-        setHeaderBgColor(""); // reseta a cor quando desativa o filtro 
-        setFontColor(""); // reseta a cor quando desativa o filtro 
-      } else {
-        setHeaderBgColor("#c01526"); // reseta a cor quando desativa o filtro 
-        setFontColor("#FFFFFF");
-      }
-
-      return novoEstado;
-    });
-    // Desativa os outros filtros (opcional)
-    setIsVencemHoje(false);
-    setIsAVencer(false);
-    setIsPagos(false);
-  };
-  const somatoriaVencidos = contasFinanceiro
-    .filter((conta) => {
-      const vencimento = conta.dt_vencimento;
-      return vencimento && new Date(vencimento) < new Date(); // Verifica se dt_vencimento não é undefined
-    })
-    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
-
-  // Formatar o resultado com ponto para milhar e vírgula para o decimal
-  const somatoriaFormatadaVencidos = somatoriaVencidos
-    .toFixed(2) // Garante que sempre tenha 2 casas decimais
-    .replace('.', ',') // Substitui o ponto por vírgula
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
-
-
-
-
-
-  const applyVencemHojeFilter = () => {
-    setIsVencemHoje((prev) => {
-      const novoEstado = !prev;
-
-      if (!novoEstado) {
-        setHeaderBgColor("");
-        setFontColor("");
-      } else {
-        setHeaderBgColor("#ff9e00"); // reseta a cor quando desativa o filtro 
-        setFontColor("#FFFFFF");
-      }
-
-      return novoEstado;
-    });
-
-    setIsVencidos(false);
-    setIsAVencer(false);
-    setIsPagos(false);
-  };
-  const somatoriaVencemHoje = contasFinanceiro
-    .filter((conta) => {
-      const vencimento = conta.dt_vencimento;
-
-      if (!vencimento) return false;
-
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      const vencimentoDate = new Date(vencimento);
-      vencimentoDate.setDate(vencimentoDate.getDate() + 1); // Corrige fuso
-      vencimentoDate.setHours(0, 0, 0, 0);
-
-      return vencimentoDate.getTime() === hoje.getTime();
-    })
-    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0);
-
-  const somatoriaFormatadaVencemHoje = somatoriaVencemHoje
-    .toFixed(2)
-    .replace('.', ',')
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-
-
-
-  const applyAVencerFilter = () => {
-    setIsAVencer((prev) => {
-      const novoEstado = !prev;
-
-      if (!novoEstado) {
-        setHeaderBgColor("");
-        setFontColor("");
-      } else {
-        setHeaderBgColor("#06b6d4"); // reseta a cor quando desativa o filtro 
-        setFontColor("#FFFFFF");
-      }
-
-      return novoEstado;
-    });
-
-    setIsVencidos(false);
-    setIsVencemHoje(false);
-    setIsPagos(false);
-  };
-
-  const somatoriaVaoVencer = contasFinanceiro
-    .filter((conta) => {
-      const vencimento = conta.dt_vencimento;
-
-      if (!vencimento) return false; // Se a data de vencimento for undefined, ignora
-
-      const hoje = new Date();
-      const vencimentoDate = new Date(vencimento); // Garante que seja um objeto Date
-
-      // Verifica se a data de vencimento é maior que a data de hoje
-      return vencimentoDate > hoje;
-    })
-    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
-
-  // Formatar o resultado com ponto para milhar e vírgula para o decimal
-  const somatoriaFormatadaAVencer = somatoriaVaoVencer
-    .toFixed(2) // Garante que sempre tenha 2 casas decimais
-    .replace('.', ',') // Substitui o ponto por vírgula
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
-
-
-  const applyPagosFilter = () => {
-    setIsPagos((prev) => {
-      const novoEstado = !prev;
-
-      if (novoEstado) {
-        setHeaderBgColor("#16a34a");
-        setFontColor("#FFFFFF");
-      } else {
-        setHeaderBgColor("");
-        setFontColor("");
-      }
-
-      return novoEstado;
-    });
-
-    // Desativa os outros filtros se quiser que só um esteja ativo por vez:
-    setIsVencidos(false);
-    setIsVencemHoje(false);
-    setIsAVencer(false);
-  };
-  const somatoriaPagos = contasFinanceiro
-    .filter((conta) => String(conta.pagamento_quitado).toLowerCase() === "sim")
-    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0);
-
-  const somatoriaFormatadaPagos = somatoriaPagos
-    .toFixed(2)
-    .replace('.', ',')
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-  //--------------------------------
-  const somatoriaTotal = contasFinanceiro
-    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0);
-
-  const somatoriaFormatadaTotal = somatoriaTotal
-    .toFixed(2)
-    .replace('.', ',')
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  //--------------------------------
-
-  const [openedFiltros, setOpenedFiltros] = useState(false);
-
-  const filteredContasFinanceiro = contasFinanceiro.filter((contaFinanceiro) => {
-
-    if (contaFinanceiro.situacao?.toLowerCase() !== 'ativo') {
-      return false;
-    }
-
-    const searchFilter = Object.values(contaFinanceiro).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    );
-
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    const vencimento = contaFinanceiro.dt_vencimento
-      ? new Date(contaFinanceiro.dt_vencimento)
-      : null;
-
-    // Corrige o fuso adicionando 1 dia (se precisar)
-    if (vencimento) {
-      vencimento.setDate(vencimento.getDate() + 1);
-      vencimento.setHours(0, 0, 0, 0);
-    }
-
-
-    const vencidoFilter =
-      !isVencidos || (vencimento && vencimento < hoje);
-
-    const vencemHojeFilter =
-      !isVencemHoje || (vencimento && vencimento.getTime() === hoje.getTime());
-
-    const aVencerFilter =
-      !isAVencer || (vencimento && vencimento > hoje);
-
-    const pagosFilter =
-      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() === "sim";
-
-    return searchFilter && vencidoFilter && vencemHojeFilter && aVencerFilter && pagosFilter;
-  });
-  //#endregion
-
-
-
 
   //#region fornecedores
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -629,9 +416,7 @@ const ContasFinanceiroPage: React.FC = () => {
   };
 
   const handleSaveEdit = async (cod_conta: any) => {
-    setItemEditDisabled(true);
-    setLoading(true);
-    setIsEditing(false);
+
     try {
       const requiredFields = [
         "descricao",
@@ -644,8 +429,6 @@ const ContasFinanceiroPage: React.FC = () => {
         "nfe",
         "valor_bruto",
         "valor_final",
-        "desconto",
-        "juros",
       ];
 
       // Dicionário de rótulos amigáveis
@@ -678,6 +461,9 @@ const ContasFinanceiroPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
+        setItemEditDisabled(false);
+        setLoading(false);
+        setIsEditing(true);
         return;
       }
 
@@ -691,8 +477,9 @@ const ContasFinanceiroPage: React.FC = () => {
         }
       );
       if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
+        setItemEditDisabled(true);
+        setLoading(true);
+        setIsEditing(false);
         clearInputs();
         fetchContasFinanceiro();
         toast.success("Conta financeira salvo com sucesso!", {
@@ -703,6 +490,7 @@ const ContasFinanceiroPage: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
+        setIsEditing(true);
         toast.error("Erro ao salvar conta financeira.", {
           position: "top-right",
           autoClose: 3000,
@@ -711,6 +499,7 @@ const ContasFinanceiroPage: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
+      setIsEditing(true);
       console.error("Erro ao salvar conta financeira:", error);
     }
   };
@@ -793,8 +582,6 @@ const ContasFinanceiroPage: React.FC = () => {
         "nfe",
         "valor_bruto",
         "valor_final",
-        "desconto",
-        "juros",
       ];
 
       // Dicionário de rótulos amigáveis
@@ -809,9 +596,7 @@ const ContasFinanceiroPage: React.FC = () => {
         dt_compensacao: "Data de Compensação",
         nfe: "NFe",
         valor_bruto: "Valor Bruto",
-        valor_final: "Valor Final",
-        desconto: "Desconto",
-        juros: "Juros",
+        valor_final: "Valor Final"
       };
 
       const emptyField = requiredFields.find((field) => {
@@ -907,7 +692,11 @@ const ContasFinanceiroPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (contasFinanceiro: ContaFinanceiro) => {
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (contasFinanceiro: ContaFinanceiro, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     console.log("contasFinanceiro", contasFinanceiro);
 
     contasFinanceiro.cod_cliente ? setEntidade("cliente")
@@ -1103,7 +892,6 @@ const ContasFinanceiroPage: React.FC = () => {
   };
 
 
-  const [visualizando, setVisualizar] = useState<boolean>(false);
   const [valorTotalTotal, setValorTotalTotal] = useState(0);
 
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
@@ -1197,7 +985,7 @@ const ContasFinanceiroPage: React.FC = () => {
         nome: selectedFormaPagamento.nome,
         formaPagamento: selectedFormaPagamento,
         parcela: pagamentos.length + i + 1, // Sequencial baseado no número de parcelas já existe no banco de dadosntes
-        valor_parcela,
+        valor_parcela: valor_parcela * 100,
         juros,
         tipo_juros: "PERCENTUAL",
         dt_parcela: dataParcelaAtual.toISOString().split('T')[0], // Formatando para "yyyy-MM-dd"
@@ -1298,6 +1086,419 @@ const ContasFinanceiroPage: React.FC = () => {
   //#endregion
 
 
+  //#region filtros
+  const [isVencidos, setIsVencidos] = useState(false);
+  const [isVencemHoje, setIsVencemHoje] = useState(false);
+  const [isAVencer, setIsAVencer] = useState(false);
+  const [isPagos, setIsPagos] = useState(false);
+
+  //VENCIDOS--------------------------------
+  const applyVencidosFilter = () => {
+    setIsVencidos((prev) => {
+      const novoEstado = !prev;
+
+      // Atualiza a cor de acordo com o estado do filtro
+      if (!novoEstado) {
+        setHeaderBgColor(""); // reseta a cor quando desativa o filtro 
+        setFontColor(""); // reseta a cor quando desativa o filtro 
+      } else {
+        setHeaderBgColor("#c01526"); // reseta a cor quando desativa o filtro 
+        setFontColor("#FFFFFF");
+      }
+
+      return novoEstado;
+    });
+    // Desativa os outros filtros (opcional)
+    setIsVencemHoje(false);
+    setIsAVencer(false);
+    setIsPagos(false);
+  };
+
+  const somatoriaVencidos = contasFinanceiro
+    .filter((conta) => {
+      const vencimento = conta.dt_vencimento;
+      // Filtro de vencidos baseado no tipo
+      if (tipo === "aPagar") {
+        return vencimento && new Date(vencimento) < new Date() && conta.tipo_conta?.toUpperCase() === "PAGAR"; // Se tipo for "aPagar", filtra por "PAGAR"
+      } else if (tipo === "aReceber") {
+        return vencimento && new Date(vencimento) < new Date() && conta.tipo_conta?.toUpperCase() === "RECEBER"; // Se tipo for "aReceber", filtra por "RECEBER"
+      }
+      return false; // Retorna falso se tipo não for nem "aPagar" nem "aReceber"
+    })
+    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
+
+  // Formatar o resultado com ponto para milhar e vírgula para o decimal
+  const somatoriaFormatadaVencidos = somatoriaVencidos
+    .toFixed(2) // Garante que sempre tenha 2 casas decimais
+    .replace('.', ',') // Substitui o ponto por vírgula
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
+  //--------------------------------
+
+
+  //VENCEM HOJE--------------------------------
+  const applyVencemHojeFilter = () => {
+    setIsVencemHoje((prev) => {
+      const novoEstado = !prev;
+
+      if (!novoEstado) {
+        setHeaderBgColor("");
+        setFontColor("");
+      } else {
+        setHeaderBgColor("#ff9e00"); // reseta a cor quando desativa o filtro 
+        setFontColor("#FFFFFF");
+      }
+
+      return novoEstado;
+    });
+
+    setIsVencidos(false);
+    setIsAVencer(false);
+    setIsPagos(false);
+  };
+  const somatoriaVencemHoje = contasFinanceiro
+    .filter((conta) => {
+      const vencimento = conta.dt_vencimento;
+
+      if (!vencimento) return false;
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      const vencimentoDate = new Date(vencimento);
+      vencimentoDate.setDate(vencimentoDate.getDate() + 1); // Corrige fuso
+      vencimentoDate.setHours(0, 0, 0, 0);
+
+      // Verifica se o vencimento é hoje e aplica o filtro de tipo
+      if (tipo === "aPagar") {
+        return vencimentoDate.getTime() === hoje.getTime() && conta.tipo_conta?.toUpperCase() === "PAGAR"; // Se tipo for "aPagar", filtra por "PAGAR"
+      } else if (tipo === "aReceber") {
+        return vencimentoDate.getTime() === hoje.getTime() && conta.tipo_conta?.toUpperCase() === "RECEBER"; // Se tipo for "aReceber", filtra por "RECEBER"
+      }
+      return false; // Retorna falso se tipo não for nem "aPagar" nem "aReceber"
+    })
+    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
+
+  // Formatar o resultado com ponto para milhar e vírgula para o decimal
+  const somatoriaFormatadaVencemHoje = somatoriaVencemHoje
+    .toFixed(2)
+    .replace('.', ',')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  //--------------------------------
+
+
+
+  //A VENCER--------------------------------
+  const applyAVencerFilter = () => {
+    setIsAVencer((prev) => {
+      const novoEstado = !prev;
+
+      if (!novoEstado) {
+        setHeaderBgColor("");
+        setFontColor("");
+      } else {
+        setHeaderBgColor("#06b6d4"); // reseta a cor quando desativa o filtro 
+        setFontColor("#FFFFFF");
+      }
+
+      return novoEstado;
+    });
+
+    setIsVencidos(false);
+    setIsVencemHoje(false);
+    setIsPagos(false);
+  };
+
+  const somatoriaVaoVencer = contasFinanceiro
+    .filter((conta) => {
+      const vencimento = conta.dt_vencimento;
+
+      if (!vencimento) return false; // Se a data de vencimento for undefined, ignora
+
+      const hoje = new Date();
+      const vencimentoDate = new Date(vencimento); // Garante que seja um objeto Date
+
+      // Verifica se a data de vencimento é maior que a data de hoje
+      if (tipo === "aPagar") {
+        return vencimentoDate > hoje && conta.tipo_conta?.toUpperCase() === "PAGAR"; // Se tipo for "aPagar", filtra por "PAGAR"
+      } else if (tipo === "aReceber") {
+        return vencimentoDate > hoje && conta.tipo_conta?.toUpperCase() === "RECEBER"; // Se tipo for "aReceber", filtra por "RECEBER"
+      }
+      return false; // Retorna falso se tipo não for nem "aPagar" nem "aReceber"
+    })
+    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
+
+  // Formatar o resultado com ponto para milhar e vírgula para o decimal
+  const somatoriaFormatadaAVencer = somatoriaVaoVencer
+    .toFixed(2) // Garante que sempre tenha 2 casas decimais
+    .replace('.', ',') // Substitui o ponto por vírgula
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
+  //--------------------------------
+
+  //PAGOS--------------------------------
+  const applyPagosFilter = () => {
+    setIsPagos((prev) => {
+      const novoEstado = !prev;
+
+      if (novoEstado) {
+        setHeaderBgColor("#16a34a");
+        setFontColor("#FFFFFF");
+      } else {
+        setHeaderBgColor("");
+        setFontColor("");
+      }
+
+      return novoEstado;
+    });
+
+    // Desativa os outros filtros 
+    setIsVencidos(false);
+    setIsVencemHoje(false);
+    setIsAVencer(false);
+  };
+  const somatoriaPagos = contasFinanceiro
+    .filter((conta) => {
+      // Filtra contas com pagamento quitado
+      const isPago = String(conta.pagamento_quitado).toLowerCase() === "sim";
+
+      if (tipo === "aPagar") {
+        // Se tipo for "aPagar", filtra as contas "PAGAR"
+        return isPago && conta.tipo_conta?.toUpperCase() === "PAGAR";
+      } else if (tipo === "aReceber") {
+        // Se tipo for "aReceber", filtra as contas "RECEBER"
+        return isPago && conta.tipo_conta?.toUpperCase() === "RECEBER";
+      }
+      return false; // Retorna falso se tipo não for nem "aPagar" nem "aReceber"
+    })
+    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
+
+  // Formatar o resultado com ponto para milhar e vírgula para o decimal
+  const somatoriaFormatadaPagos = somatoriaPagos
+    .toFixed(2) // Garante que sempre tenha 2 casas decimais
+    .replace('.', ',') // Substitui o ponto por vírgula
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
+  //--------------------------------
+
+  //TOTAL--------------------------------
+  const somatoriaTotal = contasFinanceiro
+    .filter((conta) => {
+      if (tipo === "aPagar") {
+        // Se tipo for "aPagar", filtra as contas "PAGAR"
+        return conta.tipo_conta?.toUpperCase() === "PAGAR";
+      } else if (tipo === "aReceber") {
+        // Se tipo for "aReceber", filtra as contas "RECEBER"
+        return conta.tipo_conta?.toUpperCase() === "RECEBER";
+      }
+      return true; // Se tipo for null ou outro valor, retorna todas as contas
+    })
+    .reduce((acc, conta) => acc + (Number(conta.valor_final) || 0), 0); // Converte para número
+
+  // Formatar o resultado com ponto para milhar e vírgula para o decimal
+  const somatoriaFormatadaTotal = somatoriaTotal
+    .toFixed(2) // Garante que sempre tenha 2 casas decimais
+    .replace('.', ',') // Substitui o ponto por vírgula
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // Adiciona ponto como separador de milhar
+
+  //--------------------------------
+
+  const [openedFiltros, setOpenedFiltros] = useState(false);
+
+  //botao filtros ---------------------------------
+  const [dataInicial, setDataInicial] = useState<string>("");
+  const [dataFinalFiltro, setDataFinalFiltro] = useState<string>("");
+  const [planoContasFiltro, setPlanoContasFiltro] = useState<string>("");
+  const [formaPagamentoFiltro, setFormaPagamentoFiltro] = useState<number | "">("");
+  const [centroCustoFiltro, setCentroCustoFiltro] = useState("");
+  const [contaBancariaFiltro, setContaBancariaFiltro] = useState("");
+  const [situacaoFiltro, setSituacaoFiltro] = useState("");
+  const [notaFiscalFiltro, setNotaFiscalFiltro] = useState("");
+  const [valorTotalInicialFiltro, setValorTotalInicialFiltro] = useState("");
+  const [valorTotalFinalFiltro, setValorTotalFinalFiltro] = useState("");
+  const [descricaoFiltro, setDescricaoFiltro] = useState("");
+  const [entidadeFiltro, setEntidadeFiltro] = useState("");
+  const [entidadeNomeFiltro, setEntidadeNomeFiltro] = useState("");
+
+  // Função para limpar os filtros
+  const clearFilters = () => {
+    setDataInicial("");
+    setDataFinalFiltro("");
+    setPlanoContasFiltro("");
+    setFormaPagamentoFiltro("");
+    setCentroCustoFiltro("");
+    setContaBancariaFiltro("");
+    setSituacaoFiltro("");
+    setNotaFiscalFiltro("");
+    setValorTotalInicialFiltro("");
+    setValorTotalFinalFiltro("");
+    setDescricaoFiltro("");
+    setEntidadeFiltro("");
+    setEntidadeNomeFiltro("");
+  };
+
+  //--------------------------------------------------
+
+
+  const filteredContasFinanceiro = contasFinanceiro.filter((contaFinanceiro) => {
+
+
+    const searchFilter = Object.values(contaFinanceiro).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const vencimento = contaFinanceiro.dt_vencimento
+      ? new Date(contaFinanceiro.dt_vencimento)
+      : null;
+
+    // Corrige o fuso adicionando 1 dia (se precisar)
+    if (vencimento) {
+      vencimento.setDate(vencimento.getDate() + 1);
+      vencimento.setHours(0, 0, 0, 0);
+    }
+
+
+    const vencidoFilter =
+      !isVencidos || (vencimento && vencimento < hoje);
+
+    const vencemHojeFilter =
+      !isVencemHoje || (vencimento && vencimento.getTime() === hoje.getTime());
+
+    const aVencerFilter =
+      !isAVencer || (vencimento && vencimento > hoje);
+
+    const pagosFilter =
+      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() === "sim";
+
+    const dataInicialFilter =
+      !dataInicial ||
+      (vencimento && vencimento >= new Date(dataInicial + "T00:00:00"));
+
+    const dataFinalFilter =
+      !dataFinalFiltro ||
+      (vencimento && vencimento <= new Date(dataFinalFiltro + "T23:59:59"));
+
+    const planoContasFilter =
+      !planoContasFiltro ||
+      (contaFinanceiro.cod_plano_conta &&
+        contaFinanceiro.cod_plano_conta
+          .toString()
+          .includes(planoContasFiltro)) ||
+      ((contaFinanceiro as any).dbs_plano_contas?.descricao &&
+        (contaFinanceiro as any).dbs_plano_contas.descricao
+          .toLowerCase()
+          .includes(planoContasFiltro.toLowerCase()));
+
+    const formaPagamentoFilter =
+      !formaPagamentoFiltro ||
+      (contaFinanceiro as any).dbs_pagamentos_contas?.some(
+        (p: any) => p.cod_forma_pagamento === formaPagamentoFiltro
+      );
+
+    const centroCustoFilter =
+      centroCustoFiltro.trim() === "" ||
+      (() => {
+        const termo = centroCustoFiltro.trim().toLowerCase();
+        const codigoDigitado = Number(termo);
+
+        const matchDireto = !isNaN(codigoDigitado) &&
+          contaFinanceiro.cod_centro_custo === codigoDigitado;
+
+        const matchPorNome = centrosCusto.some(
+          (c) =>
+            c.cod_centro_custo === contaFinanceiro.cod_centro_custo &&
+            (c.nome?.toLowerCase() ?? "").includes(termo)
+        );
+
+        return matchDireto || matchPorNome;
+      })();
+
+    const contaBancariaFilter =
+      contaBancariaFiltro.trim() === "" ||
+      (() => {
+        const termo = contaBancariaFiltro.trim().toLowerCase();
+        const codigoDigitado = Number(termo);
+
+        const matchDireto = !isNaN(codigoDigitado) &&
+          contaFinanceiro.cod_conta_bancaria === codigoDigitado;
+
+        const matchPorNome = contasBancarias.some(
+          (c) =>
+            c.cod_conta_bancaria === contaFinanceiro.cod_conta_bancaria &&
+            (c.nome?.toLowerCase() ?? "").includes(termo)
+        );
+
+        return matchDireto || matchPorNome;
+      })();
+
+    const situacaoFilter =
+      situacaoFiltro === "" || contaFinanceiro.situacao === situacaoFiltro;
+
+    const notaFiscalFilter =
+      notaFiscalFiltro === "" || contaFinanceiro.nfe?.includes(notaFiscalFiltro);
+
+    const valorTotal = Number(contaFinanceiro.valor_final);
+    const valorInicialOK = !valorTotalInicialFiltro || valorTotal >= Number(valorTotalInicialFiltro);
+    const valorFinalOK = !valorTotalFinalFiltro || valorTotal <= Number(valorTotalFinalFiltro);
+    const valorTotalFilter = valorInicialOK && valorFinalOK;
+
+    const descricaoFilter = !descricaoFiltro || contaFinanceiro.descricao?.toLowerCase().includes(descricaoFiltro.toLowerCase());
+
+    const entidadeFilter =
+      entidadeFiltro === "" ||
+      (entidadeFiltro === "cliente" && contaFinanceiro.cod_cliente !== null) ||
+      (entidadeFiltro === "transportadora" && contaFinanceiro.cod_transportadora !== null) ||
+      (entidadeFiltro === "fornecedor" && contaFinanceiro.cod_fornecedor !== null);
+
+    const nomeEntidade = (() => {
+      if (contaFinanceiro.cod_cliente) {
+        const cliente = clients.find(c => c.cod_cliente === contaFinanceiro.cod_cliente);
+        return cliente?.nome ?? "";
+      }
+      if (contaFinanceiro.cod_transportadora) {
+        const transportadora = transportadoras.find(t => t.cod_transportadora === contaFinanceiro.cod_transportadora);
+        return transportadora?.nome ?? "";
+      }
+      if (contaFinanceiro.cod_fornecedor) {
+        const fornecedor = fornecedores.find(f => f.cod_fornecedor === contaFinanceiro.cod_fornecedor);
+        return fornecedor?.nome ?? "";
+      }
+      return "";
+    })();
+
+    const entidadeNomeFilter =
+      entidadeNomeFiltro.trim() === "" ||
+      nomeEntidade.toLowerCase().includes(entidadeNomeFiltro.toLowerCase());
+
+    const tipoContaFilter =
+      tipoDaURL !== "aReceber" || contaFinanceiro.tipo_conta?.toUpperCase() === "RECEBER";
+
+
+    return (
+      searchFilter &&
+      vencidoFilter &&
+      vencemHojeFilter &&
+      aVencerFilter &&
+      pagosFilter &&
+      dataInicialFilter &&
+      dataFinalFilter &&
+      planoContasFilter &&
+      formaPagamentoFilter &&
+      centroCustoFilter &&
+      contaBancariaFilter &&
+      situacaoFilter &&
+      notaFiscalFilter &&
+      valorTotalFilter &&
+      descricaoFilter &&
+      entidadeFilter &&
+      entidadeNomeFilter &&
+      tipoContaFilter
+    );
+  });
+
+  //#endregion
+
+
 
 
   //#region RETURN
@@ -1343,7 +1544,7 @@ const ContasFinanceiroPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Conta" : "Nova Conta"}
+            header={isEditing ? (visualizando ? "Visualizando Conta" : "Editar Conta") : "Nova Conta"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -1355,7 +1556,9 @@ const ContasFinanceiroPage: React.FC = () => {
             onHide={() => closeModal()}
             className={"w-[1300px]"}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div className="grid grid-cols-4 gap-2">
                 <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
@@ -1378,6 +1581,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   <select
                     id="entidade"
                     name="entidade"
+                    disabled={visualizando}
                     value={entidade ?? "default"}
                     onChange={(e) => setEntidade(e.target.value)}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -1402,6 +1606,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   <select
                     id="entidadeSelecionada"
                     name="entidadeSelecionada"
+                    disabled={visualizando}
                     value={
                       (entidade === "fornecedor" && !formValues.cod_fornecedor) ||
                         (entidade === "cliente" && !formValues.cod_cliente) ||
@@ -1472,6 +1677,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="text"
                     id="descricao"
                     name="descricao"
+                    disabled={visualizando}
                     value={formValues.descricao}
                     onChange={handleInputChange}
                     className="w-full h-8 border border-[#D9D9D9] pl-1 rounded-sm"
@@ -1485,6 +1691,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="date"
                     id="dt_vencimento"
                     name="dt_vencimento"
+                    disabled={visualizando}
                     value={
                       formValues.dt_vencimento
                         ? new Date(formValues.dt_vencimento).toISOString().split("T")[0]
@@ -1542,6 +1749,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   <select
                     id="cod_conta_bancaria"
                     name="cod_conta_bancaria"
+                    disabled={visualizando}
                     value={formValues.cod_conta_bancaria ?? "default"}
                     onChange={(e) =>
                       setFormValues((prev) => ({
@@ -1610,6 +1818,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   <select
                     id="pagamento_quitado"
                     name="pagamento_quitado"
+                    disabled={visualizando}
                     value={formValues.pagamento_quitado}
                     onChange={(e) =>
                       setFormValues((prev) => ({
@@ -1635,6 +1844,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="date"
                     id="dt_compensacao"
                     name="dt_compensacao"
+                    disabled={visualizando}
                     value={
                       formValues.dt_compensacao
                         ? new Date(formValues.dt_compensacao).toISOString().split("T")[0]
@@ -1652,6 +1862,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="text"
                     id="nfe"
                     name="nfe"
+                    disabled={visualizando}
                     value={formValues.nfe}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -1706,7 +1917,7 @@ const ContasFinanceiroPage: React.FC = () => {
                       id="juros"
                       name="juros"
                       type="number"
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                       disabled={visualizando}
                       value={juros}
@@ -1725,7 +1936,7 @@ const ContasFinanceiroPage: React.FC = () => {
                         setjurosUnit((prev) => (prev === "PERCENTUAL" ? "REAL" : "PERCENTUAL"));
                         console.log("jurosUnit", jurosUnit);
                       }}
-                      className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1 ${visualizando ? 'hidden' : ''}`}
+                      className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1 `}
 
                       style={{
                         WebkitAppearance: "none",
@@ -1766,7 +1977,7 @@ const ContasFinanceiroPage: React.FC = () => {
                       id="desconto"
                       name="desconto"
                       type="number"
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                       disabled={visualizando}
                       value={desconto}
@@ -1785,7 +1996,7 @@ const ContasFinanceiroPage: React.FC = () => {
                         e.preventDefault(); // Impede a abertura do select padrão
                         setdescontoUnit((prev) => (prev === "PERCENTUAL" ? "REAL" : "PERCENTUAL"));
                       }}
-                      className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1 ${visualizando ? 'hidden' : ''}`}
+                      className={`absolute right-0 top-0 h-full w-[50px] border-l border-gray-400 !bg-gray-50 px-1  `}
 
                       style={{
                         WebkitAppearance: "none",
@@ -1827,7 +2038,7 @@ const ContasFinanceiroPage: React.FC = () => {
                       name="valor_final"
                       type="text"
                       disabled
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                       value={`R$ ${new Intl.NumberFormat('pt-BR', {
                         style: 'decimal',
@@ -1844,7 +2055,7 @@ const ContasFinanceiroPage: React.FC = () => {
               <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
               <div style={{ height: "16px" }}></div>
               <div className="grid grid-cols-6 gap-2">
-                <div>
+                <div className={`${visualizando ? 'hidden' : ''}`}>
                   <label htmlFor="restanteAserPago" className="block text-black font-small">Restante</label>
                   <input
                     id="restanteAserPago"
@@ -1852,11 +2063,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     type="text"
                     disabled
                     className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
-                    value={
-                      !isEditing
-                        ? (restanteAserPago / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                        : (Number(formValues.valor_final) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                    }
+                    value={(restanteAserPago / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
 
                   />
                   {/* <span>
@@ -2111,7 +2318,7 @@ const ContasFinanceiroPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-12 w-full">
-              <div className={`h-[50px] grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} h-[50px] grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white ml-9 transition-all transform duration-150 hover:scale-125 relative z-10 hover:z-50"
@@ -2206,8 +2413,8 @@ const ContasFinanceiroPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <button
-                        onClick={() => setVisible(true)}
-                        className="relative group focus:outline-none transform transition-all duration-50 hover:scale-150 hover:bg-green400"
+                        onClick={() => (!openedFiltros ? setOpenedFiltros(true) : setOpenedFiltros(false))}
+                        className="relative group focus:outline-none transform transition-all duration-50 hover:scale-150 hover:bg-green400 active:scale-100"
                       >
                         <div className="w-[40px] h-[40px] bg-blue300 rounded-full flex items-center justify-center">
                           <div className="w-[35px] h-[35px] bg-white rounded-full flex items-center justify-center">
@@ -2218,7 +2425,7 @@ const ContasFinanceiroPage: React.FC = () => {
                         </div>
 
                         {/* Tooltip */}
-                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap ">
                           Filtros
                         </span>
                       </button>
@@ -2226,7 +2433,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     <div>
                       <button
                         className="group bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
-                        onClick={() => setVisible(true)}
+                        onClick={() => { clearInputs(); setOpenedFiltros(false); setVisible(true); }}
                       >
                         <IoAddCircleOutline
                           style={{ fontSize: "2.5rem" }}
@@ -2244,10 +2451,230 @@ const ContasFinanceiroPage: React.FC = () => {
             </div>
 
             <div
-              className="bg-white rounded-lg p-8 pt-1 shadow-md w-full flex flex-col"
+              className="bg-white rounded-lg p-6 pt-2 shadow-md w-full flex flex-col"
               style={{ height: "95%" }}
             >
-              <div className="grid grid-cols-5 gap-3 w-full mb-4 mt-2">
+              {/* Aba superior com Filtros */}
+              <div
+                className={`
+                          bg-white
+                          border-4
+                          border-blue300
+                          transition-transform 
+                          duration-300 
+                          z-[9999] 
+                          p-5               
+                          rounded-2xl
+                          ${openedFiltros ? "" : "hidden"}
+                        `}
+              >
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <h2 className="text-blue text-xl font-extrabold mb-3">
+                      Filtros
+                    </h2>
+
+                  </div>
+                  <div className="flex items-center justify-end col-span-3">
+                    <Button
+                      label="Limpar"
+                      className="text-white w-[120px] h-[30px] !bg-pink400 border-pink800 transition-all duration-50 hover:!bg-pink600 active:scale-90 focus:outline-none"
+                      icon="pi pi-eraser"
+                      onClick={() => {
+                        clearFilters();
+                      }}
+                      style={{
+                        backgroundColor: "#dc3545",
+                        border: "1px solid #dc3545",
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    />
+                  </div>
+                </div>
+                {/* Filtros */}
+                <div className="grid grid-cols-5 gap-4 w-full">
+                  <div>
+                    <label htmlFor="dataInicial" className="block text-blue font-medium">
+                      Data Inicial
+                    </label>
+                    <input
+                      type="date"
+                      id="dataInicial"
+                      value={dataInicial}
+                      onChange={(e) => setDataInicial(e.target.value)}
+                      className="w-full border border-[#D9D9D9] bg-gray-100 pl-2 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="dataFinalFiltro" className="block text-blue font-medium">
+                      Data Final
+                    </label>
+                    <input
+                      type="date"
+                      id="dataFinalFiltro"
+                      value={dataFinalFiltro}
+                      onChange={(e) => setDataFinalFiltro(e.target.value)}
+                      className="w-full border border-[#D9D9D9] bg-gray-100 pl-2 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="planoContasFiltro" className="block text-blue font-medium">
+                      Plano de Contas
+                    </label>
+                    <input
+                      type="text"
+                      id="planoContasFiltro"
+                      value={planoContasFiltro}
+                      onChange={(e) => setPlanoContasFiltro(e.target.value)}
+                      className="w-full border border-[#D9D9D9] bg-gray-100 pl-2 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="formaPagamentoFiltro" className="block text-blue font-medium">
+                      Forma de Pagamento
+                    </label>
+                    <select
+                      id="formaPagamentoFiltro"
+                      name="formaPagamentoFiltro"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={formaPagamentoFiltro}
+                      onChange={(e) => setFormaPagamentoFiltro(e.target.value === "" ? "" : Number(e.target.value))}
+                    >
+                      <option value="">Todas as formas</option>
+                      {formasPagamento.map((forma) => (
+                        <option key={forma.cod_forma_pagamento} value={forma.cod_forma_pagamento}>
+                          {forma.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="centroCusto" className="block text-blue font-medium">
+                      Centro de Custo
+                    </label>
+                    <input
+                      type="text"
+                      value={centroCustoFiltro}
+                      onChange={(e) => setCentroCustoFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-5 gap-4 w-full mt-4">
+                  <div>
+                    <label htmlFor="contaBancaria" className="block text-blue font-medium">
+                      Conta Bancária
+                    </label>
+                    <input
+                      type="text"
+                      value={contaBancariaFiltro}
+                      onChange={(e) => setContaBancariaFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="situacao" className="block text-blue font-medium">
+                      Situação
+                    </label>
+                    <select
+                      value={situacaoFiltro}
+                      onChange={(e) => setSituacaoFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    >
+                      <option value="">Todas as Situações</option>
+                      <option value="Ativo">Ativo</option>
+                      <option value="Inativo">Inativo</option>
+                    </select>
+
+                  </div>
+                  <div>
+                    <label htmlFor="notaFiscal" className="block text-blue font-medium">
+                      Nota Fiscal
+                    </label>
+                    <input
+                      type="text"
+                      value={notaFiscalFiltro}
+                      onChange={(e) => setNotaFiscalFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+
+                  </div>
+                  <div>
+                    <label htmlFor="valorTotalInicial" className="block text-blue font-medium">
+                      Valor Total Inicial
+                    </label>
+                    <input
+                      type="number"
+                      value={valorTotalInicialFiltro}
+                      onChange={(e) => setValorTotalInicialFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="valorTotalFinal" className="block text-blue font-medium">
+                      Valor Total Final
+                    </label>
+                    <input
+                      type="number"
+                      value={valorTotalFinalFiltro}
+                      onChange={(e) => setValorTotalFinalFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 w-full mt-4">
+                  <div>
+                    <label htmlFor="descricao" className="block text-blue font-medium">
+                      Descrição
+                    </label>
+                    <input
+                      type="text"
+                      value={descricaoFiltro}
+                      onChange={(e) => setDescricaoFiltro(e.target.value)}
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="entidade" className="block text-blue font-medium">
+                      Entidade
+                    </label>
+                    <select
+                      id="entidade"
+                      name="entidade"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={entidadeFiltro}
+                      onChange={(e) => setEntidadeFiltro(e.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      <option value="cliente">Cliente</option>
+                      <option value="transportadora">Transportadora</option>
+                      <option value="fornecedor">Fornecedor</option>
+                    </select>
+
+                  </div>
+                  <div>
+                    <label htmlFor="nomeEntidade" className="block text-blue font-medium">
+                      Nome da entidade
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-400 pl-1 rounded-sm h-8"
+                      value={entidadeNomeFiltro}
+                      onChange={(e) => setEntidadeNomeFiltro(e.target.value)}
+                    />
+
+                  </div>
+                </div>
+              </div>
+
+
+              <div className="grid grid-cols-5 gap-3 w-full mb-4 mt-2 pt-2">
                 {/* Vencidos */}
                 <div
                   onClick={applyVencidosFilter}
@@ -2317,6 +2744,9 @@ const ContasFinanceiroPage: React.FC = () => {
                   }}
                 />
               </div>
+
+
+
               <DataTable
                 value={filteredContasFinanceiro.slice(first, first + rows)}
                 paginator={true}
@@ -2328,15 +2758,12 @@ const ContasFinanceiroPage: React.FC = () => {
                   setFirst(e.first);
                   setRows(e.rows);
                 }}
-                onRowClick={(e) => {
-                  setLinhaSelecionada(e.data as ContaFinanceiro);
-                  setMostrarModal(true);
-                }}
+
                 tableStyle={{
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -2433,13 +2860,43 @@ const ContasFinanceiroPage: React.FC = () => {
                       : "R$ 0,00"
                   }
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                        title="Visualizar"
+                      >
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => { handleEdit(rowData, false); setOpenedFiltros(false) }}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
@@ -2478,6 +2935,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   />
                 )}
               </DataTable>
+
               <Dialog
                 header="Detalhes da Conta Financeira selecionada:"
                 visible={mostrarModal}
@@ -2505,9 +2963,6 @@ const ContasFinanceiroPage: React.FC = () => {
                   </div>
                 )}
               </Dialog>
-
-
-
 
             </div>
           </div>

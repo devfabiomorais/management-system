@@ -10,7 +10,7 @@ import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from 'primereact/dialog';
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { FaTrash, FaBan } from "react-icons/fa";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { Button } from "primereact/button";
@@ -213,7 +213,10 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleEdit = async (rowData: any, users: User) => {
+    const [visualizando, setVisualizar] = useState<boolean>(false);
+
+    const handleEdit = async (rowData: any, users: User, visualizar: boolean) => {
+        setVisualizar(visualizar);
 
         try {
             const groups = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups/", {
@@ -642,7 +645,7 @@ Copyright Grupo ComViver
 
 
                 <Dialog
-                    header={isEditing ? "Editar Usuário" : "Novo Usuário"}
+                    header={isEditing ? (visualizando ? "Visualizando Usuário" : "Editar Usuário") : "Novo Usuário"}
                     visible={visible}
                     headerStyle={{
                         backgroundColor: "#D9D9D9",
@@ -653,7 +656,9 @@ Copyright Grupo ComViver
                     }}
                     onHide={() => closeModal()}
                 >
-                    <div className="p-fluid grid gap-3 mt-2">
+                    <div
+                        className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
                         <div className="">
                             <label htmlFor="nome" className="block text-blue font-medium">
                                 Nome Completo
@@ -662,6 +667,7 @@ Copyright Grupo ComViver
                                 type="text"
                                 id="nome"
                                 name="nome"
+                                disabled={visualizando}
                                 value={formValues.nome}
                                 onChange={handleInputChange}
                                 className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -676,6 +682,7 @@ Copyright Grupo ComViver
                                 type="email"
                                 id="email"
                                 name="email"
+                                disabled={visualizando}
                                 value={formValues.email}
                                 onChange={handleEmailChange}
                                 onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
@@ -690,6 +697,7 @@ Copyright Grupo ComViver
                                 Estabelecimento
                             </label>
                             <MultiSelect
+                                disabled={visualizando}
                                 value={selectedEstablishments}
                                 onChange={(e) => setSelectedEstablishments(e.value)}
                                 options={establishments}
@@ -711,6 +719,7 @@ Copyright Grupo ComViver
                                     type="text"
                                     id="login"
                                     name="usuario"
+                                    disabled={visualizando}
                                     value={formValues.usuario}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -721,6 +730,7 @@ Copyright Grupo ComViver
                                     Grupo de Permissões
                                 </label>
                                 <Dropdown
+                                    disabled={visualizando}
                                     value={selectedGroupPermissions}
                                     onChange={(e) => setSelectedGroupPermissions(e.value)}
                                     options={groupPermissions}
@@ -734,6 +744,7 @@ Copyright Grupo ComViver
                                     Situação
                                 </label>
                                 <Dropdown
+                                    disabled={visualizando}
                                     id="situacao"
                                     name="situacao"
                                     value={formValues.situacao}
@@ -751,7 +762,7 @@ Copyright Grupo ComViver
 
 
                     <div className="flex justify-between items-center mt-16 w-full">
-                        <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+                        <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
@@ -1002,13 +1013,43 @@ Copyright Grupo ComViver
                                     padding: "10px",
                                 }} />
 
+                            <Column
+                                header=""
+                                body={(rowData) => (
+                                    <div className="flex gap-2 justify-center">
+                                        <button
+                                            onClick={() => handleEdit(rowData, rowData, true)}
+                                            className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                                            title="Visualizar"
+                                        >
+                                            <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                                        </button>
+                                    </div>
+                                )}
+                                className="text-black"
+                                style={{
+                                    width: "0%",
+                                    textAlign: "center",
+                                    border: "1px solid #ccc",
+                                }}
+                                headerStyle={{
+                                    fontSize: "1.2rem",
+                                    color: "#1B405D",
+                                    fontWeight: "bold",
+                                    border: "1px solid #ccc",
+                                    textAlign: "center",
+                                    backgroundColor: "#D9D9D980",
+                                    verticalAlign: "middle",
+                                    padding: "10px",
+                                }}
+                            />
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
                                         <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
                                             <button
-                                                onClick={() => handleEdit(rowData, rowData)}
+                                                onClick={() => handleEdit(rowData, rowData, false)}
                                                 className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                                             >
                                                 <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />

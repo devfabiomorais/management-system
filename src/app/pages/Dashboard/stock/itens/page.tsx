@@ -11,7 +11,7 @@ import 'primeicons/primeicons.css';
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
 import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { IoAddCircleOutline } from "react-icons/io5";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -627,9 +627,12 @@ const ItensPage: React.FC = () => {
     };
 
 
+    const [visualizando, setVisualizar] = useState<boolean>(false);
 
-    const handleEdit = async (itens: Item) => {
+    const handleEdit = async (itens: Item, visualizar: boolean) => {
         console.log("Item selecionado para edição:", itens);
+
+        setVisualizar(visualizar);
 
         try {
             // Fazer todas as requisições simultaneamente para melhorar o desempenho
@@ -823,7 +826,7 @@ const ItensPage: React.FC = () => {
 
 
                 <Dialog
-                    header={isEditing ? "Editar Item" : "Novo Item"}
+                    header={isEditing ? (visualizando ? "Visualizando Item" : "Editar Item") : "Novo Item"}
                     visible={visible}
                     headerStyle={{
                         backgroundColor: "#D9D9D9",
@@ -834,7 +837,9 @@ const ItensPage: React.FC = () => {
                     }}
                     onHide={() => closeModal()}
                 >
-                    <div className="p-fluid grid gap-3 mt-2 space-y-0">
+                    <div
+                        className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
                         <div className="grid grid-cols-4 gap-2">
 
                             <div className="">
@@ -845,6 +850,7 @@ const ItensPage: React.FC = () => {
                                     type="text"
                                     id="codigo"
                                     name="codigo"
+                                    disabled={visualizando}
                                     value={formValues.codigo}
                                     onChange={(e) => setFormValues({ ...formValues, codigo: e.target.value })}
                                     className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
@@ -861,6 +867,7 @@ const ItensPage: React.FC = () => {
                                 type="text"
                                 id="description"
                                 name="descricao"
+                                disabled={visualizando}
                                 value={formValues.descricao}
                                 onChange={(e) => setFormValues({ ...formValues, descricao: e.target.value })}
                                 className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -875,6 +882,7 @@ const ItensPage: React.FC = () => {
                                 id="narrative"
                                 rows={3}
                                 name="narrativa"
+                                disabled={visualizando}
                                 value={formValues.narrativa}
                                 onChange={(e) => setFormValues({ ...formValues, narrativa: e.target.value })}
                                 className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-16"
@@ -889,6 +897,7 @@ const ItensPage: React.FC = () => {
                                 <Dropdown
                                     id="un"
                                     name="cod_un"
+                                    disabled={visualizando}
                                     value={selectedUnit}
                                     onChange={(e) => {
                                         setSelectedUnit(e.value)
@@ -909,6 +918,7 @@ const ItensPage: React.FC = () => {
                                 <Dropdown
                                     id="family"
                                     name="cod_familia"
+                                    disabled={visualizando}
                                     value={selectedFamily}
                                     onChange={(e) => {
                                         setSelectedFamily(e.value);
@@ -928,6 +938,7 @@ const ItensPage: React.FC = () => {
                                 <Dropdown
                                     id="situacao"
                                     name="situacao"
+                                    disabled={visualizando}
                                     value={formValues.situacao}
                                     onChange={(e) => setFormValues({ ...formValues, situacao: e.value })}
                                     options={[
@@ -951,6 +962,7 @@ const ItensPage: React.FC = () => {
                                     id="valor_venda"
                                     name="valor_venda"
                                     type="text"
+                                    disabled={visualizando}
                                     value={`R$ ${Number(formValues.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                                     onChange={(e) => {
                                         const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
@@ -971,6 +983,7 @@ const ItensPage: React.FC = () => {
                                     id="valor_custo"
                                     name="valor_custo"
                                     type="text"
+                                    disabled={visualizando}
                                     value={`R$ ${Number(formValues.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                                     onChange={(e) => {
                                         const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
@@ -985,7 +998,7 @@ const ItensPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="w-full">
+                            <div className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2">
                                 <label htmlFor="photo" className="block text-blue font-medium">
                                     Foto
                                 </label>
@@ -994,6 +1007,7 @@ const ItensPage: React.FC = () => {
                                     type="file"
                                     id="photo"
                                     name="foto"
+                                    disabled={visualizando}
                                     onChange={handleFileChange}
                                     className="file-input"
                                     style={{ display: "none" }}  // Esconde o input real
@@ -1037,6 +1051,7 @@ const ItensPage: React.FC = () => {
                                     onChange={(e) => setSelectedEstablishments(e.value)}
                                     options={establishments}
                                     optionLabel="nome"
+                                    disabled={visualizando}
                                     filter
                                     placeholder="Selecione os Estabelecimentos"
                                     maxSelectedLabels={3}
@@ -1050,7 +1065,7 @@ const ItensPage: React.FC = () => {
                     <br></br>
                     <br></br>
 
-                    <div className={`grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
+                    <div className={`${visualizando ? "hidden" : ""} grid gap-3 ${isEditing ? "grid-cols-2" : "grid-cols-3"} w-full`}>
                         {/* Botão Vermelho - Sempre Presente */}
                         <Button
                             label="Sair Sem Salvar"
@@ -1171,12 +1186,11 @@ const ItensPage: React.FC = () => {
                             rows={rows}
                             rowsPerPageOptions={[5, 10]}
                             rowClassName={(data) => 'hover:bg-gray-200'}
-
+                            className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                             onPage={(e) => {
                                 setFirst(e.first);
                                 setRows(e.rows);
                             }}
-                            className="w-full"
                             responsiveLayout="scroll"
                             tableStyle={{
                                 borderCollapse: "collapse",
@@ -1311,12 +1325,42 @@ const ItensPage: React.FC = () => {
                                     return <span>{formattedDate}</span>;
                                 }}
                             />
+                            <Column
+                                header=""
+                                body={(rowData) => (
+                                    <div className="flex gap-2 justify-center">
+                                        <button
+                                            onClick={() => handleEdit(rowData, true)}
+                                            className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                                            title="Visualizar"
+                                        >
+                                            <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                                        </button>
+                                    </div>
+                                )}
+                                className="text-black"
+                                style={{
+                                    width: "0%",
+                                    textAlign: "center",
+                                    border: "1px solid #ccc",
+                                }}
+                                headerStyle={{
+                                    fontSize: "1.2rem",
+                                    color: "#1B405D",
+                                    fontWeight: "bold",
+                                    border: "1px solid #ccc",
+                                    textAlign: "center",
+                                    backgroundColor: "#D9D9D980",
+                                    verticalAlign: "middle",
+                                    padding: "10px",
+                                }}
+                            />
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)}
+                                            <button onClick={() => handleEdit(rowData, false)}
                                                 className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
                                                 <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
                                             </button>

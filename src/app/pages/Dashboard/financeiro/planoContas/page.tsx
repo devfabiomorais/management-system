@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -206,7 +206,11 @@ const PlanoContasPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (planoContas: PlanoContas) => {
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (planoContas: PlanoContas, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     console.log("Editando plano de contas:", planoContas);
 
     // Remover o último ".X" da classificação, se existir
@@ -435,7 +439,7 @@ const PlanoContasPage: React.FC = () => {
 
           {/* MODAL PRINCIPAL */}
           <Dialog
-            header={isEditing ? "Editar Plano de conta" : "Novo Plano de conta"}
+            header={isEditing ? (visualizando ? "Visualizando Plano de conta" : "Editar Plano de conta") : "Novo Plano de conta"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -446,7 +450,9 @@ const PlanoContasPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -463,8 +469,8 @@ const PlanoContasPage: React.FC = () => {
                         cod_plano_conta_mae: parseFloat(e.target.value),
                       }))
                     }
-                    disabled={isEditing}
-                    className={`w-full pl-1 rounded-sm h-8 border-[#D9D9D9] ${isEditing ? 'text-gray-400 bg-gray-100 pointer-events-none' : ''
+                    disabled={isEditing || visualizando}
+                    className={`w-full pl-1 rounded-sm h-8 border-[#D9D9D9] ${isEditing ? ' bg-gray-100 pointer-events-none' : ''
                       }`}
                   >
                     <option value="0" disabled hidden>
@@ -497,7 +503,7 @@ const PlanoContasPage: React.FC = () => {
                       id="cod_grupo_dre"
                       name="cod_grupo_dre"
                       value={selectedGrupoDRE ? selectedGrupoDRE.cod_grupo_dre : "default"}
-                      disabled={isEditing}
+                      disabled={isEditing || visualizando}
                       onChange={handleGrupoDREChange}
                       className="w-full pl-1 rounded-sm h-8 border-[#D9D9D9]"
                     >
@@ -546,6 +552,7 @@ const PlanoContasPage: React.FC = () => {
                     type="text"
                     id="descricao"
                     name="descricao"
+                    disabled={visualizando}
                     value={formValues.descricao}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -558,7 +565,7 @@ const PlanoContasPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -694,7 +701,7 @@ const PlanoContasPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -833,13 +840,43 @@ const PlanoContasPage: React.FC = () => {
                     return <span>{formattedDate}</span>;
                   }}
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                        title="Visualizar"
+                      >
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => handleEdit(rowData, false)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

@@ -11,7 +11,7 @@ import { Dialog } from 'primereact/dialog';
 import { IoAddCircleOutline } from "react-icons/io5";
 import { Paginator } from "primereact/paginator";
 import { FaBan, FaTrash } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -342,8 +342,11 @@ const EstablishmentsPage: React.FC = () => {
         }
     };
 
+    const [visualizando, setVisualizar] = useState<boolean>(false);
 
-    const handleEdit = (estabelecimento: Establishment) => {
+    const handleEdit = (estabelecimento: Establishment, visualizar: boolean) => {
+        setVisualizar(visualizar);
+
         setFormValues(estabelecimento);
         setSelectedEstabilishment(estabelecimento);
         setIsEditing(true);
@@ -573,7 +576,7 @@ const EstablishmentsPage: React.FC = () => {
                 </Dialog>
 
                 <Dialog
-                    header={isEditing ? "Editar Estabelecimento" : "Novo Estabelecimento"}
+                    header={isEditing ? (visualizando ? "Visualizando Estabelecimento" : "Editar Estabelecimento") : "Novo Estabelecimento"}
                     visible={visible}
                     headerStyle={{
                         backgroundColor: "#D9D9D9",
@@ -585,7 +588,9 @@ const EstablishmentsPage: React.FC = () => {
                     className="w-[750px]"
                     onHide={() => closeModal()}
                 >
-                    <div className="p-fluid grid gap-2 mt-2">
+                    <div
+                        className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
                         <div className="grid grid-cols-1 gap-2">
                             <div>
                                 <label htmlFor="name" className="block text-blue font-medium">
@@ -595,6 +600,7 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="name"
                                     name="nome"
+                                    disabled={visualizando}
                                     value={formValues.nome}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -612,6 +618,7 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="cep"
                                     name="cep"
+                                    disabled={visualizando}
                                     value={formValues.cep}
                                     onChange={handleCepChange}
                                     maxLength={15}
@@ -627,6 +634,7 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="street"
                                     name="logradouro"
+                                    disabled={visualizando}
                                     value={formValues.logradouro}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -642,6 +650,7 @@ const EstablishmentsPage: React.FC = () => {
                                     id="number"
                                     name="numero"
                                     value={formValues.numero}
+                                    disabled={visualizando}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
@@ -659,6 +668,7 @@ const EstablishmentsPage: React.FC = () => {
                                     id="state"
                                     name="estado"
                                     value={formValues.estado}
+                                    disabled={visualizando}
                                     onChange={(e) => setFormValues({ ...formValues, estado: e.target.value })}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                 >
@@ -682,6 +692,7 @@ const EstablishmentsPage: React.FC = () => {
                                     id="city"
                                     name="cidade"
                                     value={formValues.cidade}
+                                    disabled={visualizando}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                     placeholder="" />
@@ -695,6 +706,7 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="neighborHood"
                                     name="bairro"
+                                    disabled={visualizando}
                                     value={formValues.bairro}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -709,6 +721,7 @@ const EstablishmentsPage: React.FC = () => {
                                     type="text"
                                     id="complement"
                                     name="complemento"
+                                    disabled={visualizando}
                                     value={formValues.complemento}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -721,7 +734,7 @@ const EstablishmentsPage: React.FC = () => {
 
 
                     <div className="flex justify-between items-center mt-16 w-full">
-                        <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+                        <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
@@ -851,7 +864,7 @@ const EstablishmentsPage: React.FC = () => {
                                 borderCollapse: 'collapse',
                                 width: '100%',
                             }}
-                            className="w-full"
+                            className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                             responsiveLayout="scroll"
                         >
                             <Column field="cod_estabelecimento" header="Código" className="text-black"
@@ -991,12 +1004,42 @@ const EstablishmentsPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
+                            <Column
+                                header=""
+                                body={(rowData) => (
+                                    <div className="flex gap-2 justify-center">
+                                        <button
+                                            onClick={() => handleEdit(rowData, true)}
+                                            className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                                            title="Visualizar"
+                                        >
+                                            <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                                        </button>
+                                    </div>
+                                )}
+                                className="text-black"
+                                style={{
+                                    width: "0%",
+                                    textAlign: "center",
+                                    border: "1px solid #ccc",
+                                }}
+                                headerStyle={{
+                                    fontSize: "1.2rem",
+                                    color: "#1B405D",
+                                    fontWeight: "bold",
+                                    border: "1px solid #ccc",
+                                    textAlign: "center",
+                                    backgroundColor: "#D9D9D980",
+                                    verticalAlign: "middle",
+                                    padding: "10px",
+                                }}
+                            />
                             {permissions?.edicao === "SIM" && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData)}
+                                            <button onClick={() => handleEdit(rowData, false)}
                                                 className="bg-yellow p-2 transform transition-all duration-50  rounded-2xl hover:scale-125 hover:bg-yellow700"
                                             >
                                                 <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -351,8 +351,11 @@ const TransportadorasPage: React.FC = () => {
 
 
   // ---------------------------------------------------------------------------------------------------------------
+  const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (rowData: any, transportadora: Transportadora) => {
+  const handleEdit = (rowData: any, transportadora: Transportadora, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     setFormValues(transportadora);
     setSelectedTransportadora(transportadora);
     setIsEditing(true);
@@ -741,7 +744,7 @@ const TransportadorasPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Transportadora" : "Nova Transportadora"}
+            header={isEditing ? (visualizando ? "Visualizando Transportadora" : "Editar Transportadora") : "Nova Transportadora"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -752,7 +755,9 @@ const TransportadorasPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
 
               <div className="grid gap-2">
                 <div className="col-span-2">
@@ -763,6 +768,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="nome"
                     name="nome"
+                    disabled={visualizando}
                     value={formValues.nome}
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
@@ -779,6 +785,7 @@ const TransportadorasPage: React.FC = () => {
                   <select
                     id="tipo"
                     name="tipo"
+                    disabled={visualizando}
                     value={formValues.tipo}
                     onChange={(e) =>
                       setFormValues({ ...formValues, tipo: e.target.value })
@@ -799,6 +806,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="responsavel"
                     name="responsavel"
+                    disabled={visualizando}
                     value={formValues.responsavel}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -810,6 +818,7 @@ const TransportadorasPage: React.FC = () => {
                     Estabelecimento
                   </label>
                   <MultiSelect
+                    disabled={visualizando}
                     value={selectedEstablishments}
                     onChange={(e) => setSelectedEstablishments(e.value)}
                     options={establishments}
@@ -831,6 +840,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="celular"
                     name="celular"
+                    disabled={visualizando}
                     value={formValues.celular}
                     onChange={handleCelularChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -846,6 +856,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="telefone"
                     name="telefone"
+                    disabled={visualizando}
                     value={formValues.telefone}
                     onChange={handleTelefoneChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -861,6 +872,7 @@ const TransportadorasPage: React.FC = () => {
                     type="email"
                     id="email"
                     name="email"
+                    disabled={visualizando}
                     value={formValues.email}
                     onChange={handleEmailChange}
                     onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
@@ -881,6 +893,7 @@ const TransportadorasPage: React.FC = () => {
                   <textarea
                     id="obervacoes_gerais"
                     name="obervacoes_gerais"
+                    disabled={visualizando}
                     value={formValues.observacoes || ""}
                     maxLength={255}
                     className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
@@ -905,6 +918,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="cep"
                     name="cep"
+                    disabled={visualizando}
                     value={formValues.cep}
                     onChange={handleCepChange}
                     maxLength={15}
@@ -920,6 +934,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="logradouro"
                     name="logradouro"
+                    disabled={visualizando}
                     value={formValues.logradouro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -934,6 +949,7 @@ const TransportadorasPage: React.FC = () => {
                     type="number"
                     id="numero"
                     name="numero"
+                    disabled={visualizando}
                     value={formValues.numero}
                     onChange={handleNumericInputChange} // Não permite letras
                     onKeyPress={handleNumericKeyPress} // Bloqueia letras
@@ -952,6 +968,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="estado"
                     name="estado"
+                    disabled={visualizando}
                     value={formValues.estado}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -966,6 +983,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="bairro"
                     name="bairro"
+                    disabled={visualizando}
                     value={formValues.bairro}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -980,6 +998,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="cidade"
                     name="cidade"
+                    disabled={visualizando}
                     value={formValues.cidade}
                     onChange={handleAlphabeticInputChange} // Não permite números
                     onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
@@ -995,6 +1014,7 @@ const TransportadorasPage: React.FC = () => {
                     type="text"
                     id="complemento"
                     name="complemento"
+                    disabled={visualizando}
                     value={formValues.complemento}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -1007,7 +1027,7 @@ const TransportadorasPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -1142,7 +1162,7 @@ const TransportadorasPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -1310,14 +1330,43 @@ const TransportadorasPage: React.FC = () => {
                   }}
                 />
 
-
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData, rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                        title="Visualizar"
+                      >
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData, rowData)}
+                          onClick={() => handleEdit(rowData, rowData, false)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

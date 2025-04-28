@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -19,6 +19,9 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
+import CancelButton from "@/app/components/Buttons/CancelButton";
 
 interface CentroCusto {
   cod_centro_custo: number;
@@ -281,7 +284,12 @@ const CentrosCustoPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (centrosCusto: CentroCusto) => {
+
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (centrosCusto: CentroCusto, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     setFormValues(centrosCusto);
     setSelectedCentroCusto(centrosCusto);
     setIsEditing(true);
@@ -476,7 +484,7 @@ const CentrosCustoPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar Centro de Custo" : "Novo Centro de Custo"}
+            header={isEditing ? (visualizando ? "Visualizando Centro de Custo" : "Editar Centro de Custo") : "Novo Centro de Custo"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -487,7 +495,9 @@ const CentrosCustoPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
@@ -497,6 +507,7 @@ const CentrosCustoPage: React.FC = () => {
                     type="text"
                     id="nome"
                     name="nome"
+                    disabled={visualizando}
                     value={formValues.nome}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -509,13 +520,19 @@ const CentrosCustoPage: React.FC = () => {
                   <label htmlFor="descricao" className="block text-blue font-medium">
                     Descrição
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     id="descricao"
                     name="descricao"
+                    disabled={visualizando}
                     value={formValues.descricao}
-                    onChange={handleInputChange}
-                    className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
+                    maxLength={255}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        descricao: e.target.value,
+                      }));
+                    }}
                   />
                 </div>
               </div>
@@ -523,7 +540,7 @@ const CentrosCustoPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -649,7 +666,6 @@ const CentrosCustoPage: React.FC = () => {
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
                 rowClassName={(data) => 'hover:bg-gray-200'}
-
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -658,7 +674,7 @@ const CentrosCustoPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -684,7 +700,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="nome"
                   header="Nome"
                   style={{
-                    width: "3%",
+                    width: "1%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -737,17 +753,36 @@ const CentrosCustoPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <ViewButton onClick={() => handleEdit(rowData, true)} />
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEdit(rowData)}
-                          className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                        >
-                          <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                        </button>
+                        <EditButton onClick={() => handleEdit(rowData, false)} />
                       </div>
                     )}
                     className="text-black"
@@ -773,12 +808,7 @@ const CentrosCustoPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => openDialog(rowData.cod_centro_custo)}
-                          className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl"
-                        >
-                          <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                        </button>
+                        <CancelButton onClick={() => openDialog(rowData.cod_centro_custo)} />
                       </div>
                     )}
                     className="text-black"

@@ -10,7 +10,7 @@ import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -248,7 +248,12 @@ const FormasPagamentoPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (FormasPagamento: FormasPagamento) => {
+
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (FormasPagamento: FormasPagamento, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     console.log("Editando Forma de Pagamento:", FormasPagamento);
     setFormValues((prev) => ({
       ...prev,
@@ -467,7 +472,7 @@ const FormasPagamentoPage: React.FC = () => {
 
           {/* MODAL PRINCIPAL */}
           <Dialog
-            header={isEditing ? "Editar Forma de Pagamento" : "Nova Forma de Pagamento"}
+            header={isEditing ? (visualizando ? "Visualizando Forma de Pagamento" : "Editar Forma de Pagamento") : "Nova Forma de Pagamento"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -479,7 +484,9 @@ const FormasPagamentoPage: React.FC = () => {
             style={{ width: "50vw" }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid-cols-2 grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div>
                 <label htmlFor="nome" className="block text-blue font-medium">
                   Nome
@@ -488,6 +495,7 @@ const FormasPagamentoPage: React.FC = () => {
                   type="text"
                   id="nome"
                   name="nome"
+                  disabled={visualizando}
                   value={formValues.nome}
                   onChange={handleInputChange}
                   className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -502,6 +510,7 @@ const FormasPagamentoPage: React.FC = () => {
                   type="text"
                   id="descricao"
                   name="descricao"
+                  disabled={visualizando}
                   value={formValues.descricao}
                   onChange={handleInputChange}
                   className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -509,7 +518,9 @@ const FormasPagamentoPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-fluid grid-cols-2 grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div>
                 <label htmlFor="max_parcelas" className="block text-blue font-medium">
                   N° Max Parcelas
@@ -518,6 +529,7 @@ const FormasPagamentoPage: React.FC = () => {
                   type="text"
                   id="max_parcelas"
                   name="max_parcelas"
+                  disabled={visualizando}
                   value={formValues.max_parcelas}
                   onChange={handleInputChange}
                   className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -532,6 +544,7 @@ const FormasPagamentoPage: React.FC = () => {
                   type="number"
                   id="intervalo_parcelas"
                   name="intervalo_parcelas"
+                  disabled={visualizando}
                   value={formValues.intervalo_parcelas}
                   onChange={handleInputChange}
                   min={1}
@@ -541,7 +554,8 @@ const FormasPagamentoPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-fluid grid-cols-2 grid gap-2 mt-2">
+            <div className={`${visualizando ? 'visualizando' : ''}
+            p-fluid grid-cols-2 grid gap-2 mt-2`}>
               <div>
                 <label htmlFor="cod_conta_bancaria" className="block text-blue font-medium">
                   Conta Bancária
@@ -552,7 +566,7 @@ const FormasPagamentoPage: React.FC = () => {
                   value={formValues.cod_conta_bancaria ?? ""}
                   onChange={handleInputChange}
                   className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  disabled={loading}
+                  disabled={loading || visualizando}
                 >
                   <option value="" disabled>
                     Selecione
@@ -576,7 +590,7 @@ const FormasPagamentoPage: React.FC = () => {
                   value={formValues.cod_modalidade || ""}
                   onChange={handleInputChange}
                   className="w-full pl-1 rounded-sm h-8 border-[#D9D9D9]"
-                  disabled={loading}
+                  disabled={loading || visualizando}
                 >
                   <option value="" disabled>
                     Selecione
@@ -593,7 +607,7 @@ const FormasPagamentoPage: React.FC = () => {
 
 
             <div className="flex justify-between items-center mt-16 w-full">
-              <div className={`grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
@@ -729,7 +743,7 @@ const FormasPagamentoPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -864,13 +878,43 @@ const FormasPagamentoPage: React.FC = () => {
                   }}
 
                 />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(rowData, true)}
+                        className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
+                        title="Visualizar"
+                      >
+                        <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
+                      </button>
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
                         <button
-                          onClick={() => handleEdit(rowData)}
+                          onClick={() => handleEdit(rowData, false)}
                           className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
                         >
                           <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />

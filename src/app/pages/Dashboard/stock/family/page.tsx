@@ -381,7 +381,7 @@ const FamilyPage: React.FC = () => {
                                         setFirst(e.first);
                                         setRows(e.rows);
                                     }}
-                                    className="w-full"
+                                    className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                                     responsiveLayout="scroll"
                                     tableStyle={{
                                         borderCollapse: "collapse",
