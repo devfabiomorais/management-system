@@ -36,7 +36,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
     { href: "/pages/Dashboard/home", icon: <FaHome className="text-4xl mb-1" />, label: "Início", module: "Home" },
     { href: "/pages/Dashboard/commercial", icon: <FaSackDollar className="text-4xl mb-1" />, label: "Comercial", module: "Comercial" },
     { href: "/pages/Dashboard/stock", icon: <FaDolly className="text-4xl mb-1" />, label: "Estoque", module: "Estoque" },
-    { href: "#", icon: <FaTags className="text-4xl mb-1" />, label: "Faturamento", module: "Faturamento" },
+    { href: "/pages/Dashboard/faturamento", icon: <FaTags className="text-4xl mb-1" />, label: "Faturamento", module: "Financeiro" },
     { href: "/pages/Dashboard/financeiro", icon: <FaHandHoldingDollar className="text-4xl mb-1" />, label: "Financeiro", module: "Financeiro" },
     { href: "/pages/Dashboard/controls", icon: <FaCogs className="text-4xl mb-1" />, label: "Controles", module: "Controles" },
   ];

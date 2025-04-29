@@ -1,0 +1,980 @@
+"use client";
+import React, { ChangeEvent, useEffect, useState } from "react";
+import SidebarLayout from "@/app/components/Sidebar";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { InputText } from "primereact/inputtext";
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+import { Dialog } from "primereact/dialog";
+import { IoAddCircleOutline } from "react-icons/io5";
+import { FaTrash, FaBan } from "react-icons/fa";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
+import { Button } from "primereact/button";
+import axios from "axios";
+import { toast } from "react-toastify";
+import BeatLoader from "react-spinners/BeatLoader";
+import { useToken } from "../../../../hook/accessToken";
+import Footer from "@/app/components/Footer";
+import useUserPermissions from "@/app/hook/useUserPermissions";
+import { useGroup } from "@/app/hook/acessGroup";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+
+export interface NaturezaOperacao {
+  cod_natureza_operacao: number;
+  nome?: string;
+  padrao?: string;
+  tipo?: string; // Se você estiver usando enum, pode tipar melhor
+  finalidade_emissao?: string;
+  tipo_agendamento?: string;
+  consumidor_final?: string; // Ou boolean, dependendo do seu Prisma
+  observacoes?: string;
+  cod_grupo_tributacao?: number;
+  cod_cfop_interno?: number;
+  cod_cfop_externo?: number;
+  situacao?: 'Ativo' | 'Inativo'; // enum
+}
+
+
+const NaturezaOperacao: React.FC = () => {
+  const { groupCode } = useGroup();
+  const { token } = useToken();
+  const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
+  let [loading, setLoading] = useState(false);
+  let [color, setColor] = useState("#B8D047");
+  const [itemCreateDisabled, setItemCreateDisabled] = useState(false);
+  const [itemCreateReturnDisabled, setItemCreateReturnDisabled] =
+    useState(false);
+  const [itemEditDisabled, setItemEditDisabled] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [naturezasOperacao, setNaturezasOperacao] = useState<NaturezaOperacao[]>([]);
+  const [search, setSearch] = useState("");
+  const [first, setFirst] = useState(0);
+  const [rows, setRows] = useState(10);
+
+
+  const filteredNaturezasOperacao = naturezasOperacao.filter((naturezaOperacao) => {
+    // Apenas ATIVO aparecem
+    if (naturezaOperacao.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Lógica de busca
+    return Object.values(naturezaOperacao).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [naturezasOperacaoIdToDelete, setNaturezaOperacaoIdToDelete] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [selectedNaturezaOperacao, setSelectedNaturezaOperacao] = useState<NaturezaOperacao | null>(null);
+  const [formValues, setFormValues] = useState<NaturezaOperacao>({
+    cod_natureza_operacao: 0,
+    nome: "",
+    padrao: "",
+    tipo: "",
+    finalidade_emissao: "",
+    tipo_agendamento: "",
+    consumidor_final: "",
+    observacoes: "",
+    cod_grupo_tributacao: 0,
+    cod_cfop_interno: 0,
+    cod_cfop_externo: 0,
+    situacao: "Ativo",
+  });
+
+
+  const clearInputs = () => {
+    setFormValues({
+      cod_natureza_operacao: 0,
+      nome: "",
+      padrao: "",
+      tipo: "",
+      finalidade_emissao: "",
+      tipo_agendamento: "",
+      consumidor_final: "",
+      observacoes: "",
+      cod_grupo_tributacao: undefined,
+      cod_cfop_interno: 0,
+      cod_cfop_externo: 0,
+      situacao: "Ativo",
+    });
+  };
+
+
+  const handleSaveEdit = async (cod_natureza_operacao: any) => {
+    setItemEditDisabled(true);
+    setLoading(true);
+    setIsEditing(false);
+    try {
+      const requiredFields = [
+        "nome",
+        "descricao",
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (isEmptyField) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/edit/${cod_natureza_operacao}`,
+        { ...formValues },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchNaturezasOperacao();
+        toast.success("Natureza de Operação salvo com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+      } else {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar Natureza de Operação.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemEditDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar Natureza de Operação:", error);
+    }
+  };
+
+
+  const [rowData, setRowData] = useState<NaturezaOperacao[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const handleSaveReturn = async (fecharTela: boolean) => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+
+    try {
+      const requiredFields = [
+        "nome",
+        "padrao",
+        "tipo",
+        "finalidade_emissao",
+        "tipo_agendamento",
+        "consumidor_final",
+        "observacoes",
+        "cod_grupo_tributacao",
+        "cod_cfop_interno",
+        "cod_cfop_externo"
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof NaturezaOperacao];
+        return (
+          value === "" ||
+          value === null ||
+          value === undefined
+        );
+      });
+
+      if (isEmptyField) {
+        toast.info("Todos os campos obrigatórios devem ser preenchidos.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      const naturezaEncontrado = rowData.find(
+        (item) => item.nome === formValues.nome
+      );
+      const situacaoInativo = naturezaEncontrado?.situacao === "Inativo";
+
+      if (naturezaEncontrado && !situacaoInativo) {
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      if (naturezaEncontrado && situacaoInativo) {
+        await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
+        fetchNaturezasOperacao();
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Nome já existia e foi reativado com os novos dados.", {
+          position: "top-right",
+          autoClose: 8000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/register`,
+        formValues,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Natureza de Operação salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        fetchNaturezasOperacao();
+        clearInputs();
+        setVisible(fecharTela);
+      } else {
+        toast.error("Erro ao salvar Natureza de Operação.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar Natureza de Operação:", error);
+      toast.error("Erro interno ao tentar salvar.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+    }
+  };
+
+
+
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (naturezasOperacao: NaturezaOperacao, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
+    setFormValues(naturezasOperacao);
+    setSelectedNaturezaOperacao(naturezasOperacao);
+    setIsEditing(true);
+    setVisible(true);
+  };
+
+  useEffect(() => {
+    fetchNaturezasOperacao();
+  }, []);
+
+  const fetchNaturezasOperacao = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/naturezaOperacao",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setRowData(response.data.naturezas);
+      setIsDataLoaded(true);
+      setNaturezasOperacao(response.data.naturezas);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar Naturezas de Operação:", error);
+    }
+  };
+
+  const openDialog = (id: number) => {
+    setNaturezaOperacaoIdToDelete(id);
+    setModalDeleteVisible(true);
+  };
+
+  const closeDialog = () => {
+    setModalDeleteVisible(false);
+    setNaturezaOperacaoIdToDelete(null);
+  };
+
+  const handleCancelar = async () => {
+    if (naturezasOperacaoIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/cancel/${naturezasOperacaoIdToDelete}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchNaturezasOperacao(); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        setModalDeleteVisible(false);
+        toast.success("Natureza de Operação cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar Natureza de Operação.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao excluir Natureza de Operação:", error);
+      toast.error("Erro ao excluir Natureza de Operação. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
+  const handleDelete = async () => {
+    if (naturezasOperacaoIdToDelete === null) return;
+
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/${naturezasOperacaoIdToDelete}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success("Natureza de Operação removido com sucesso!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      fetchNaturezasOperacao();
+      setModalDeleteVisible(false);
+    } catch (error) {
+      console.log("Erro ao excluir Natureza de Operação:", error);
+      toast.error("Erro ao excluir Natureza de Operação. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormValues({ ...formValues, [name]: value });
+  };
+
+  const closeModal = () => {
+    clearInputs();
+    setIsEditing(false);
+    setVisible(false);
+  };
+
+  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target; // Obtém o "name" e o valor do input
+    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
+    setFormValues({
+      ...formValues,
+      [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
+    });
+  };
+
+
+  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    if (!/[0-9]/.test(char)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target; // Obtém o "name" e o valor do input
+    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
+    setFormValues({
+      ...formValues,
+      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
+    });
+  };
+
+  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const char = e.key;
+    // Permite qualquer caractere que não seja número
+    if (/[\d]/.test(char)) {
+      e.preventDefault(); // Bloqueia a inserção de números
+    }
+  };
+
+
+
+  return (
+    <>
+      <SidebarLayout>
+        <div className="flex justify-center">
+          {loading && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+              <BeatLoader
+                color={color}
+                loading={loading}
+                size={30}
+                aria-label="Loading Spinner"
+                data-testid="loader"
+              />
+            </div>
+          )}
+
+          <Dialog
+            header="Confirmar Cancelamento"
+            visible={modalDeleteVisible}
+            style={{ width: "auto" }}
+            onHide={closeDialog}
+            footer={
+              <div>
+                <Button
+                  label="Não"
+                  icon="pi pi-times"
+                  onClick={closeDialog}
+                  className="p-button-text bg-red text-white p-2 hover:bg-red700 transition-all"
+                />
+                <Button
+                  label="Sim"
+                  icon="pi pi-check"
+                  onClick={handleCancelar}
+                  className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
+                />
+              </div>
+            }
+          >
+            <p>Tem certeza que deseja cancelar este Natureza de Operação?</p>
+          </Dialog>
+
+          <Dialog
+            header={isEditing ? (visualizando ? "Visualizando Natureza de Operação" : "Editar Natureza de Operação") : "Nova Natureza de Operação"}
+            visible={visible}
+            headerStyle={{
+              backgroundColor: "#D9D9D9",
+              color: "#1B405D",
+              fontWeight: "bold",
+              padding: "0.8rem",
+              height: "3rem",
+            }}
+            onHide={() => closeModal()}
+          >
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
+              <div className="grid gap-2">
+                <div>
+                  <label htmlFor="nome" className="block text-blue font-medium">
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    disabled={visualizando}
+                    value={formValues.nome}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="padrao" className="block text-blue font-medium">
+                    Padrão
+                  </label>
+                  <input
+                    type="text"
+                    id="padrao"
+                    name="padrao"
+                    disabled={visualizando}
+                    value={formValues.padrao}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="tipo" className="block text-blue font-medium">
+                    Tipo
+                  </label>
+                  <input
+                    type="text"
+                    id="tipo"
+                    name="tipo"
+                    disabled={visualizando}
+                    value={formValues.tipo}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="finalidade_emissao" className="block text-blue font-medium">
+                    Finalidade de Emissão
+                  </label>
+                  <input
+                    type="text"
+                    id="finalidade_emissao"
+                    name="finalidade_emissao"
+                    disabled={visualizando}
+                    value={formValues.finalidade_emissao}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento
+                  </label>
+                  <input
+                    type="text"
+                    id="estabelecimento"
+                    name="estabelecimento"
+                    disabled={visualizando}
+                    // value={formValues.}
+                    // onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="consumidor_final" className="block text-blue font-medium">
+                    Consumidor Final
+                  </label>
+                  <input
+                    type="text"
+                    id="consumidor_final"
+                    name="consumidor_final"
+                    disabled={visualizando}
+                    value={formValues.consumidor_final}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="tipo_agendamento" className="block text-blue font-medium">
+                    Tipo de Agendamento
+                  </label>
+                  <input
+                    type="text"
+                    id="tipo_agendamento"
+                    name="tipo_agendamento"
+                    disabled={visualizando}
+                    value={formValues.tipo_agendamento}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div>
+                  <label htmlFor="observacoes" className="block text-blue font-medium">
+                    Observações
+                  </label>
+                  <textarea
+                    id="observacoes"
+                    name="observacoes"
+                    disabled={visualizando}
+                    value={formValues.observacoes}
+                    maxLength={255}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        observacoes: e.target.value,
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="cod_grupo_tributacao" className="block text-blue font-medium">
+                    Grupo de Tributação
+                  </label>
+                  <input
+                    type="number"
+                    id="cod_grupo_tributacao"
+                    name="cod_grupo_tributacao"
+                    disabled={visualizando}
+                    value={formValues.cod_grupo_tributacao}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+
+
+                <div>
+                  <label htmlFor="cod_cfop_interno" className="block text-blue font-medium">
+                    CFOP Interno
+                  </label>
+                  <input
+                    type="number"
+                    id="cod_cfop_interno"
+                    name="cod_cfop_interno"
+                    disabled={visualizando}
+                    value={formValues.cod_cfop_interno}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="cod_cfop_externo" className="block text-blue font-medium">
+                    CFOP Interestadual
+                  </label>
+                  <input
+                    type="number"
+                    id="cod_cfop_externo"
+                    name="cod_cfop_externo"
+                    disabled={visualizando}
+                    value={formValues.cod_cfop_externo}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+
+            <div className="flex justify-between items-center mt-16 w-full">
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
+                <Button
+                  label="Sair Sem Salvar"
+                  className="text-white"
+                  icon="pi pi-times"
+                  style={{
+                    backgroundColor: '#dc3545',
+                    border: '1px solid #dc3545',
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                  }}
+                  onClick={() => closeModal()}
+                />
+
+                {!isEditing ? (
+                  <>
+                    <Button
+                      label="Salvar e Voltar à Listagem"
+                      className="text-white"
+                      icon="pi pi-refresh"
+                      onClick={() => handleSaveReturn(false)}
+                      disabled={itemCreateReturnDisabled}
+                      style={{
+                        backgroundColor: '#007bff',
+                        border: '1px solid #007bff',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                      }}
+                    />
+                    <Button
+                      label="Salvar e Adicionar Outro"
+                      className="text-white"
+                      disabled={itemCreateDisabled}
+                      icon="pi pi-check"
+                      onClick={() => handleSaveReturn(true)}
+                      style={{
+                        backgroundColor: '#28a745',
+                        border: '1px solid #28a745',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                      }}
+                    />
+                  </>
+                ) : (
+                  <Button
+                    label="Salvar"
+                    className="text-white"
+                    icon="pi pi-check"
+                    onClick={() => handleSaveEdit(formValues.cod_natureza_operacao)}
+                    disabled={itemEditDisabled}
+                    style={{
+                      backgroundColor: '#28a745',
+                      border: '1px solid #28a745',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+          </Dialog>
+
+          <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+            <div className="flex justify-between">
+              <div>
+                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                  Natureza de Operação
+                </h2>
+              </div>
+              {permissions?.insercao === "SIM" && (
+                <div>
+                  <button
+                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
+                    onClick={() => setVisible(true)}
+                  >
+                    <IoAddCircleOutline
+                      style={{ fontSize: "2.5rem" }}
+                      className="text-white text-center"
+                    />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+              style={{ height: "95%" }}
+            >
+              <div className="mb-4 flex justify-end">
+                <p className="text-blue font-bold text-lg">Busca:</p>
+                <InputText
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder=""
+                  className="p-inputtext-sm border rounded-md ml-1 text-black pl-1"
+                  style={{
+                    border: "1px solid #1B405D80",
+                  }}
+                />
+              </div>
+              <DataTable
+                value={filteredNaturezasOperacao.slice(first, first + rows)}
+                paginator={true}
+                rows={rows}
+                rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
+                onPage={(e) => {
+                  setFirst(e.first);
+                  setRows(e.rows);
+                }}
+                tableStyle={{
+                  borderCollapse: "collapse",
+                  width: "100%",
+                }}
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
+                responsiveLayout="scroll"
+              >
+
+                <Column
+                  field="nome"
+                  header="Nome"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="tributacao"
+                  header="Tributação"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="padrao"
+                  header="Padrão"
+                  style={{
+                    width: "0.5%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="cfop"
+                  header="CFOP"
+                  style={{
+                    width: "0.5%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <ViewButton onClick={() => handleEdit(rowData, true)} />
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                {permissions?.edicao === "SIM" && (
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <EditButton onClick={() => handleEdit(rowData, false)} />
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                )}
+                {permissions?.delecao === "SIM" && (
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                )}
+              </DataTable>
+            </div>
+          </div>
+        </div>
+      </SidebarLayout>
+      <Footer />
+    </>
+  );
+};
+
+export default NaturezaOperacao;

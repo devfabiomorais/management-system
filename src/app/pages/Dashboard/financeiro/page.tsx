@@ -13,7 +13,7 @@ import { GiPayMoney, GiReceiveMoney } from "react-icons/gi";
 import { useSearchParams } from 'next/navigation';
 
 
-const CommercialPage: React.FC = () => {
+const FinanceiroPage: React.FC = () => {
   const searchParams = useSearchParams();
   const tipo = searchParams.get('tipo'); // "aPagar" ou "aReceber"
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -42,7 +42,7 @@ const CommercialPage: React.FC = () => {
       <SidebarLayout>
         <div className="flex justify-center h-screen">
           <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
-            <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Comercial</h2>
+            <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Financeiro</h2>
             <div className="bg-white rounded-lg p-8 pt-14 shadow-md w-full flex justify-center" style={{ height: "95%" }}>
               <div className="flex flex-col items-center">
                 <div className="flex gap-6">
@@ -174,7 +174,7 @@ export default function Page() {
         </div>
       }
     >
-      <CommercialPage />
+      <FinanceiroPage />
     </Suspense>
   );
 }
