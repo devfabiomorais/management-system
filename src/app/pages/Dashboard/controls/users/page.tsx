@@ -24,6 +24,8 @@ import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 import { handleClientScriptLoad } from "next/script";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
 
 interface User {
     cod_usuario: number;
@@ -40,7 +42,7 @@ interface User {
     }
 }
 
-interface Establishment {
+export interface Establishment {
     cod_estabelecimento: number;
     nome: string;
     cep: string;
@@ -1048,14 +1050,8 @@ Copyright Grupo ComViver
                                     header=""
                                     body={(rowData) => (
                                         <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
-                                            <button
-                                                onClick={() => handleEdit(rowData, rowData, false)}
-                                                className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl"
-                                            >
-                                                <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                                            </button>
+                                            <EditButton onClick={() => handleEdit(rowData, rowData, false)} />
                                         </div>
-
                                     )}
                                     className="text-black"
                                     style={{
@@ -1079,17 +1075,8 @@ Copyright Grupo ComViver
                                     header=""
                                     body={(rowData) => (
                                         <div className="bg-red400 flex gap-2 justify-center rounded-2xl w-full">
-                                            <button
-                                                onClick={() => openDialog(rowData.cod_usuario)}
-                                                className="hover:bg-red600 hover:scale-125 p-2 bg-transparent transform transition-all duration-50  rounded-2xl"
-                                            >
-                                                <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                                            </button>
+                                            <CancelButton onClick={() => openDialog(rowData.cod_usuario)} />
                                         </div>
-
-
-
-
                                     )}
                                     className="text-black"
                                     style={{

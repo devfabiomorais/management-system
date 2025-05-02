@@ -19,6 +19,8 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
 
 interface Item {
     cod_un: number;
@@ -463,10 +465,7 @@ const UnMedidaPage: React.FC = () => {
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleEdit(rowData)} className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
-                                                        <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                                                    </button>
-
+                                                    <EditButton onClick={() => handleEdit(rowData)} />
                                                 </div>
                                             )}
                                             className="text-black"
@@ -492,9 +491,7 @@ const UnMedidaPage: React.FC = () => {
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => openDialog(rowData.cod_un)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
-                                                        <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                                                    </button>
+                                                    <CancelButton onClick={() => openDialog(rowData.cod_un)} />
                                                 </div>
                                             )}
                                             className="text-black"

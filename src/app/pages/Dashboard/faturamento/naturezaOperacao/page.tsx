@@ -22,6 +22,10 @@ import { useGroup } from "@/app/hook/acessGroup";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
+import { MultiSelect } from "primereact/multiselect";
+import { Establishment } from "@/services/estabilishment";
+import { fetchEstabilishments } from "@/services/estabilishment";
+
 
 export interface NaturezaOperacao {
   cod_natureza_operacao: number;
@@ -29,7 +33,7 @@ export interface NaturezaOperacao {
   padrao?: string;
   tipo?: string; // Se você estiver usando enum, pode tipar melhor
   finalidade_emissao?: string;
-  tipo_agendamento?: string;
+  tipo_atendimento?: string;
   consumidor_final?: string; // Ou boolean, dependendo do seu Prisma
   observacoes?: string;
   cod_grupo_tributacao?: number;
@@ -79,7 +83,7 @@ const NaturezaOperacao: React.FC = () => {
     padrao: "",
     tipo: "",
     finalidade_emissao: "",
-    tipo_agendamento: "",
+    tipo_atendimento: "",
     consumidor_final: "",
     observacoes: "",
     cod_grupo_tributacao: 0,
@@ -96,7 +100,7 @@ const NaturezaOperacao: React.FC = () => {
       padrao: "",
       tipo: "",
       finalidade_emissao: "",
-      tipo_agendamento: "",
+      tipo_atendimento: "",
       consumidor_final: "",
       observacoes: "",
       cod_grupo_tributacao: undefined,
@@ -104,6 +108,7 @@ const NaturezaOperacao: React.FC = () => {
       cod_cfop_externo: 0,
       situacao: "Ativo",
     });
+    setSelectedEstablishments([]);
   };
 
 
@@ -180,7 +185,7 @@ const NaturezaOperacao: React.FC = () => {
         "padrao",
         "tipo",
         "finalidade_emissao",
-        "tipo_agendamento",
+        "tipo_atendimento",
         "consumidor_final",
         "observacoes",
         "cod_grupo_tributacao",
@@ -433,6 +438,17 @@ const NaturezaOperacao: React.FC = () => {
     }
   };
 
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
+  useEffect(() => {
+    const carregarEstabs = async () => {
+      const estabs = await fetchEstabilishments(token);
+      setEstablishments(estabs);
+    };
+
+    carregarEstabs();
+  }, [token]);
+
 
 
   return (
@@ -487,6 +503,7 @@ const NaturezaOperacao: React.FC = () => {
               height: "3rem",
             }}
             onHide={() => closeModal()}
+            style={{ position: 'fixed', width: '60rem' }}
           >
             <div
               className={`${visualizando ? 'visualizando' : ''}
@@ -513,61 +530,101 @@ const NaturezaOperacao: React.FC = () => {
                   <label htmlFor="padrao" className="block text-blue font-medium">
                     Padrão
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="padrao"
                     name="padrao"
                     disabled={visualizando}
                     value={formValues.padrao}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        padrao: e.target.value,
+                      }))
+                    }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione
+                    </option>
+                    <option value="Venda">Venda</option>
+                    <option value="Venda não contribuinte">Venda não contribuinte</option>
+                    <option value="Venda contribuinte">Venda contribuinte</option>
+                    <option value="Cupom Fiscal (NFC-e)">Cupom Fiscal (NFC-e)</option>
+                    <option value="Compra">Compra</option>
+                  </select>
                 </div>
+
 
                 <div>
                   <label htmlFor="tipo" className="block text-blue font-medium">
                     Tipo
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="tipo"
                     name="tipo"
                     disabled={visualizando}
                     value={formValues.tipo}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        tipo: e.target.value,
+                      }))
+                    }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione
+                    </option>
+                    <option value="Entrada">Entrada</option>
+                    <option value="Saída">Saída</option>
+                  </select>
                 </div>
+
 
                 <div>
                   <label htmlFor="finalidade_emissao" className="block text-blue font-medium">
                     Finalidade de Emissão
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="finalidade_emissao"
                     name="finalidade_emissao"
                     disabled={visualizando}
                     value={formValues.finalidade_emissao}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        finalidade_emissao: e.target.value,
+                      }))
+                    }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione
+                    </option>
+                    <option value="NF-e normal">NF-e normal</option>
+                    <option value="NF-e complementar">NF-e complementar</option>
+                    <option value="NF-e de ajuste">NF-e de ajuste</option>
+                    <option value="Devolução de mercadoria">Devolução de mercadoria</option>
+                  </select>
                 </div>
+
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                <div>
+                <div className="">
                   <label htmlFor="estabelecimento" className="block text-blue font-medium">
                     Estabelecimento
                   </label>
-                  <input
-                    type="text"
-                    id="estabelecimento"
-                    name="estabelecimento"
+                  <MultiSelect
                     disabled={visualizando}
-                    // value={formValues.}
-                    // onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione os Estabelecimentos"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black h-[35px] flex items-center"
                   />
                 </div>
 
@@ -575,31 +632,56 @@ const NaturezaOperacao: React.FC = () => {
                   <label htmlFor="consumidor_final" className="block text-blue font-medium">
                     Consumidor Final
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="consumidor_final"
                     name="consumidor_final"
                     disabled={visualizando}
                     value={formValues.consumidor_final}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        consumidor_final: e.target.value,
+                      }))
+                    }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione
+                    </option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
                 </div>
 
+
                 <div>
-                  <label htmlFor="tipo_agendamento" className="block text-blue font-medium">
-                    Tipo de Agendamento
+                  <label htmlFor="tipo_atendimento" className="block text-blue font-medium">
+                    Tipo de Atendimento
                   </label>
-                  <input
-                    type="text"
-                    id="tipo_agendamento"
-                    name="tipo_agendamento"
+                  <select
+                    id="tipo_atendimento"
+                    name="tipo_atendimento"
                     disabled={visualizando}
-                    value={formValues.tipo_agendamento}
-                    onChange={handleInputChange}
+                    value={formValues.tipo_atendimento}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        tipo_atendimento: e.target.value,
+                      }))
+                    }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione
+                    </option>
+                    <option value="Não se aplica">Não se aplica</option>
+                    <option value="Operação presencial">Operação presencial</option>
+                    <option value="Operação não presencial, pela internet">Operação não presencial, pela internet</option>
+                    <option value="Operação não presencial, teleatendimento">Operação não presencial, teleatendimento</option>
+                    <option value="Operação não presencial, outros">Operação não presencial, outros</option>
+                  </select>
                 </div>
+
               </div>
 
               <div>

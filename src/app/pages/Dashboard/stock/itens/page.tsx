@@ -23,6 +23,9 @@ import Footer from "@/app/components/Footer";
 import { useGroup } from "@/app/hook/acessGroup";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import '../../../../../../src/app/globals.css';
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
 
 interface Item {
     cod_item: string;
@@ -1329,13 +1332,7 @@ const ItensPage: React.FC = () => {
                                 header=""
                                 body={(rowData) => (
                                     <div className="flex gap-2 justify-center">
-                                        <button
-                                            onClick={() => handleEdit(rowData, true)}
-                                            className="hover:scale-125 hover:bg-blue400 p-2 bg-blue300 transform transition-all duration-50  rounded-2xl"
-                                            title="Visualizar"
-                                        >
-                                            <MdVisibility style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                                        </button>
+                                        <ViewButton onClick={() => handleEdit(rowData, true)} />
                                     </div>
                                 )}
                                 className="text-black"
@@ -1360,11 +1357,7 @@ const ItensPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => handleEdit(rowData, false)}
-                                                className="hover:scale-125 hover:bg-yellow700 p-2 bg-yellow transform transition-all duration-50  rounded-2xl">
-                                                <MdOutlineModeEditOutline style={{ fontSize: "1.2rem" }} className="text-white text-2xl" />
-                                            </button>
-
+                                            <EditButton onClick={() => handleEdit(rowData, false)} />
                                         </div>
                                     )}
                                     className="text-black"
@@ -1389,9 +1382,7 @@ const ItensPage: React.FC = () => {
                                     header=""
                                     body={(rowData) => (
                                         <div className="flex gap-2 justify-center">
-                                            <button onClick={() => openDialog(rowData.cod_item)} className="bg-red hover:bg-red600 hover:scale-125 p-2 transform transition-all duration-50  rounded-2xl">
-                                                <FaBan style={{ fontSize: "1.2rem" }} className="text-white text-center" />
-                                            </button>
+                                            <CancelButton onClick={() => openDialog(rowData.cod_item)} />
                                         </div>
                                     )}
                                     className="text-black"

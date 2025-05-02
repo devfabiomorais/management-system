@@ -9,8 +9,6 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -22,13 +20,12 @@ import { useGroup } from "@/app/hook/acessGroup";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
+import type { GrupoTributacao, RegraGrupoTributacao } from "@/services/gruposTributacao";
+import { fetchGruposTributacao, fetchRegraGrupoTributacao } from "@/services/gruposTributacao";
+import { TipoRegraTributaria } from "@/services/gruposTributacao";
+import { FaPlus } from "react-icons/fa";
+import { MultiSelect } from "primereact/multiselect";
 
-interface GrupoTributacao {
-  cod_natureza_operacao: number;
-  nome: string;
-  descricao?: string;
-  situacao?: string;
-}
 
 const GrupoTributacao: React.FC = () => {
   const { groupCode } = useGroup();
@@ -41,34 +38,56 @@ const GrupoTributacao: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [gruposTributacao, setGruposTributacao] = useState<GrupoTributacao[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
 
-
-  const filteredGruposTributacao = gruposTributacao.filter((grupoTributacao) => {
-    // Apenas ATIVO aparecem
-    if (grupoTributacao.situacao !== 'Ativo') {
-      return false;
-    }
-
-    // Lógica de busca
-    return Object.values(grupoTributacao).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    );
-  });
-
-
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [gruposTributacaoIdToDelete, setGrupoTributacaoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+
+  //GRUPOS TRIBUTACAO
+  const [gruposTributacao, setGruposTributacao] = useState<GrupoTributacao[]>([]);
   const [selectedGrupoTributacao, setSelectedGrupoTributacao] = useState<GrupoTributacao | null>(null);
+  useEffect(() => {
+    const carregarGrupos = async () => {
+      const grupos = await fetchGruposTributacao(token);
+      setGruposTributacao(grupos);
+    };
+
+    carregarGrupos();
+  }, [token]);
+
   const [formValues, setFormValues] = useState<GrupoTributacao>({
     cod_natureza_operacao: 0,
     nome: "",
     descricao: "",
   });
+
+  //REGRAS TRIBUTACAO
+  const [RegraGrupoTributacao, setRegraGrupoTributacao] = useState<RegraGrupoTributacao[]>([]);
+  const [selectedRegraGrupoTributacao, setSelectedRegraGrupoTributacao] = useState<RegraGrupoTributacao[]>([]);
+  useEffect(() => {
+    const carregarRegraGrupoTributacao = async () => {
+      const regras = await fetchRegraGrupoTributacao(token);
+      setRegraGrupoTributacao(regras);
+    };
+
+    carregarRegraGrupoTributacao();
+  }, [token]);
+
+
+  const [formValuesRegraGrupoTributacao, setFormValuesRegraGrupoTributacao] = useState<RegraGrupoTributacao>({
+    cod_regra_grupo: null,
+    cod_grupo_tributacao: 0,
+    tipo: undefined,
+    aliquota: 0,
+    cst_csosn: "",
+    observacoes: "",
+    grupo: undefined,
+    estados: [],
+  });
+
 
   const clearInputs = () => {
     setFormValues({
@@ -116,7 +135,7 @@ const GrupoTributacao: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchGruposTributacao();
+        fetchGruposTributacao(token);
         toast.success("Grupo de Tributação salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
@@ -174,7 +193,7 @@ const GrupoTributacao: React.FC = () => {
         setItemCreateDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchGruposTributacao();
+        fetchGruposTributacao(token);
         toast.success("Grupo de Tributação salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
@@ -238,7 +257,8 @@ const GrupoTributacao: React.FC = () => {
 
       if (naturezaEncontrado && situacaoInativo) {
         await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
-        fetchGruposTributacao();
+        const novosGrupos = await fetchGruposTributacao(token);
+        setGruposTributacao(novosGrupos);
         setItemCreateReturnDisabled(false);
         setLoading(false);
         clearInputs();
@@ -254,7 +274,7 @@ const GrupoTributacao: React.FC = () => {
 
       const response = await axios.post(
         process.env.NEXT_PUBLIC_API_URL + "/api/gruposTributacao/register",
-        formValues,
+        { ...formValues, regras: selectedRegraGrupoTributacao },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -265,7 +285,7 @@ const GrupoTributacao: React.FC = () => {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchGruposTributacao();
+        fetchGruposTributacao(token);
         toast.success("Grupo de Tributação salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
@@ -286,6 +306,10 @@ const GrupoTributacao: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchGruposTributacao(token).then(setGruposTributacao);
+  }, [token]);
+
 
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
@@ -296,31 +320,6 @@ const GrupoTributacao: React.FC = () => {
     setSelectedGrupoTributacao(gruposTributacao);
     setIsEditing(true);
     setVisible(true);
-  };
-
-  useEffect(() => {
-    fetchGruposTributacao();
-  }, []);
-
-  const fetchGruposTributacao = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/gruposTributacao",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.gruposTributacao);
-      setIsDataLoaded(true);
-      setGruposTributacao(response.data.gruposTributacao);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar Grupo de Tributaçãos:", error);
-    }
   };
 
   const openDialog = (id: number) => {
@@ -348,7 +347,7 @@ const GrupoTributacao: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchGruposTributacao(); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        fetchGruposTributacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
         setModalDeleteVisible(false);
         toast.success("Grupo de Tributação cancelado com sucesso!", {
           position: "top-right",
@@ -386,7 +385,7 @@ const GrupoTributacao: React.FC = () => {
         position: "top-right",
         autoClose: 3000,
       });
-      fetchGruposTributacao();
+      fetchGruposTributacao(token);
       setModalDeleteVisible(false);
     } catch (error) {
       console.log("Erro ao excluir Grupo de Tributação:", error);
@@ -441,6 +440,88 @@ const GrupoTributacao: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
+
+  const filteredGruposTributacao = gruposTributacao.filter((grupoTributacao) => {
+    // Apenas ATIVO aparecem
+    if (grupoTributacao.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Lógica de busca
+    return Object.values(grupoTributacao).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+
+  const handleSaveRegraGrupoTributacao = async () => {
+
+    try {
+      const requiredFields = [
+        "tipo",
+        "aliquota",
+        "cst_csosn",
+        "observacoes",
+      ];
+
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValuesRegraGrupoTributacao[field as keyof typeof formValuesRegraGrupoTributacao];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (isEmptyField) {
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/RegraGrupoTributacao/register",
+        formValuesRegraGrupoTributacao,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        clearInputs();
+        const novasRegras = await fetchRegraGrupoTributacao(token);
+        setRegraGrupoTributacao(novasRegras);
+        toast.success("Regra de Grupo de Tributação salvo com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar Regra de Grupo de Tributação.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar Regra de Grupo de Tributação:", error);
+    }
+  };
+
+  const [firstRegras, setFirstRegras] = useState(0);
+  const [rowsRegras, setRowsRegras] = useState(10);
+  const filteredRegraGrupoTributacao = RegraGrupoTributacao.filter((regra) => {
+    // // Apenas ATIVO aparecem
+    // if (grupoTributacao.situacao !== 'Ativo') {
+    //   return false;
+    // }
+
+    // Lógica de busca
+    return Object.values(regra).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
 
 
@@ -515,6 +596,22 @@ const GrupoTributacao: React.FC = () => {
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+                <div className="">
+                  <label htmlFor="regras" className="block text-blue font-medium">
+                    Regras
+                  </label>
+                  <MultiSelect
+                    disabled={visualizando}
+                    value={selectedRegraGrupoTributacao}
+                    onChange={(e) => setSelectedRegraGrupoTributacao(e.value)}
+                    options={RegraGrupoTributacao}
+                    optionLabel="observacoes"
+                    filter
+                    placeholder="Selecione os regras"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-2">
@@ -538,6 +635,282 @@ const GrupoTributacao: React.FC = () => {
                   />
                 </div>
               </div>
+
+              <div className="border border-gray-700 p-2 rounded bg-gray-100">
+                <div className="grid grid-cols-3 gap-2 pb-2 pt-2">
+                  <div>
+                    <label htmlFor="tipo" className="block text-blue font-medium pl-[2px]">
+                      Tipo
+                    </label>
+                    <select
+                      id="tipo"
+                      name="tipo"
+                      disabled={visualizando}
+                      value={formValuesRegraGrupoTributacao.tipo}
+                      onChange={(e) =>
+                        setFormValuesRegraGrupoTributacao((prev) => ({
+                          ...prev,
+                          tipo: e.target.value as TipoRegraTributaria,
+                        }))
+                      }
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    ><option value="">Selecione</option>
+                      {Object.values(TipoRegraTributaria).map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {tipo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="aliquota" className="block text-blue font-medium pl-[2px]">
+                      Alíquota
+                    </label>
+                    <input
+                      id="aliquota"
+                      name="aliquota"
+                      type="number"
+                      disabled={visualizando}
+                      value={formValuesRegraGrupoTributacao.aliquota}
+                      maxLength={255}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      onChange={(e) => {
+                        setFormValuesRegraGrupoTributacao((prevValues) => ({
+                          ...prevValues,
+                          aliquota: parseFloat(e.target.value),
+                        }));
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="cst_csosn" className="block text-blue font-medium pl-[1px]">
+                      Código de Situação Tributária
+                    </label>
+                    <input
+                      id="cst_csosn"
+                      name="cst_csosn"
+                      disabled={visualizando}
+                      value={formValuesRegraGrupoTributacao.cst_csosn}
+                      maxLength={255}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      onChange={(e) => {
+                        setFormValuesRegraGrupoTributacao((prevValues) => ({
+                          ...prevValues,
+                          cst_csosn: e.target.value,
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="justify-between pb-2">
+                  <label htmlFor="observacoes" className="block text-blue font-medium pl-[1px]">
+                    Observações
+                  </label>
+                  <div className="flex items-center w-full">
+                    <input
+                      id="observacoes"
+                      name="observacoes"
+                      disabled={visualizando}
+                      value={formValuesRegraGrupoTributacao.observacoes}
+                      maxLength={255}
+                      className="flex-1 border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      onChange={(e) => {
+                        setFormValuesRegraGrupoTributacao((prevValues) => ({
+                          ...prevValues,
+                          observacoes: e.target.value,
+                        }));
+                      }}
+                    />
+                    <button
+                      className={`ml-2 bg-green-200 border border-green-700 rounded-2xl p-1 hover:bg-green-300 duration-50 hover:scale-125 flex items-center justify-center h-8 ${visualizando ? 'hidden' : ''
+                        }`}
+                      disabled={visualizando}
+                      onClick={handleSaveRegraGrupoTributacao}
+                    >
+                      <FaPlus className="text-green-700 text-xl" />
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <DataTable
+                  value={filteredRegraGrupoTributacao.slice(firstRegras, firstRegras + rowsRegras)}
+                  paginator={true}
+                  rows={rows}
+                  rowsPerPageOptions={[5, 10]}
+                  rowClassName={(data) => 'hover:bg-gray-200'}
+                  onPage={(e) => {
+                    setFirst(e.first);
+                    setRows(e.rows);
+                  }}
+                  tableStyle={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                  }}
+                  className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
+                  responsiveLayout="scroll"
+                >
+
+                  <Column
+                    field="tipo"
+                    header="Tipo"
+                    style={{
+                      width: "1%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="aliquota"
+                    header="Alíquota"
+                    style={{
+                      width: "5%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="cst_csosn"
+                    header="CST"
+                    style={{
+                      width: "5%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    field="observacoes"
+                    header="Observações"
+                    style={{
+                      width: "5%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  <Column
+                    header=""
+                    body={(rowData) => (
+                      <div className="flex gap-2 justify-center">
+                        <ViewButton onClick={() => handleEdit(rowData, true)} />
+                      </div>
+                    )}
+                    className="text-black"
+                    style={{
+                      width: "0%",
+                      textAlign: "center",
+                      border: "1px solid #ccc",
+                    }}
+                    headerStyle={{
+                      fontSize: "1.2rem",
+                      color: "#1B405D",
+                      fontWeight: "bold",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                      backgroundColor: "#D9D9D980",
+                      verticalAlign: "middle",
+                      padding: "10px",
+                    }}
+                  />
+                  {permissions?.edicao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <EditButton onClick={() => handleEdit(rowData, false)} />
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                  {permissions?.delecao === "SIM" && (
+                    <Column
+                      header=""
+                      body={(rowData) => (
+                        <div className="flex gap-2 justify-center">
+                          <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                        </div>
+                      )}
+                      className="text-black"
+                      style={{
+                        width: "0%",
+                        textAlign: "center",
+                        border: "1px solid #ccc",
+                      }}
+                      headerStyle={{
+                        fontSize: "1.2rem",
+                        color: "#1B405D",
+                        fontWeight: "bold",
+                        border: "1px solid #ccc",
+                        textAlign: "center",
+                        backgroundColor: "#D9D9D980",
+                        verticalAlign: "middle",
+                        padding: "10px",
+                      }}
+                    />
+                  )}
+                </DataTable>
+              </div>
+
             </div>
 
 
@@ -719,10 +1092,10 @@ const GrupoTributacao: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="situacao"
-                  header="Situação"
+                  field="usuario_cadastro"
+                  header="Usuário Cadastro"
                   style={{
-                    width: "0.5%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -737,6 +1110,44 @@ const GrupoTributacao: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+                <Column
+                  field="dt_cadastro"
+                  header="DT Cadastro"
+                  style={{
+                    width: "5%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    if (rowData.dt_cadastro) {
+                      const date = new Date(rowData.dt_cadastro);
+
+                      if (!isNaN(date.getTime())) {
+                        // Formatar apenas DD/MM/AAAA no fuso horário de Brasília
+                        const formattedDate = date.toLocaleDateString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        });
+
+                        return <span>{formattedDate}</span>;
+                      } else {
+                        return <span>Data inválida</span>;
+                      }
+                    } else {
+                      return <span>Sem data</span>;
+                    }
+                  }}
+                />
+
                 <Column
                   header=""
                   body={(rowData) => (
