@@ -101,6 +101,7 @@ const ContasBancariasPage: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_conta_bancaria: 0,
       nome: "",

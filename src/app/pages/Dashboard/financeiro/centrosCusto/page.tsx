@@ -69,6 +69,7 @@ const CentrosCustoPage: React.FC = () => {
   });
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_centro_custo: 0,
       nome: "",

@@ -145,6 +145,7 @@ const FormasPagamentoPage: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_forma_pagamento: 0,
       nome: "",

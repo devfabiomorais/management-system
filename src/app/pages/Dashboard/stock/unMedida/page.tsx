@@ -63,6 +63,7 @@ const UnMedidaPage: React.FC = () => {
 
 
     const clearInputs = () => {
+        setVisualizar(false)
         setDescricao("")
         setMedida("")
     }

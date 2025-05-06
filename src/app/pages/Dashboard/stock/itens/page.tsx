@@ -140,6 +140,7 @@ const ItensPage: React.FC = () => {
 
 
     const clearInputs = () => {
+        setVisualizar(false)
         setFileName("");
         setFormValues({
             cod_item: "",

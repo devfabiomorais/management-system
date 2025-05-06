@@ -151,6 +151,7 @@ const TransportadorasPage: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setSelectedEstablishments([]);
     setFormValues({
       cod_transportadora: 0,
@@ -240,7 +241,6 @@ const TransportadorasPage: React.FC = () => {
         "telefone",
         "celular",
         "responsavel",
-        "complemento",
         "email",
         "logradouro",
         "cidade",

@@ -94,6 +94,7 @@ const NaturezaOperacao: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_natureza_operacao: 0,
       nome: "",

@@ -796,21 +796,6 @@ const OrcamentosPage: React.FC = () => {
     tipo: "",
     documento: "",
   });
-  //autopreenchimento de campos ao selecionar algo CLIENTS
-  useEffect(() => {
-    if (selectedClient) {
-      setFormValuesClients((prevValues) => ({
-        ...prevValues,
-        logradouro: selectedClient.logradouro || '',
-        cidade: selectedClient.cidade || '',
-        bairro: selectedClient.bairro || '',
-        estado: selectedClient.estado || '',
-        complemento: selectedClient.complemento || '',
-        numero: selectedClient.numero || '',
-        cep: selectedClient.cep || ''
-      }));
-    }
-  }, [selectedClient]);
   const fetchClients = async () => {
     setLoading(true);
     try {
@@ -855,49 +840,53 @@ const OrcamentosPage: React.FC = () => {
 
     setSelectedClient(selected || null); // Atualiza o estado de selectedClient
 
-    if (selected) {
-      setIsDisabled(true);
-      setUsarEndereco("usar");
-      setClientInfo({
-        cod_cliente: selected.cod_cliente || 0,
-        nome: selected.nome || "",
-        logradouro: selected.logradouro || "",
-        cidade: selected.cidade || "",
-        bairro: selected.bairro || "",
-        estado: selected.estado || "",
-        complemento: selected.complemento || "",
-        numero: String(selected.numero || ""),  // Certifique-se de que o número seja uma string
-        cep: selected.cep || "",
-        email: selected.email || "",
-        telefone: selected.telefone || "",
-        celular: selected.celular || "",
-        situacao: selected.situacao || "",
-        tipo: selected.tipo || "",
-      });
-      // Atualizando formValuesClients corretamente com os dados do cliente
-      setFormValuesClients((prevValues) => ({
-        ...prevValues,
-        logradouro: selected.logradouro || '',
-        cidade: selected.cidade || '',
-        bairro: selected.bairro || '',
-        estado: selected.estado || '',
-        complemento: selected.complemento || '',
-        numero: String(selected.numero || ''),  // Garanta que seja uma string, se necessário
-        cep: selected.cep || '',
-      }));
+    if (isEditing) {
+      return
+    } else {
+      if (selected) {
+        setIsDisabled(true);
+        setUsarEndereco("usar");
+        setClientInfo({
+          cod_cliente: selected.cod_cliente || 0,
+          nome: selected.nome || "",
+          logradouro: selected.logradouro || "",
+          cidade: selected.cidade || "",
+          bairro: selected.bairro || "",
+          estado: selected.estado || "",
+          complemento: selected.complemento || "",
+          numero: String(selected.numero || ""),  // Certifique-se de que o número seja uma string
+          cep: selected.cep || "",
+          email: selected.email || "",
+          telefone: selected.telefone || "",
+          celular: selected.celular || "",
+          situacao: selected.situacao || "",
+          tipo: selected.tipo || "",
+        });
+        // Atualizando formValuesClients corretamente com os dados do cliente
+        setFormValuesClients((prevValues) => ({
+          ...prevValues,
+          logradouro: selected.logradouro || '',
+          cidade: selected.cidade || '',
+          bairro: selected.bairro || '',
+          estado: selected.estado || '',
+          complemento: selected.complemento || '',
+          numero: String(selected.numero || ''),  // Garanta que seja uma string, se necessário
+          cep: selected.cep || '',
+        }));
 
-      // Atualizando formValues com o cod_cliente e os dados do cliente
-      setFormValues((prevValues) => ({
-        ...prevValues,
-        cod_cliente: selected.cod_cliente,
-        logradouro: selected.logradouro || '',
-        cidade: selected.cidade || '',
-        bairro: selected.bairro || '',
-        estado: selected.estado || '',
-        complemento: selected.complemento || '',
-        numero: selected.numero ? Number(selected.numero) : 0,  // Convertendo para number
-        cep: selected.cep || '',
-      }));
+        // Atualizando formValues com o cod_cliente e os dados do cliente
+        setFormValues((prevValues) => ({
+          ...prevValues,
+          cod_cliente: selected.cod_cliente,
+          logradouro: selected.logradouro || '',
+          cidade: selected.cidade || '',
+          bairro: selected.bairro || '',
+          estado: selected.estado || '',
+          complemento: selected.complemento || '',
+          numero: selected.numero ? Number(selected.numero) : 0,  // Convertendo para number
+          cep: selected.cep || '',
+        }));
+      }
     }
   };
   // #endregion
@@ -976,7 +965,10 @@ const OrcamentosPage: React.FC = () => {
   };
   const handleAdicionarLinha = () => {
     if (!selectedProd || !quantidadeProd) {
-      alert("Após selecionar um produto, insira a quantidade.");
+      toast.info("Após selecionar um produto, insira a quantidade.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
     // Garante que tenha um produto e quantidade antes de adicionar
@@ -1448,7 +1440,10 @@ const OrcamentosPage: React.FC = () => {
 
   const handleAdicionarServico = () => {
     if (!selectedServico || !quantidadeServ) {
-      alert("Após selecionar um serviço, insira a quantidade.");
+      toast.info("Após selecionar um serviço, insira a quantidade.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
     // Garante que tenha um serviço e quantidade antes de adicionar
@@ -1761,19 +1756,6 @@ const OrcamentosPage: React.FC = () => {
 
 
 
-  // useEffect(() => {
-  //   calcularTotal();
-  // }, [produtosTotal,
-  //   servicosTotal,
-  //   descontoTotal,
-  //   descontoUnitTotal,
-  //   produtosSelecionados,
-  //   servicosSelecionados,
-  //   frete
-  // ]);
-
-
-
   const handleDescontoTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
     let numericValue = Number(value);
@@ -1855,8 +1837,11 @@ const OrcamentosPage: React.FC = () => {
   };
 
   const handleAdicionarPagamento = () => {
-    if (!selectedFormaPagamento || !data_parcela) {
-      alert("Prencha a forma de pagamento, o valor e a data de pagamento");
+    if (!selectedFormaPagamento || !data_parcela || !valorParcela) {
+      toast.warning("Preencha a forma de pagamento, valor e data da parcela!", {
+        position: "top-center",
+        autoClose: 3000,
+      });
       return;
     }
     const novoPagamento: Pagamento = {
@@ -1918,24 +1903,24 @@ const OrcamentosPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // Atualiza número da próxima parcela
     setParcela(pagamentos.length > 0 ? pagamentos[pagamentos.length - 1].parcela! + 1 : 1);
-  }, [pagamentos]);
 
-  useEffect(() => {
-    const totalPago = pagamentos.reduce((acc, pagamento) => acc + (pagamento.valorParcela ?? 0), 0);
-    setRestanteAserPago(valorTotalTotal - totalPago);
-  }, [pagamentos, valorTotalTotal]);
-
-  useEffect(() => {
+    // Calcula o total com juros
     const totalComJuros = pagamentos.reduce((acc, pagamento) => {
-      const valorParcela = pagamento.valorParcela ?? 0; // Garantir que valorParcela não seja undefined
-      const juros = pagamento.juros ?? 0; // Garantir que juros não seja undefined
-      const valorComJuros = valorParcela * (1 + juros / 100);
-      return acc + valorComJuros;
+      const valorParcela = pagamento.valorParcela ?? 0;
+      const juros = pagamento.juros ?? 0;
+      return acc + (valorParcela * (1 + juros / 100));
     }, 0);
 
     setTotalPagamentos(totalComJuros);
-  }, [pagamentos]);
+
+    // Calcula restante a ser pago
+    const totalPago = pagamentos.reduce((acc, pagamento) => acc + (pagamento.valorParcela ?? 0), 0);
+    setRestanteAserPago(valorTotalTotal - totalPagamentos);
+
+  }, [pagamentos, valorTotalTotal, totalPagamentos]);
+
 
 
 
@@ -2681,8 +2666,8 @@ const OrcamentosPage: React.FC = () => {
       doc.setTextColor(0, 0, 0); // Preto
       const adjustedTextY2totalFinal = verticalTotalFinal + 1; // Ajustar o Y para um pouco abaixo
       // Definir o valor total somando produtos e serviços
-      const totalGeral = totalProdutosPDF + totalServicosPDF;
-      const totalTextoFinal = `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}`;
+      const totalGeral = totalProdutosPDF + totalServicosPDF + Number(freteInput);
+      const totalTextoFinal = `TOTAL GERAL (+ frete): R$ ${totalGeral.toFixed(2)}`;
       // Calcular a largura do texto dinamicamente
       const textWidthFinal = doc.getTextWidth(totalTextoFinal);
       // Definir a posição X para alinhar à direita
@@ -2846,6 +2831,16 @@ const OrcamentosPage: React.FC = () => {
     fetchCanaisVenda();
     fetchFormasPagamento();
   }, [token]);
+
+  useEffect(() => {
+    const frete = Number(formValues.frete || 0);
+    const total = Number(valorTotalTotal);
+    const pagamentos = Number(totalPagamentos);
+    const restante = total - pagamentos;
+
+    setRestanteAserPago(restante);
+  }, [valorTotalTotal, formValues.frete, totalPagamentos]);
+
   // #endregion
 
 
@@ -2853,6 +2848,7 @@ const OrcamentosPage: React.FC = () => {
 
   // #region FUNÇÕES INPUTS
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_orcamento: 0,
       cod_responsavel: 0,
@@ -3283,6 +3279,7 @@ const OrcamentosPage: React.FC = () => {
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
   const handleEdit = (orcamento: Orcamento, visualizar: boolean) => {
+
     setVisualizar(visualizar);
 
     console.log("Orçamento recebido para edição:", orcamento);
@@ -3297,6 +3294,15 @@ const OrcamentosPage: React.FC = () => {
 
     // Atualiza os selects com os valores corretos
     setSelectedClient(clients.find(c => c.cod_cliente === orcamento.cod_cliente) || null);
+    setFormValuesClients(prevValues => ({
+      ...prevValues,
+      cep: orcamento.cep ?? "",
+      logradouro: orcamento.logradouro ?? "",
+      numero: orcamento.numero != null ? orcamento.numero.toString() : "",
+      estado: orcamento.estado ?? "",
+      bairro: orcamento.bairro ?? "",
+      cidade: orcamento.cidade ?? "",
+    }));
     formattedDocumento();
     setSelectedUser(users.find(u => u.cod_usuario === orcamento.cod_responsavel) || null);
     setSelectedTransportadora(transportadoras.find(t => t.cod_transportadora === orcamento.cod_transportadora) || null);
@@ -3487,13 +3493,27 @@ const OrcamentosPage: React.FC = () => {
         if (!response.data.erro) {
           setFormValuesClients(prevValues => ({
             ...prevValues,
+            cep: response.data.cep || "",
+            logradouro: response.data.logradouro || "",
+            bairro: response.data.bairro || "",
+            cidade: response.data.localidade || "",
+            estado: response.data.uf || "",
+          }));
+          setFormValues(prevValues => ({
+            ...prevValues,
+            cep: response.data.cep || "",
             logradouro: response.data.logradouro || "",
             bairro: response.data.bairro || "",
             cidade: response.data.localidade || "",
             estado: response.data.uf || "",
           }));
         } else {
-          alert("CEP não encontrado!");
+          toast.info("CEP não encontrado!", {
+            position: "top-center",
+            autoClose: 3000,
+            progressStyle: { background: "yellow" },
+            icon: <span>⚠️</span>,
+          });
           setFormValuesClients(prevValues => ({
             ...prevValues,
             logradouro: "",
@@ -3526,6 +3546,11 @@ const OrcamentosPage: React.FC = () => {
       ...prevState,
       [name]: value,
     }));
+
+    setFormValues(prevValues => ({
+      ...prevValues,
+      [name]: value,
+    }));
   };
 
 
@@ -3534,7 +3559,6 @@ const OrcamentosPage: React.FC = () => {
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-
 
     if (value === "usar") {
       setIsDisabled(true);
@@ -3592,7 +3616,7 @@ const OrcamentosPage: React.FC = () => {
 
       setFormValues((prevValues) => ({
         ...prevValues,
-        endereco_cliente: "Não",
+        endereco_cliente: "Nao",
         logradouro: "",
         cidade: "",
         bairro: "",
@@ -3723,6 +3747,22 @@ const OrcamentosPage: React.FC = () => {
   };
   // #endregion
   // #endregion
+
+  //autopreenchimento de campos ao selecionar algo CLIENTS
+  useEffect(() => {
+    if (selectedClient && (usarEndereco != "naoUsar")) {
+      setFormValuesClients((prevValues) => ({
+        ...prevValues,
+        logradouro: selectedClient.logradouro || '',
+        cidade: selectedClient.cidade || '',
+        bairro: selectedClient.bairro || '',
+        estado: selectedClient.estado || '',
+        complemento: selectedClient.complemento || '',
+        numero: selectedClient.numero || '',
+        cep: selectedClient.cep || ''
+      }));
+    }
+  }, [selectedClient, usarEndereco]);
 
 
   // #region RETURN
@@ -5971,13 +6011,6 @@ const OrcamentosPage: React.FC = () => {
                           : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                         }
                       />
-                      {/* <span>
-                        R$ {!isEditing
-                          ? Number(restanteAserPago).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                          : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        }
-                      </span> */}
-
                     </div>
 
                   </div>
@@ -6176,17 +6209,13 @@ const OrcamentosPage: React.FC = () => {
                           className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                           value={
                             pagamento.data_parcela
-                              ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR")
+                              ? new Date(pagamento.data_parcela).toLocaleDateString("pt-BR", {
+                                timeZone: "UTC",
+                              })
                               : ""
                           }
-                        // value={
-                        //   pagamento.data_parcela
-                        //     ? isEditing
-                        //       ? new Date(pagamento.data_parcela).toISOString().split("T")[0] // Formato YYYY-MM-DD para inputs do tipo date
-                        //       : new Date(pagamento.data_parcela).toLocaleDateString("pt-BR") // Formato DD/MM/YYYY para exibição
-                        //     : ""
-                        // }
                         />
+
                         <button
                           className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
                           onClick={() => handleRemovePagamento(pagamento.id)}
@@ -6683,7 +6712,7 @@ const OrcamentosPage: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <EditButton onClick={() => handleEdit(rowData, false)} />
+                          <EditButton onClick={() => { handleEdit(rowData, false); setIsEditing(true) }} />
                         </div>
                       )}
                       className="text-black"

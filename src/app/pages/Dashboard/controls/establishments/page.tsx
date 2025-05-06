@@ -115,6 +115,7 @@ const EstablishmentsPage: React.FC = () => {
 
 
     const clearInputs = () => {
+        setVisualizar(false)
         setFormValues({
             cod_estabelecimento: 0,
             nome: "",

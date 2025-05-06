@@ -20,7 +20,7 @@ export enum TipoRegraTributaria {
 }
 
 export interface GrupoTributacao {
-  cod_natureza_operacao: number;
+  cod_grupo_tributacao: number;
   nome: string;
   descricao?: string;
   situacao?: string;
@@ -30,30 +30,6 @@ export interface EstadoRegraGrupo {
   cod_estado: number;
   nome: string;
 }
-
-export const fetchRegraGrupoTributacao = async (token: string | null): Promise<RegraGrupoTributacao[]> => {
-  try {
-    const response = await axios.get(
-      process.env.NEXT_PUBLIC_API_URL + "/api/RegraGrupoTributacao",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    // const regrasAtivos = response.data.regras.filter(
-    //   (regra: any) => regra.situacao === "Ativo"
-    // );
-
-    // return regrasAtivos;
-    const regras = response.data.regras;
-    return regras;
-  } catch (error) {
-    console.error("Erro ao carregar regras de Tributação:", error);
-    return [];
-  }
-};
 
 
 export const fetchGruposTributacao = async (token: string | null): Promise<GrupoTributacao[]> => {
@@ -89,3 +65,4 @@ export const fetchGruposTributacao = async (token: string | null): Promise<Grupo
 
 //   carregarGrupos();
 // }, [token]);
+

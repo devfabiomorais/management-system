@@ -110,6 +110,7 @@ const PlanoContasPage: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_plano_conta: 0,
       descricao: "",

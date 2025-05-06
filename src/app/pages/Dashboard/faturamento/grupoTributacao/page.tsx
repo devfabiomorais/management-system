@@ -21,10 +21,16 @@ import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
 import type { GrupoTributacao, RegraGrupoTributacao } from "@/services/gruposTributacao";
-import { fetchGruposTributacao, fetchRegraGrupoTributacao } from "@/services/gruposTributacao";
+import { fetchGruposTributacao } from "@/services/gruposTributacao";
 import { TipoRegraTributaria } from "@/services/gruposTributacao";
 import { FaPlus } from "react-icons/fa";
 import { MultiSelect } from "primereact/multiselect";
+import {
+  salvarRegraGrupoTributacao,
+  validarCamposObrigatorios,
+  verificarDuplicidade,
+  fetchRegraGrupoTributacao
+} from "@/services/regraGrupoTributacaoService";
 
 
 const GrupoTributacao: React.FC = () => {
@@ -59,7 +65,7 @@ const GrupoTributacao: React.FC = () => {
   }, [token]);
 
   const [formValues, setFormValues] = useState<GrupoTributacao>({
-    cod_natureza_operacao: 0,
+    cod_grupo_tributacao: 0,
     nome: "",
     descricao: "",
   });
@@ -90,14 +96,28 @@ const GrupoTributacao: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
-      cod_natureza_operacao: 0,
+      cod_grupo_tributacao: 0,
       nome: "",
       descricao: "",
     });
   };
 
-  const handleSaveEdit = async (cod_natureza_operacao: any) => {
+  const clearInputsRegras = () => {
+    setFormValuesRegraGrupoTributacao({
+      cod_regra_grupo: null,
+      cod_grupo_tributacao: 0,
+      tipo: undefined,
+      aliquota: 0,
+      cst_csosn: "",
+      observacoes: "",
+      grupo: undefined,
+      estados: [],
+    });
+  };
+
+  const handleSaveEdit = async (cod_grupo_tributacao: any) => {
     setItemEditDisabled(true);
     setLoading(true);
     setIsEditing(false);
@@ -123,7 +143,7 @@ const GrupoTributacao: React.FC = () => {
       }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/gruposTributacao/edit/${cod_natureza_operacao}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/gruposTributacao/edit/${cod_grupo_tributacao}`,
         { ...formValues },
         {
           headers: {
@@ -240,10 +260,10 @@ const GrupoTributacao: React.FC = () => {
         return;
       }
 
-      const naturezaEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const situacaoInativo = naturezaEncontrado?.situacao === "Inativo";
+      const GRUPOEncontrado = rowData.find((item) => item.nome === formValues.nome);
+      const situacaoInativo = GRUPOEncontrado?.situacao === "Inativo";
 
-      if (naturezaEncontrado && !situacaoInativo) {
+      if (GRUPOEncontrado && !situacaoInativo) {
         setItemCreateReturnDisabled(false);
         setLoading(false);
         toast.info("Esse nome já existe no banco de dados, escolha outro!", {
@@ -255,8 +275,8 @@ const GrupoTributacao: React.FC = () => {
         return;
       }
 
-      if (naturezaEncontrado && situacaoInativo) {
-        await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
+      if (GRUPOEncontrado && situacaoInativo) {
+        await handleSaveEdit(GRUPOEncontrado.cod_grupo_tributacao);
         const novosGrupos = await fetchGruposTributacao(token);
         setGruposTributacao(novosGrupos);
         setItemCreateReturnDisabled(false);
@@ -347,7 +367,7 @@ const GrupoTributacao: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchGruposTributacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        fetchGruposTributacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de grupos de operacao
         setModalDeleteVisible(false);
         toast.success("Grupo de Tributação cancelado com sucesso!", {
           position: "top-right",
@@ -455,19 +475,8 @@ const GrupoTributacao: React.FC = () => {
 
 
   const handleSaveRegraGrupoTributacao = async () => {
-
     try {
-      const requiredFields = [
-        "tipo",
-        "aliquota",
-        "cst_csosn",
-        "observacoes",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValuesRegraGrupoTributacao[field as keyof typeof formValuesRegraGrupoTributacao];
-        return value === "" || value === null || value === undefined;
-      });
+      const isEmptyField = validarCamposObrigatorios(formValuesRegraGrupoTributacao);
 
       if (isEmptyField) {
         toast.info("Todos os campos devem ser preenchidos!", {
@@ -477,17 +486,39 @@ const GrupoTributacao: React.FC = () => {
         return;
       }
 
-      const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/RegraGrupoTributacao/register",
-        formValuesRegraGrupoTributacao,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const regraExistente = verificarDuplicidade(formValuesRegraGrupoTributacao, RegraGrupoTributacao);
+      const situacaoInativo = regraExistente?.situacao === "Inativo";
+
+      if (regraExistente && !situacaoInativo) {
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>,
+        });
+        return;
+      }
+
+      if (regraExistente && situacaoInativo) {
+        await handleSaveEdit(regraExistente.cod_grupo_tributacao);
+        const novasRegras = await fetchRegraGrupoTributacao(token);
+        setRegraGrupoTributacao(novasRegras);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
+      if (!token) {
+        throw new Error("Token is required");
+      }
+      const response = await salvarRegraGrupoTributacao(formValuesRegraGrupoTributacao, token);
+
       if (response.status >= 200 && response.status < 300) {
-        clearInputs();
+        clearInputsRegras();
         const novasRegras = await fetchRegraGrupoTributacao(token);
         setRegraGrupoTributacao(novasRegras);
         toast.success("Regra de Grupo de Tributação salvo com sucesso!", {
@@ -495,16 +526,12 @@ const GrupoTributacao: React.FC = () => {
           autoClose: 3000,
         });
       } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
         toast.error("Erro ao salvar Regra de Grupo de Tributação.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      setItemCreateReturnDisabled(false);
-      setLoading(false);
       console.error("Erro ao salvar Regra de Grupo de Tributação:", error);
     }
   };
@@ -887,7 +914,7 @@ const GrupoTributacao: React.FC = () => {
                       header=""
                       body={(rowData) => (
                         <div className="flex gap-2 justify-center">
-                          <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                          <CancelButton onClick={() => openDialog(rowData.cod_grupo_tributacao)} />
                         </div>
                       )}
                       className="text-black"
@@ -978,7 +1005,7 @@ const GrupoTributacao: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => handleSaveEdit(formValues.cod_natureza_operacao)}
+                    onClick={() => handleSaveEdit(formValues.cod_grupo_tributacao)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
@@ -1203,7 +1230,7 @@ const GrupoTributacao: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                        <CancelButton onClick={() => openDialog(rowData.cod_grupo_tributacao)} />
                       </div>
                     )}
                     className="text-black"

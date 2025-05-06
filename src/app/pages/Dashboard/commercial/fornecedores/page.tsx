@@ -182,6 +182,7 @@ const FornecedoresPage: React.FC = () => {
 
 
   const clearInputs = () => {
+    setVisualizar(false)
     setSelectedEstablishments([]);
     setFormValues({
       cod_fornecedor: 0,
@@ -271,7 +272,6 @@ const FornecedoresPage: React.FC = () => {
         "telefone",
         "celular",
         "responsavel",
-        "complemento",
         "email",
         "logradouro",
         "cidade",
@@ -749,7 +749,7 @@ const FornecedoresPage: React.FC = () => {
           </Dialog>
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Fornecedor" : "Editar Fornecedor") : "Nova Fornecedor"}
+            header={isEditing ? (visualizando ? "Visualizando Fornecedor" : "Editar Fornecedor") : "Novo Fornecedor"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",

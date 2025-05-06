@@ -62,6 +62,7 @@ const ModulePage: React.FC = () => {
     }, []);
 
     const clearInputs = () => {
+        setVisualizar(false)
         setDescricao("")
         setCodModuloPai("")
     }

@@ -385,6 +385,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const [entidade, setEntidade] = useState("");
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_conta: 0,
       tipo_conta: undefined,

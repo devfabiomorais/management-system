@@ -118,6 +118,7 @@ const UsersPage: React.FC = () => {
     const [visible, setVisible] = useState(false);
 
     const clearInputs = () => {
+        setVisualizar(false)
         setFormValues({
             cod_usuario: 0,
             nome: "",

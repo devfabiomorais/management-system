@@ -66,6 +66,7 @@ const FamilyPage: React.FC = () => {
 
 
     const clearInputs = () => {
+        setVisualizar(false)
         setDescricao("")
         setNome("")
     }

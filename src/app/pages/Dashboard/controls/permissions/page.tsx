@@ -78,6 +78,7 @@ const PermissionsPage: React.FC = () => {
     }, []);
 
     const clearInputs = () => {
+        setVisualizar(false)
         setNomeGroup("")
     }
 

@@ -108,6 +108,7 @@ const ClientsPage: React.FC = () => {
   };
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_cliente: 0,
       nome: "",

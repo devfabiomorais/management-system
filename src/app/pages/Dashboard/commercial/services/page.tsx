@@ -75,6 +75,7 @@ const ServicosPage: React.FC = () => {
   });
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_servico: 0,
       nome: "",
