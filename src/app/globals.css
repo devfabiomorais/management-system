@@ -145,6 +145,7 @@ body {
 
 .tabela-limitada td {
   max-width: 200px;
+  height: 45px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

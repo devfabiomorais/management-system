@@ -19,10 +19,11 @@ import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
+import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
-import type { GrupoTributacao, RegraGrupoTributacao } from "@/services/gruposTributacao";
-import { fetchGruposTributacao } from "@/services/gruposTributacao";
-import { TipoRegraTributaria } from "@/services/gruposTributacao";
+import type { GrupoTributacao, RegraGrupoTributacao } from "@/services/faturamento/gruposTributacao";
+import { fetchGruposTributacao } from "@/services/faturamento/gruposTributacao";
+import { TipoRegraTributaria } from "@/services/faturamento/gruposTributacao";
 import { FaPlus } from "react-icons/fa";
 import { MultiSelect } from "primereact/multiselect";
 import {
@@ -30,7 +31,7 @@ import {
   validarCamposObrigatorios,
   verificarDuplicidade,
   fetchRegraGrupoTributacao
-} from "@/services/regraGrupoTributacaoService";
+} from "@/services/faturamento/regraGrupoTributacaoService";
 
 
 const GrupoTributacao: React.FC = () => {
@@ -1025,29 +1026,22 @@ const GrupoTributacao: React.FC = () => {
 
           </Dialog>
 
-          <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+          <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
-                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">
                   Grupo de Tributação
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
-                <div>
-                  <button
-                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
-                    onClick={() => setVisible(true)}
-                  >
-                    <IoAddCircleOutline
-                      style={{ fontSize: "2.5rem" }}
-                      className="text-white text-center"
-                    />
-                  </button>
+                <div className="mr-2">
+                  <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
               )}
             </div>
             <div
-              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
               style={{ height: "95%" }}
             >
               <div className="mb-4 flex justify-end">

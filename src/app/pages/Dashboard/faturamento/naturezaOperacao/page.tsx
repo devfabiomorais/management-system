@@ -9,8 +9,6 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -21,26 +19,14 @@ import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
+import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
 import { MultiSelect } from "primereact/multiselect";
-import { Establishment } from "@/services/estabilishment";
-import { fetchEstabilishments } from "@/services/estabilishment";
-
-
-export interface NaturezaOperacao {
-  cod_natureza_operacao: number;
-  nome?: string;
-  padrao?: string;
-  tipo?: string; // Se você estiver usando enum, pode tipar melhor
-  finalidade_emissao?: string;
-  tipo_atendimento?: string;
-  consumidor_final?: string; // Ou boolean, dependendo do seu Prisma
-  observacoes?: string;
-  cod_grupo_tributacao?: number;
-  cod_cfop_interno?: number;
-  cod_cfop_externo?: number;
-  situacao?: 'Ativo' | 'Inativo'; // enum
-}
+import { Establishment, fetchEstabilishments } from "@/services/controls/estabilishment";
+import type { NaturezaOperacao } from "@/services/faturamento/naturezaOperacao";
+import { fetchNaturezaOperacao } from "@/services/faturamento/naturezaOperacao";
+import { fetchGruposTributacao, GrupoTributacao } from "@/services/faturamento/gruposTributacao";
+import { Cfop, fetchCfops } from "@/services/faturamento/cfops";
 
 
 const NaturezaOperacao: React.FC = () => {
@@ -60,36 +46,26 @@ const NaturezaOperacao: React.FC = () => {
   const [rows, setRows] = useState(10);
 
 
-  const filteredNaturezasOperacao = naturezasOperacao.filter((naturezaOperacao) => {
-    // Apenas ATIVO aparecem
-    if (naturezaOperacao.situacao !== 'Ativo') {
-      return false;
-    }
 
-    // Lógica de busca
-    return Object.values(naturezaOperacao).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    );
-  });
 
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [naturezasOperacaoIdToDelete, setNaturezaOperacaoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedNaturezaOperacao, setSelectedNaturezaOperacao] = useState<NaturezaOperacao | null>(null);
   const [formValues, setFormValues] = useState<NaturezaOperacao>({
     cod_natureza_operacao: 0,
     nome: "",
     padrao: "",
     tipo: "",
     finalidade_emissao: "",
-    tipo_atendimento: "",
+    tipo_agendamento: "",
     consumidor_final: "",
     observacoes: "",
     cod_grupo_tributacao: 0,
     cod_cfop_interno: 0,
     cod_cfop_externo: 0,
     situacao: "Ativo",
+    estabelecimentos: [],
   });
 
 
@@ -101,13 +77,14 @@ const NaturezaOperacao: React.FC = () => {
       padrao: "",
       tipo: "",
       finalidade_emissao: "",
-      tipo_atendimento: "",
+      tipo_agendamento: "",
       consumidor_final: "",
       observacoes: "",
       cod_grupo_tributacao: undefined,
       cod_cfop_interno: 0,
       cod_cfop_externo: 0,
       situacao: "Ativo",
+      estabelecimentos: [],
     });
     setSelectedEstablishments([]);
   };
@@ -151,7 +128,7 @@ const NaturezaOperacao: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchNaturezasOperacao();
+        fetchNaturezaOperacao(token);
         toast.success("Natureza de Operação salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
@@ -186,25 +163,29 @@ const NaturezaOperacao: React.FC = () => {
         "padrao",
         "tipo",
         "finalidade_emissao",
-        "tipo_atendimento",
+        "tipo_agendamento",
         "consumidor_final",
         "observacoes",
         "cod_grupo_tributacao",
         "cod_cfop_interno",
-        "cod_cfop_externo"
+        "cod_cfop_externo",
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof NaturezaOperacao];
-        return (
-          value === "" ||
-          value === null ||
-          value === undefined
-        );
-      });
+      const verificarCamposObrigatorios = (dados: NaturezaOperacao): string | null => {
+        for (const campo of requiredFields) {
+          const valor = dados[campo as keyof NaturezaOperacao];
 
-      if (isEmptyField) {
-        toast.info("Todos os campos obrigatórios devem ser preenchidos.", {
+          if (valor === "" || valor === null || valor === undefined) {
+            return campo; // Retorna o primeiro campo inválido
+          }
+
+        }
+        return null; // Todos os campos estão válidos
+      };
+      const campoFaltando = verificarCamposObrigatorios(formValues);
+
+      if (campoFaltando) {
+        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
           position: "top-right",
           autoClose: 3000,
         });
@@ -232,7 +213,7 @@ const NaturezaOperacao: React.FC = () => {
 
       if (naturezaEncontrado && situacaoInativo) {
         await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
-        fetchNaturezasOperacao();
+        fetchNaturezaOperacao(token);
         clearInputs();
         setVisible(fecharTela);
         toast.info("Nome já existia e foi reativado com os novos dados.", {
@@ -246,9 +227,10 @@ const NaturezaOperacao: React.FC = () => {
         return;
       }
 
+
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/register`,
-        formValues,
+        { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -261,7 +243,7 @@ const NaturezaOperacao: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        fetchNaturezasOperacao();
+        fetchNaturezaOperacao(token);
         clearInputs();
         setVisible(fecharTela);
       } else {
@@ -290,35 +272,36 @@ const NaturezaOperacao: React.FC = () => {
     setVisualizar(visualizar);
 
     setFormValues(naturezasOperacao);
-    setSelectedNaturezaOperacao(naturezasOperacao);
+    setSelectedNaturezaOperacao([naturezasOperacao]);
     setIsEditing(true);
     setVisible(true);
   };
 
-  useEffect(() => {
-    fetchNaturezasOperacao();
-  }, []);
 
-  const fetchNaturezasOperacao = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/naturezaOperacao",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.naturezas);
-      setIsDataLoaded(true);
-      setNaturezasOperacao(response.data.naturezas);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar Naturezas de Operação:", error);
+  const [naturezaOperacao, setNaturezaOperacao] = useState<NaturezaOperacao[]>([]);
+  const [selectedNaturezaOperacao, setSelectedNaturezaOperacao] = useState<NaturezaOperacao[]>([]);
+
+  // useEffect para carregar dados
+  useEffect(() => {
+    const carregarNatureza = async () => {
+      const natureza = await fetchNaturezaOperacao(token);
+      setNaturezaOperacao(natureza);
+    };
+
+    carregarNatureza();
+  }, [token]);
+
+  const filteredNaturezasOperacao = naturezaOperacao.filter((naturezaOperacao) => {
+    // Apenas ATIVO aparecem
+    if (naturezaOperacao.situacao !== 'Ativo') {
+      return false;
     }
-  };
+
+    // Lógica de busca
+    return Object.values(naturezaOperacao).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   const openDialog = (id: number) => {
     setNaturezaOperacaoIdToDelete(id);
@@ -345,7 +328,7 @@ const NaturezaOperacao: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchNaturezasOperacao(); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        fetchNaturezaOperacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
         setModalDeleteVisible(false);
         toast.success("Natureza de Operação cancelado com sucesso!", {
           position: "top-right",
@@ -367,76 +350,18 @@ const NaturezaOperacao: React.FC = () => {
   };
 
 
-  const handleDelete = async () => {
-    if (naturezasOperacaoIdToDelete === null) return;
-
-    try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/${naturezasOperacaoIdToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Natureza de Operação removido com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchNaturezasOperacao();
-      setModalDeleteVisible(false);
-    } catch (error) {
-      console.log("Erro ao excluir Natureza de Operação:", error);
-      toast.error("Erro ao excluir Natureza de Operação. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormValues({ ...formValues, [name]: value });
   };
+
 
   const closeModal = () => {
     clearInputs();
     setIsEditing(false);
     setVisible(false);
-  };
-
-  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
-    setFormValues({
-      ...formValues,
-      [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
-
-
-  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault();
-    }
-  };
-
-  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
-    setFormValues({
-      ...formValues,
-      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
-
-  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    // Permite qualquer caractere que não seja número
-    if (/[\d]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de números
-    }
   };
 
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -448,6 +373,32 @@ const NaturezaOperacao: React.FC = () => {
     };
 
     carregarEstabs();
+  }, [token]);
+
+
+  const [gruposTributacao, setGruposTributacao] = useState<GrupoTributacao[]>([]);
+  const [selectedGruposTributacao, setSelectedGruposTributacao] = useState<GrupoTributacao[]>([]);
+  useEffect(() => {
+    const carregarGrupos = async () => {
+      const grupos = await fetchGruposTributacao(token);
+      setGruposTributacao(grupos);
+    };
+
+    carregarGrupos();
+  }, [token]);
+
+
+  const [cfops, setCfops] = useState<Cfop[]>([]);
+  const [selectedCfops, setSelectedCfops] = useState<Cfop[]>([]);
+
+  // useEffect para carregar os CFOPs
+  useEffect(() => {
+    const carregarCfops = async () => {
+      const data = await fetchCfops(token);
+      setCfops(data);
+    };
+
+    carregarCfops();
   }, [token]);
 
 
@@ -619,11 +570,11 @@ const NaturezaOperacao: React.FC = () => {
                   <MultiSelect
                     disabled={visualizando}
                     value={selectedEstablishments}
-                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    onChange={(e) => { setSelectedEstablishments(e.value); console.log(selectedEstablishments) }}
                     options={establishments}
                     optionLabel="nome"
                     filter
-                    placeholder="Selecione os Estabelecimentos"
+                    placeholder="Selecione"
                     maxSelectedLabels={3}
                     className="w-full border text-black h-[35px] flex items-center"
                   />
@@ -656,18 +607,18 @@ const NaturezaOperacao: React.FC = () => {
 
 
                 <div>
-                  <label htmlFor="tipo_atendimento" className="block text-blue font-medium">
+                  <label htmlFor="tipo_agendamento" className="block text-blue font-medium">
                     Tipo de Atendimento
                   </label>
                   <select
-                    id="tipo_atendimento"
-                    name="tipo_atendimento"
+                    id="tipo_agendamento"
+                    name="tipo_agendamento"
                     disabled={visualizando}
-                    value={formValues.tipo_atendimento}
+                    value={formValues.tipo_agendamento}
                     onChange={(e) =>
                       setFormValues((prev) => ({
                         ...prev,
-                        tipo_atendimento: e.target.value,
+                        tipo_agendamento: e.target.value,
                       }))
                     }
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -708,20 +659,31 @@ const NaturezaOperacao: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label htmlFor="cod_grupo_tributacao" className="block text-blue font-medium">
+                <div className="">
+                  <label htmlFor="grupoTributacao" className="block text-blue font-medium">
                     Grupo de Tributação
                   </label>
-                  <input
-                    type="number"
-                    id="cod_grupo_tributacao"
-                    name="cod_grupo_tributacao"
+                  <select
+                    id="grupoTributacao"
                     disabled={visualizando}
-                    value={formValues.cod_grupo_tributacao}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                    value={formValues.cod_grupo_tributacao || ""}
+                    onChange={(e) =>
+                      setFormValues((prev) => ({
+                        ...prev,
+                        cod_grupo_tributacao: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full border text-black h-[35px] px-2 rounded"
+                  >
+                    <option value="">Selecione</option>
+                    {gruposTributacao.map((grupo) => (
+                      <option key={grupo.cod_grupo_tributacao} value={grupo.cod_grupo_tributacao}>
+                        {grupo.nome}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
 
 
 
@@ -729,31 +691,44 @@ const NaturezaOperacao: React.FC = () => {
                   <label htmlFor="cod_cfop_interno" className="block text-blue font-medium">
                     CFOP Interno
                   </label>
-                  <input
-                    type="number"
+                  <select
                     id="cod_cfop_interno"
                     name="cod_cfop_interno"
                     disabled={visualizando}
                     value={formValues.cod_cfop_interno}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="">Selecione</option>
+                    {cfops.map((cfop) => (
+                      <option key={cfop.cod_cfop} value={cfop.cod_cfop}>
+                        {cfop.cod_cfop} - {cfop.descricao}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label htmlFor="cod_cfop_externo" className="block text-blue font-medium">
                     CFOP Interestadual
                   </label>
-                  <input
-                    type="number"
+                  <select
                     id="cod_cfop_externo"
                     name="cod_cfop_externo"
                     disabled={visualizando}
                     value={formValues.cod_cfop_externo}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="">Selecione</option>
+                    {cfops.map((cfop) => (
+                      <option key={cfop.cod_cfop} value={cfop.cod_cfop}>
+                        {cfop.cod_cfop} - {cfop.descricao}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
               </div>
 
             </div>
@@ -843,29 +818,22 @@ const NaturezaOperacao: React.FC = () => {
 
           </Dialog>
 
-          <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+          <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
-                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">
                   Natureza de Operação
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
-                <div>
-                  <button
-                    className="bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
-                    onClick={() => setVisible(true)}
-                  >
-                    <IoAddCircleOutline
-                      style={{ fontSize: "2.5rem" }}
-                      className="text-white text-center"
-                    />
-                  </button>
+                <div className="mr-2">
+                  <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
               )}
             </div>
             <div
-              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
               style={{ height: "95%" }}
             >
               <div className="mb-4 flex justify-end">
@@ -918,7 +886,7 @@ const NaturezaOperacao: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="tributacao"
+                  field="cod_grupo_tributacao"
                   header="Tributação"
                   style={{
                     width: "1%",
@@ -956,8 +924,8 @@ const NaturezaOperacao: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="cfop"
-                  header="CFOP"
+                  field="cod_cfop_interno"
+                  header="CFOP Interno"
                   style={{
                     width: "0.5%",
                     textAlign: "center",

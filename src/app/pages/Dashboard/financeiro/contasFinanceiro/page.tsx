@@ -26,6 +26,8 @@ import ClientsPage from "../../commercial/clients/page";
 import CancelButton from "@/app/components/Buttons/CancelButton";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
+import RegisterButton from "@/app/components/Buttons/RegisterButton";
+import FilterButton from "@/app/components/Buttons/FilterButton";
 
 export interface ContasBancarias {
   cod_conta_bancaria: number;
@@ -2405,10 +2407,11 @@ const ContasFinanceiroPage: React.FC = () => {
 
           </Dialog>
 
-          <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+          <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
-                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">
                   {tipo === "aPagar" ? "Contas a Pagar" : "Contas a Receber"}
                 </h2>
               </div>
@@ -2416,38 +2419,10 @@ const ContasFinanceiroPage: React.FC = () => {
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <button
-                        onClick={() => (!openedFiltros ? setOpenedFiltros(true) : setOpenedFiltros(false))}
-                        className="relative group focus:outline-none transform transition-all duration-50 hover:scale-150 hover:bg-green400 active:scale-100"
-                      >
-                        <div className="w-[40px] h-[40px] bg-blue300 rounded-full flex items-center justify-center">
-                          <div className="w-[35px] h-[35px] bg-white rounded-full flex items-center justify-center">
-                            <div className="w-[30px] h-[30px] bg-blue300 rounded-full flex items-center justify-center">
-                              <GiFunnel className="text-white text-xl" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Tooltip */}
-                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap ">
-                          Filtros
-                        </span>
-                      </button>
+                      <FilterButton onClick={() => (!openedFiltros ? setOpenedFiltros(true) : setOpenedFiltros(false))} title="Filtros" />
                     </div>
                     <div>
-                      <button
-                        className="group bg-green200 rounded-3xl mr-3 transform transition-all duration-50 hover:scale-150 hover:bg-green400 focus:outline-none"
-                        onClick={() => { clearInputs(); setOpenedFiltros(false); setVisible(true); }}
-                      >
-                        <IoAddCircleOutline
-                          style={{ fontSize: "2.5rem" }}
-                          className="text-white text-center" />
-
-                        {/* Tooltip */}
-                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                          Cadastro
-                        </span>
-                      </button>
+                      <RegisterButton onClick={() => { clearInputs(); setOpenedFiltros(false); setVisible(true); }} title="Cadastrar" />
                     </div>
                   </div>
                 </>
@@ -2455,7 +2430,7 @@ const ContasFinanceiroPage: React.FC = () => {
             </div>
 
             <div
-              className="bg-white rounded-lg p-6 pt-2 shadow-md w-full flex flex-col"
+              className="bg-white rounded-lg p-6 pt-2 shadow-md w-full flex flex-col mt-2"
               style={{ height: "95%" }}
             >
               {/* Aba superior com Filtros */}

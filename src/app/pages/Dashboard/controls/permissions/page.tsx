@@ -522,14 +522,15 @@ const PermissionsPage: React.FC = () => {
                     <p>Tem certeza que deseja excluir este grupo?</p>
                 </Dialog>
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
                     <div className="flex justify-between">
                         <div>
-                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Grupo de Permissões</h2>
+                            <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">Grupo de Permissões</h2>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
                         style={{ height: "95%" }}>
 
                         <div className="flex justify-around">

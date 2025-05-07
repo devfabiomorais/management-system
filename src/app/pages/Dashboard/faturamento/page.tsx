@@ -45,7 +45,7 @@ const FaturamentoPage: React.FC = () => {
         <div>
             <SidebarLayout>
                 <div className="flex justify-center h-screen">
-                    <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                    <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
                         <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Faturamento</h2>
                         <div className="bg-white rounded-lg p-8 pt-14 shadow-md w-full flex justify-center" style={{ height: "95%" }}>
                             <div className="flex flex-col items-center">

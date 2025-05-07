@@ -43,11 +43,13 @@ export const fetchGruposTributacao = async (token: string | null): Promise<Grupo
       }
     );
 
-    const gruposAtivos = response.data.grupos.filter(
-      (grupo: any) => grupo.situacao === "Ativo"
-    );
+    // const gruposAtivos = response.data.grupos.filter(
+    //   (grupo: any) => grupo.situacao === "Ativo"
+    // );
 
-    return gruposAtivos;
+    // return gruposAtivos;
+    const grupos = response.data.grupos;
+    return grupos
   } catch (error) {
     console.error("Erro ao carregar Grupos de Tributação:", error);
     return [];

@@ -345,14 +345,15 @@ const UnMedidaPage: React.FC = () => {
                     <p>Tem certeza que deseja excluir esta unidade de médida?</p>
                 </Dialog>
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
                     <div className="flex justify-between">
                         <div>
-                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Unidades de Medida</h2>
+                            <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">Unidades de Medida</h2>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2" style={{ height: "95%" }}>
 
                         <div className="flex justify-around">
 
