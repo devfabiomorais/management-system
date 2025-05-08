@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { FaBan } from 'react-icons/fa';
 
-interface BlockButtonProps {
+interface CancelButtonProps {
   onClick: () => void;
 }
 
-export default function BlockButton({ onClick }: BlockButtonProps) {
+export default function CancelButton({ onClick }: CancelButtonProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {

@@ -91,33 +91,54 @@ const NaturezaOperacao: React.FC = () => {
 
 
   const handleSaveEdit = async (cod_natureza_operacao: any) => {
-    setItemEditDisabled(true);
-    setLoading(true);
-    setIsEditing(false);
     try {
       const requiredFields = [
         "nome",
-        "descricao",
+        "padrao",
+        "tipo",
+        "finalidade_emissao",
+        "tipo_agendamento",
+        "consumidor_final",
+        "observacoes",
+        "cod_grupo_tributacao",
+        "cod_cfop_interno",
+        "cod_cfop_externo",
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
+      const verificarCamposObrigatorios = (dados: NaturezaOperacao): string | null => {
+        for (const campo of requiredFields) {
+          const valor = dados[campo as keyof NaturezaOperacao];
 
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+          if (valor === "" || valor === null || valor === undefined) {
+            return campo; // Retorna o primeiro campo inválido
+          }
+
+        }
+        return null; // Todos os campos estão válidos
+      };
+      const campoFaltando = verificarCamposObrigatorios(formValues);
+
+      if (campoFaltando) {
+        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
           position: "top-right",
           autoClose: 3000,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      } else if (selectedEstablishments == null) {
+        toast.info(`Selecione pelo menos um estabelecimento.`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
       const response = await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/api/naturezaOperacao/edit/${cod_natureza_operacao}`,
-        { ...formValues },
+        { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -128,8 +149,9 @@ const NaturezaOperacao: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchNaturezaOperacao(token);
-        toast.success("Natureza de Operação salvo com sucesso!", {
+        const novasNaturezas = await fetchNaturezaOperacao(token);
+        setNaturezaOperacao(novasNaturezas);
+        toast.success("Natureza de Operação editada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -137,7 +159,7 @@ const NaturezaOperacao: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar Natureza de Operação.", {
+        toast.error("Erro ao editar Natureza de Operação.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -145,7 +167,7 @@ const NaturezaOperacao: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar Natureza de Operação:", error);
+      console.error("Erro ao editar Natureza de Operação:", error);
     }
   };
 
@@ -194,7 +216,7 @@ const NaturezaOperacao: React.FC = () => {
         return;
       }
 
-      const naturezaEncontrado = rowData.find(
+      const naturezaEncontrado = naturezaOperacao.find(
         (item) => item.nome === formValues.nome
       );
       const situacaoInativo = naturezaEncontrado?.situacao === "Inativo";
@@ -213,10 +235,11 @@ const NaturezaOperacao: React.FC = () => {
 
       if (naturezaEncontrado && situacaoInativo) {
         await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
-        fetchNaturezaOperacao(token);
+        const novasNaturezas = await fetchNaturezaOperacao(token);
+        setNaturezaOperacao(novasNaturezas);
         clearInputs();
         setVisible(fecharTela);
-        toast.info("Nome já existia e foi reativado com os novos dados.", {
+        toast.info("Esse nome já existia, portanto foi reativado com os novos dados.", {
           position: "top-right",
           autoClose: 8000,
           progressStyle: { background: "green" },
@@ -243,7 +266,8 @@ const NaturezaOperacao: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        fetchNaturezaOperacao(token);
+        const novasNaturezas = await fetchNaturezaOperacao(token);
+        setNaturezaOperacao(novasNaturezas);
         clearInputs();
         setVisible(fecharTela);
       } else {
@@ -268,10 +292,18 @@ const NaturezaOperacao: React.FC = () => {
 
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (naturezasOperacao: NaturezaOperacao, visualizar: boolean) => {
+  const handleEdit = (naturezasOperacao: any, visualizar: boolean) => {
+    console.log(naturezasOperacao)
     setVisualizar(visualizar);
 
     setFormValues(naturezasOperacao);
+    // Filtra os estabelecimentos com base no cod_estabel
+    const selectedEstablishmentsWithNames = naturezasOperacao.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
+      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+    )
+      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+    setSelectedEstablishments(selectedEstablishmentsWithNames);
     setSelectedNaturezaOperacao([naturezasOperacao]);
     setIsEditing(true);
     setVisible(true);
@@ -328,7 +360,8 @@ const NaturezaOperacao: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchNaturezaOperacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        const novasNaturezas = await fetchNaturezaOperacao(token);
+        setNaturezaOperacao(novasNaturezas);
         setModalDeleteVisible(false);
         toast.success("Natureza de Operação cancelado com sucesso!", {
           position: "top-right",
@@ -341,8 +374,8 @@ const NaturezaOperacao: React.FC = () => {
         });
       }
     } catch (error) {
-      console.log("Erro ao excluir Natureza de Operação:", error);
-      toast.error("Erro ao excluir Natureza de Operação. Tente novamente.", {
+      console.log("Erro ao cancelar Natureza de Operação:", error);
+      toast.error("Erro ao cancelar Natureza de Operação. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -528,7 +561,7 @@ const NaturezaOperacao: React.FC = () => {
                       Selecione
                     </option>
                     <option value="Entrada">Entrada</option>
-                    <option value="Saída">Saída</option>
+                    <option value="Saida">Saída</option>
                   </select>
                 </div>
 
