@@ -73,13 +73,7 @@ export const fetchNfsProdutos = async (
       }
     );
 
-    // Filtra apenas as NFs com situação ativa (caso necessário)
-    // const nfsAtivas = response.data.nfs.filter(
-    //   (nfs: any) => nfs.situacao === "Ativo"
-    // );
-
-    // return nfsAtivas;
-    const nfs = response.data.nfs;
+    const nfs = response.data.nfsProdutos;
     return nfs;
   } catch (error) {
     console.error("Erro ao carregar Notas Fiscais de Produto:", error);

@@ -154,13 +154,22 @@ const NfsProduto: React.FC = () => {
     carregarNfsProdutos();
   }, [token]);
 
-  const filteredNfsProdutos = (nfsProdutos ?? []).filter((nfs) => {
-    if (nfs.situacao !== 'Ativo') return false;
+  const filteredNfsProdutos =
+    Array.isArray(nfsProdutos) && nfsProdutos.length > 0
+      ? nfsProdutos.filter((nfs) => {
+        // Apenas ATIVO aparecem
+        if (nfs.situacao !== 'Ativo') {
+          return false;
+        }
 
-    return Object.values(nfs).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    );
-  });
+        // Lógica de busca
+        return Object.values(nfs).some((value) =>
+          String(value ?? '') // previne erro com undefined/null
+            .toLowerCase()
+            .includes(search.toLowerCase())
+        );
+      })
+      : [];
 
 
 
@@ -439,31 +448,26 @@ const NfsProduto: React.FC = () => {
 
     try {
       const requiredFields = [
-        "nome",
-        "padrao",
+        "numero_nf",
+        "serie",
         "tipo",
-        "finalidade_emissao",
-        "tipo_agendamento",
-        "consumidor_final",
-        "observacoes",
-        "cod_grupo_tributacao",
-        "cod_cfop_interno",
-        "cod_cfop_externo",
+        "dt_emissao",
+        "hr_emissao",
+        "cod_entidade",
+        "total_nf",
       ];
 
-      const verificarCamposObrigatorios = (dados: NfsProduto): string | null => {
+      const verificarCamposObrigatorios = (dados: any): string | null => {
         for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsProduto];
-
+          const valor = dados[campo as keyof typeof dados];
           if (valor === "" || valor === null || valor === undefined) {
-            return campo; // Retorna o primeiro campo inválido
+            return campo;
           }
-
         }
-        return null; // Todos os campos estão válidos
+        return null;
       };
-      const campoFaltando = verificarCamposObrigatorios(formValues);
 
+      const campoFaltando = verificarCamposObrigatorios(formValues);
       if (campoFaltando) {
         toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
           position: "top-right",
@@ -474,10 +478,13 @@ const NfsProduto: React.FC = () => {
         return;
       }
 
-
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/register`,
-        { ...formValues, estabelecimentos: selectedEstablishments },
+        {
+          ...formValues,
+          produtos: produtosSelecionados, // se você estiver usando produtos vinculados
+          tipo_en: tipoEntidade,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -490,8 +497,9 @@ const NfsProduto: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        const novasNaturezas = await fetchNfsProdutos(token);
-        setNfsProdutos(novasNaturezas);
+
+        const novasNotas = await fetchNfsProdutos(token); // função que atualiza a lista
+        setNfsProdutos(novasNotas);
         clearInputs();
         setVisible(fecharTela);
       } else {
@@ -511,6 +519,7 @@ const NfsProduto: React.FC = () => {
       setLoading(false);
     }
   };
+
 
 
 
@@ -707,13 +716,13 @@ const NfsProduto: React.FC = () => {
     }));
   };
 
-  const [tipoEntidade, setTipoEntidade] = useState<'cliente' | 'fornecedor'>('cliente');
+  const [tipoEntidade, setTipoEntidade] = useState<'Cliente' | 'Fornecedor'>('Cliente');
 
 
   const handleSelectEntidade = (id: string) => {
     let entidade: any;
 
-    if (tipoEntidade === "fornecedor") {
+    if (tipoEntidade === 'Fornecedor') {
       // Busca fornecedor
       entidade = fornecedores.find((f) => f.cod_fornecedor.toString() === id);
 
@@ -1561,13 +1570,21 @@ const NfsProduto: React.FC = () => {
       (formValues.total_pis || 0) +
       (formValues.total_cofins || 0);
 
+    const roundedFederais = parseFloat(novosFederais.toFixed(2));
+
     setImpostosFederaisInput(
-      novosFederais.toLocaleString('pt-BR', {
+      roundedFederais.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })
     );
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      impostos_federais: roundedFederais,
+    }));
   }, [formValues.total_ipi, formValues.total_pis, formValues.total_cofins]);
+
 
 
   const [impostosEstaduaisInput, setImpostosEstaduaisInput] = useState(
@@ -1578,14 +1595,22 @@ const NfsProduto: React.FC = () => {
   );
 
   useEffect(() => {
-    const impostosEstaduais = (formValues.total_icms || 0);
+    const impostosEstaduais = formValues.total_icms || 0;
+    const roundedEstaduais = parseFloat(impostosEstaduais.toFixed(2));
+
     setImpostosEstaduaisInput(
-      impostosEstaduais.toLocaleString('pt-BR', {
+      roundedEstaduais.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })
     );
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      impostos_estaduais: roundedEstaduais,
+    }));
   }, [formValues.total_icms]);
+
 
 
 
@@ -1610,14 +1635,25 @@ const NfsProduto: React.FC = () => {
       (formValues.impostos_estaduais || 0) +
       (formValues.impostos_municipais || 0);
 
+    const roundedTotal = parseFloat(total.toFixed(2));
+
     setTotalImpostosInput(
-      total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      roundedTotal.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
     );
+
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      total_impostos: roundedTotal,
+    }));
   }, [
     formValues.impostos_federais,
     formValues.impostos_estaduais,
-    formValues.impostos_municipais
+    formValues.impostos_municipais,
   ]);
+
 
 
 
@@ -2285,12 +2321,12 @@ const NfsProduto: React.FC = () => {
                           audio.play();
 
                           setTimeout(() => {
-                            setTipoEntidade('cliente');
+                            setTipoEntidade('Cliente');
                           }, 100);
                         }}
 
                         className={`h-[28px] px-8 rounded-full border font-medium 
-                        ${tipoEntidade === 'cliente' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
+                        ${tipoEntidade === 'Cliente' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         Cliente
                       </button>
@@ -2302,11 +2338,11 @@ const NfsProduto: React.FC = () => {
                           audio.play();
 
                           setTimeout(() => {
-                            setTipoEntidade('fornecedor');
+                            setTipoEntidade('Fornecedor');
                           }, 100);
                         }}
                         className={`h-[28px] px-8 rounded-full border font-medium 
-                        ${tipoEntidade === 'fornecedor' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
+                        ${tipoEntidade === 'Fornecedor' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         Fornecedor
                       </button>
@@ -2323,7 +2359,7 @@ const NfsProduto: React.FC = () => {
                       className="w-full border text-black h-[34px] px-2 rounded mt-1"
                     >
                       <option value="">Selecione</option>
-                      {tipoEntidade === "fornecedor" ? (
+                      {tipoEntidade === 'Fornecedor' ? (
                         fornecedores.map((fornecedor) => (
                           <option key={fornecedor.cod_fornecedor} value={fornecedor.cod_fornecedor}>
                             {fornecedor.nome}
@@ -3105,7 +3141,7 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                        className="rounded-r-none w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
                       />
                       <input
                         type="text"
@@ -3120,25 +3156,32 @@ const NfsProduto: React.FC = () => {
                           setTotalICMSInput(rawValue.replace('.', ','));
                         }}
                         onBlur={(e) => {
+                          // Pega o valor do input, permite apenas números e vírgula, e converte para ponto
                           const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
+                          // Converte para float e fixa em duas casas decimais
+                          const numericValue = parseFloat(rawValue);
+                          const roundedValue = isNaN(numericValue) ? 0 : parseFloat(numericValue.toFixed(2));
+
+                          // Atualiza o estado do form
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_icms: numericValue,
+                            total_icms: roundedValue,
                           }));
 
+                          // Atualiza o input formatado para exibir com vírgula
                           setTotalICMSInput(
-                            numericValue.toLocaleString('pt-BR', {
+                            roundedValue.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })
                           );
                         }}
+
                         style={{
                           textAlign: 'left',
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} rounded-l-none border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -3153,7 +3196,7 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                        className="rounded-r-none w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
                       />
                       <input
                         type="text"
@@ -3166,25 +3209,32 @@ const NfsProduto: React.FC = () => {
                           setTotalPISInput(rawValue.replace('.', ','));
                         }}
                         onBlur={(e) => {
+                          // Pega o valor, limpa caracteres e converte vírgula para ponto
                           const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
+                          // Converte para float e fixa em duas casas decimais
+                          const numericValue = parseFloat(rawValue);
+                          const roundedValue = isNaN(numericValue) ? 0 : parseFloat(numericValue.toFixed(2));
+
+                          // Atualiza o form
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_pis: numericValue,
+                            total_pis: roundedValue,
                           }));
 
+                          // Atualiza o input exibido
                           setTotalPISInput(
-                            numericValue.toLocaleString('pt-BR', {
+                            roundedValue.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })
                           );
                         }}
+
                         style={{
                           textAlign: 'left',
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} rounded-l-none border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -3199,7 +3249,7 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                        className="rounded-r-none w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
                       />
                       <input
                         type="text"
@@ -3212,25 +3262,32 @@ const NfsProduto: React.FC = () => {
                           setTotalCOFINSInput(rawValue.replace('.', ','));
                         }}
                         onBlur={(e) => {
+                          // Limpa caracteres inválidos e troca vírgula por ponto
                           const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
+                          // Converte para número com 2 casas decimais
+                          const numericValue = parseFloat(rawValue);
+                          const roundedValue = isNaN(numericValue) ? 0 : parseFloat(numericValue.toFixed(2));
+
+                          // Atualiza o form
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_cofins: numericValue,
+                            total_cofins: roundedValue,
                           }));
 
+                          // Atualiza o input com vírgula para exibição
                           setTotalCOFINSInput(
-                            numericValue.toLocaleString('pt-BR', {
+                            roundedValue.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })
                           );
                         }}
+
                         style={{
                           textAlign: 'left',
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} rounded-l-none border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -3245,7 +3302,7 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                        className="rounded-r-none w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
                       />
                       <input
                         type="text"
@@ -3258,25 +3315,32 @@ const NfsProduto: React.FC = () => {
                           setTotalIPIInput(rawValue.replace('.', ','));
                         }}
                         onBlur={(e) => {
+                          // Limpa caracteres inválidos e troca vírgula por ponto
                           const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
+                          // Converte para número com 2 casas decimais
+                          const numericValue = parseFloat(rawValue);
+                          const roundedValue = isNaN(numericValue) ? 0 : parseFloat(numericValue.toFixed(2));
+
+                          // Atualiza o form
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_ipi: numericValue,
+                            total_ipi: roundedValue,
                           }));
 
+                          // Atualiza o input com vírgula para exibição
                           setTotalIPIInput(
-                            numericValue.toLocaleString('pt-BR', {
+                            roundedValue.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })
                           );
                         }}
+
                         style={{
                           textAlign: 'left',
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} rounded-l-none border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -3317,7 +3381,7 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm rounded-r-none h-8 bg-gray-100"
                       />
                       <input
                         type="text"
@@ -3348,7 +3412,7 @@ const NfsProduto: React.FC = () => {
                         style={{
                           textAlign: 'left',
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} rounded-l-none border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -3621,46 +3685,8 @@ const NfsProduto: React.FC = () => {
               >
 
                 <Column
-                  field="nome"
-                  header="Nome"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="cod_grupo_tributacao"
-                  header="Tributação"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="padrao"
-                  header="Padrão"
+                  field="numero_nf"
+                  header="Número"
                   style={{
                     width: "0.5%",
                     textAlign: "center",
@@ -3678,8 +3704,8 @@ const NfsProduto: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="cod_cfop_interno"
-                  header="CFOP Interno"
+                  field="pedido"
+                  header="Pedido"
                   style={{
                     width: "0.5%",
                     textAlign: "center",
@@ -3696,6 +3722,124 @@ const NfsProduto: React.FC = () => {
                     padding: "10px",
                   }}
                 />
+                <Column
+                  field="dt_emissao"
+                  header="Data"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    const date = new Date(rowData.dt_emissao);
+                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }).format(date);
+
+                    return <span>{formattedDate}</span>;
+                  }}
+                />
+                <Column
+                  field="razao_social_ent"
+                  header="Destinatário"
+                  style={{
+                    width: "6%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="cod_natureza_operacao"
+                  header="Natureza de Operação"
+                  body={(rowData) => {
+                    const natureza = naturezaOperacao.find(
+                      (n) => n.cod_natureza_operacao === rowData.cod_natureza_operacao
+                    );
+                    return natureza ? natureza.nome : '';
+                  }}
+                  style={{
+                    width: "6%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="total_nf"
+                  header="Valor"
+                  body={(rowData) => {
+                    return `R$ ${new Intl.NumberFormat('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format(rowData.total_nf)}`;
+                  }}
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+
                 <Column
                   header=""
                   body={(rowData) => (
