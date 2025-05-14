@@ -9,8 +9,6 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -23,15 +21,15 @@ import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
+import { MultiSelect } from "primereact/multiselect";
+import { Establishment, fetchEstabilishments } from "@/services/controls/estabilishment";
+import type { AtividadesServicos } from "@/services/faturamento/atividadesServicos";
+import { fetchAtividadesServicos } from "@/services/faturamento/atividadesServicos";
+import { fetchGruposTributacao, GrupoTributacao } from "@/services/faturamento/gruposTributacao";
+import { Cfop, fetchCfops } from "@/services/faturamento/cfops";
 
-interface AtividadeServico {
-  cod_natureza_operacao: number;
-  nome: string;
-  descricao?: string;
-  situacao?: string;
-}
 
-const AtividadeServico: React.FC = () => {
+const AtividadesServicos: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
   const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
@@ -42,72 +40,115 @@ const AtividadeServico: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [atividadesServico, setAtividadesServico] = useState<AtividadeServico[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
 
 
-  const filteredAtividadesServico = atividadesServico.filter((atividadeServico) => {
-    // Apenas ATIVO aparecem
-    if (atividadeServico.situacao !== 'Ativo') {
-      return false;
-    }
 
-    // Lógica de busca
-    return Object.values(atividadeServico).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    );
-  });
 
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [atividadesServicoIdToDelete, setAtividadeServicoIdToDelete] = useState<number | null>(null);
+  const [atividadesServicosIdToDelete, setAtividadesServicosIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedAtividadeServico, setSelectedAtividadeServico] = useState<AtividadeServico | null>(null);
-  const [formValues, setFormValues] = useState<AtividadeServico>({
-    cod_natureza_operacao: 0,
-    nome: "",
+
+  const [atividadesServicos, setAtividadesServicos] = useState<AtividadesServicos[]>([]);
+  const [selectedAtividadesServicos, setSelectedAtividadesServicos] = useState<AtividadesServicos[]>([]);
+
+  const [formValues, setFormValues] = useState<AtividadesServicos>({
+    cod_atividade_servico: 0,
+    cod_tributacao: 0,
+    cnae: "",
     descricao: "",
+    iss: 0,
+    cofins: 0,
+    pis: 0,
+    csll: 0,
+    ir: 0,
+    inss: 0,
+    desconta_imp_tot: "",
+    desconta_ded_tot: "",
+    servico_const_civil: "",
+    situacao: "Ativo",
+    estabelecimentos: []
   });
+
+
 
   const clearInputs = () => {
     setVisualizar(false)
     setFormValues({
-      cod_natureza_operacao: 0,
-      nome: "",
+      cod_atividade_servico: 0,
+      cod_tributacao: 0,
+      cnae: "",
       descricao: "",
+      iss: 0,
+      cofins: 0,
+      pis: 0,
+      csll: 0,
+      ir: 0,
+      inss: 0,
+      desconta_imp_tot: "",
+      desconta_ded_tot: "",
+      servico_const_civil: "",
+      situacao: "Ativo",
+      estabelecimentos: []
     });
+    setSelectedEstablishments([]);
   };
 
-  const handleSaveEdit = async (cod_natureza_operacao: any) => {
-    setItemEditDisabled(true);
-    setLoading(true);
-    setIsEditing(false);
+
+  const handleSaveEdit = async (cod_atividade_servico: any) => {
     try {
       const requiredFields = [
-        "nome",
+        "cod_tributacao",
+        "cnae",
         "descricao",
+        "iss",
+        "cofins",
+        "pis",
+        "csll",
+        "ir",
+        "inss",
+        "desconta_imp_tot",
+        "desconta_ded_tot",
+        "servico_const_civil",
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
+      const verificarCamposObrigatorios = (dados: AtividadesServicos): string | null => {
+        for (const campo of requiredFields) {
+          const valor = dados[campo as keyof AtividadesServicos];
 
-      if (isEmptyField) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+          if (valor === "" || valor === null || valor === undefined) {
+            return campo; // Retorna o primeiro campo inválido
+          }
+
+        }
+        return null; // Todos os campos estão válidos
+      };
+      const campoFaltando = verificarCamposObrigatorios(formValues);
+
+      if (campoFaltando) {
+        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
           position: "top-right",
           autoClose: 3000,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      } else if (selectedEstablishments == null) {
+        toast.info(`Selecione pelo menos um estabelecimento.`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServico/edit/${cod_natureza_operacao}`,
-        { ...formValues },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServicos/edit/${cod_atividade_servico}`,
+        { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -118,16 +159,18 @@ const AtividadeServico: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchAtividadesServico();
-        toast.success("Atividade de Serviço salvo com sucesso!", {
+        const novasAtividades = await fetchAtividadesServicos(token);
+        setAtividadesServicos(novasAtividades);
+        toast.success("Atividade de Serviço editada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar Atividade de Serviço.", {
+        toast.error("Erro ao editar Atividade de Serviço.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -135,212 +178,192 @@ const AtividadeServico: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar Atividade de Serviço:", error);
+      console.error("Erro ao editar Atividade de Serviço:", error);
     }
   };
 
-  const handleSave = async () => {
-    setItemCreateDisabled(true);
+
+  const [rowData, setRowData] = useState<AtividadesServicos[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const handleSaveReturn = async (fecharTela: boolean) => {
+    setItemCreateReturnDisabled(true);
     setLoading(true);
+
     try {
       const requiredFields = [
-        "nome",
+        "cod_tributacao",
+        "cnae",
         "descricao",
+        "iss",
+        "cofins",
+        "pis",
+        "csll",
+        "ir",
+        "inss",
+        "desconta_imp_tot",
+        "desconta_ded_tot",
+        "servico_const_civil",
       ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
-      });
 
-      if (isEmptyField) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+      const verificarCamposObrigatorios = (dados: AtividadesServicos): string | null => {
+        for (const campo of requiredFields) {
+          const valor = dados[campo as keyof AtividadesServicos];
+
+          if (valor === "" || valor === null || valor === undefined) {
+            return campo; // Retorna o primeiro campo inválido
+          }
+
+        }
+        return null; // Todos os campos estão válidos
+      };
+      const campoFaltando = verificarCamposObrigatorios(formValues);
+
+      if (campoFaltando) {
+        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
           position: "top-right",
           autoClose: 3000,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
+      const atividadeEncontrada = atividadesServicos.find(
+        (item) => item.descricao === formValues.descricao
+      );
+      const situacaoInativo = atividadeEncontrada?.situacao === "Inativo";
+
+      if (atividadeEncontrada && !situacaoInativo) {
+        toast.info("Essa descricao já existe no banco de dados, escolha outra!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      if (atividadeEncontrada && situacaoInativo) {
+        await handleSaveEdit(atividadeEncontrada.cod_atividade_servico);
+        const novasAtividades = await fetchAtividadesServicos(token);
+        setAtividadesServicos(novasAtividades);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Essa atividade com essa descrição já existia, portanto foi reativada com os novos dados.", {
+          position: "top-right",
+          autoClose: 8000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/atividadesServico/register",
-        formValues,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServicos/register`,
+        { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
-        setItemCreateDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchAtividadesServico();
-        toast.success("Atividade de Serviço salvo com sucesso!", {
+        toast.success("Atividade de Serviço salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
+        const novasAtividades = await fetchAtividadesServicos(token);
+        setAtividadesServicos(novasAtividades);
+        clearInputs();
+        setVisible(fecharTela);
       } else {
-        setItemCreateDisabled(false);
-        setLoading(false);
         toast.error("Erro ao salvar Atividade de Serviço.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      setItemCreateDisabled(false);
-      setLoading(false);
       console.error("Erro ao salvar Atividade de Serviço:", error);
-    }
-  };
-
-  const [rowData, setRowData] = useState<AtividadeServico[]>([]);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-  const handleSaveReturn = async (fecharTela: boolean) => {
-    setItemCreateReturnDisabled(true);
-    setLoading(true);
-    try {
-      const requiredFields = [
-        "nome",
-        "descricao",
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
-        return value === "" || value === null || value === undefined;
+      toast.error("Erro interno ao tentar salvar.", {
+        position: "top-right",
+        autoClose: 3000,
       });
-
-      if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const naturezaEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const situacaoInativo = naturezaEncontrado?.situacao === "Inativo";
-
-      if (naturezaEncontrado && !situacaoInativo) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
-          position: "top-right",
-          autoClose: 3000,
-          progressStyle: { background: "yellow" },
-          icon: <span>⚠️</span>, // Usa o emoji de alerta
-        });
-        return;
-      }
-
-      if (naturezaEncontrado && situacaoInativo) {
-        await handleSaveEdit(naturezaEncontrado.cod_natureza_operacao);
-        fetchAtividadesServico();
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
-        setVisible(fecharTela);
-        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
-          position: "top-right",
-          autoClose: 10000,
-          progressStyle: { background: "green" },
-          icon: <span>♻️</span>,
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/atividadesServico/register",
-        formValues,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchAtividadesServico();
-        toast.success("Atividade de Serviço salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setVisible(fecharTela);
-      } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar Atividade de Serviços.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
+    } finally {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar Atividade de Serviços:", error);
     }
   };
+
 
 
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (atividadesServico: AtividadeServico, visualizar: boolean) => {
+  const handleEdit = (atividadesServicos: any, visualizar: boolean) => {
+    console.log(atividadesServicos)
     setVisualizar(visualizar);
 
-    setFormValues(atividadesServico);
-    setSelectedAtividadeServico(atividadesServico);
+    setFormValues(atividadesServicos);
+    // Filtra os estabelecimentos com base no cod_estabel
+    const selectedEstablishmentsWithNames = atividadesServicos.dbs_estabelecimentos_atividades.map(({ cod_estabel }: any) =>
+      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+    )
+      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+    setSelectedEstablishments(selectedEstablishmentsWithNames);
+    setSelectedAtividadesServicos([atividadesServicos]);
     setIsEditing(true);
     setVisible(true);
   };
 
-  useEffect(() => {
-    fetchAtividadesServico();
-  }, []);
 
-  const fetchAtividadesServico = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/atividadesServico",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.atividadesServico);
-      setIsDataLoaded(true);
-      setAtividadesServico(response.data.atividadesServico);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar Atividade de Serviços:", error);
+
+
+  // useEffect para carregar dados
+  useEffect(() => {
+    const carregarNatureza = async () => {
+      const natureza = await fetchAtividadesServicos(token);
+      setAtividadesServicos(natureza);
+    };
+
+    carregarNatureza();
+  }, [token]);
+
+  const filteredAtividadesServicos = atividadesServicos.filter((atividadesServicos) => {
+    // Apenas ATIVO aparecem
+    if (atividadesServicos.situacao !== 'Ativo') {
+      return false;
     }
-  };
+
+    // Lógica de busca
+    return Object.values(atividadesServicos).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   const openDialog = (id: number) => {
-    setAtividadeServicoIdToDelete(id);
+    setAtividadesServicosIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setAtividadeServicoIdToDelete(null);
+    setAtividadesServicosIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (atividadesServicoIdToDelete === null) return;
+    if (atividadesServicosIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServico/cancel/${atividadesServicoIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServicos/cancel/${atividadesServicosIdToDelete}`,
         {},
         {
           headers: {
@@ -350,7 +373,8 @@ const AtividadeServico: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchAtividadesServico(); // Aqui é necessário chamar a função que irá atualizar a lista de naturezas de operacao
+        const novasAtividades = await fetchAtividadesServicos(token);
+        setAtividadesServicos(novasAtividades);
         setModalDeleteVisible(false);
         toast.success("Atividade de Serviço cancelado com sucesso!", {
           position: "top-right",
@@ -363,8 +387,8 @@ const AtividadeServico: React.FC = () => {
         });
       }
     } catch (error) {
-      console.log("Erro ao excluir Atividade de Serviço:", error);
-      toast.error("Erro ao excluir Atividade de Serviço. Tente novamente.", {
+      console.log("Erro ao cancelar Atividade de Serviço:", error);
+      toast.error("Erro ao cancelar Atividade de Serviço. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -372,37 +396,13 @@ const AtividadeServico: React.FC = () => {
   };
 
 
-  const handleDelete = async () => {
-    if (atividadesServicoIdToDelete === null) return;
-
-    try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/atividadesServico/${atividadesServicoIdToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Atividade de Serviço removido com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchAtividadesServico();
-      setModalDeleteVisible(false);
-    } catch (error) {
-      console.log("Erro ao excluir Atividade de Serviço:", error);
-      toast.error("Erro ao excluir Atividade de Serviço. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormValues({ ...formValues, [name]: value });
   };
+
 
   const closeModal = () => {
     clearInputs();
@@ -410,39 +410,42 @@ const AtividadeServico: React.FC = () => {
     setVisible(false);
   };
 
-  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
-    setFormValues({
-      ...formValues,
-      [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
+  useEffect(() => {
+    const carregarEstabs = async () => {
+      const estabs = await fetchEstabilishments(token);
+      setEstablishments(estabs);
+    };
+
+    carregarEstabs();
+  }, [token]);
 
 
-  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault();
-    }
-  };
+  const [gruposTributacao, setGruposTributacao] = useState<GrupoTributacao[]>([]);
+  const [selectedGruposTributacao, setSelectedGruposTributacao] = useState<GrupoTributacao[]>([]);
+  useEffect(() => {
+    const carregarGrupos = async () => {
+      const grupos = await fetchGruposTributacao(token);
+      setGruposTributacao(grupos);
+    };
 
-  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
-    setFormValues({
-      ...formValues,
-      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
+    carregarGrupos();
+  }, [token]);
 
-  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    // Permite qualquer caractere que não seja número
-    if (/[\d]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de números
-    }
-  };
+
+  const [cfops, setCfops] = useState<Cfop[]>([]);
+  const [selectedCfops, setSelectedCfops] = useState<Cfop[]>([]);
+
+  // useEffect para carregar os CFOPs
+  useEffect(() => {
+    const carregarCfops = async () => {
+      const data = await fetchCfops(token);
+      setCfops(data);
+    };
+
+    carregarCfops();
+  }, [token]);
 
 
 
@@ -503,44 +506,45 @@ const AtividadeServico: React.FC = () => {
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
               <div className="grid gap-2 grid-cols-3">
-                <div>
-                  <label htmlFor="cod_servico" className="block text-blue font-medium">
+                <div className="">
+                  <label htmlFor="cod_atividade_servico" className="block text-blue font-medium">
                     Código do Serviço
                   </label>
                   <input
                     type="text"
-                    id="cod_servico"
-                    name="cod_servico"
-                    disabled={visualizando}
-                    // value={formValues.cod_servico}
+                    id="cod_atividade_servico"
+                    name="cod_atividade_servico"
+                    disabled
+                    value={formValues.cod_atividade_servico ?? 0}
                     onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
                   />
                 </div>
+
                 <div>
                   <label htmlFor="cod_tributacao" className="block text-blue font-medium">
                     Código de Tributação
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="cod_tributacao"
                     name="cod_tributacao"
                     disabled={visualizando}
-                    // value={formValues.cod_tributacao}
+                    value={formValues.cod_tributacao}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
                 <div>
-                  <label htmlFor="chae" className="block text-blue font-medium">
-                    CHAE
+                  <label htmlFor="cnae" className="block text-blue font-medium">
+                    CNAE
                   </label>
                   <input
-                    type="text"
-                    id="chae"
-                    name="chae"
+                    type="number"
+                    id="cnae"
+                    name="cnae"
                     disabled={visualizando}
-                    // value={formValues.chae}
+                    value={formValues.cnae}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -575,11 +579,11 @@ const AtividadeServico: React.FC = () => {
                     %ISS
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="iss"
                     name="iss"
                     disabled={visualizando}
-                    // value={formValues.iss}
+                    value={formValues.iss}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -589,11 +593,11 @@ const AtividadeServico: React.FC = () => {
                     %COFINS
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="cofins"
                     name="cofins"
                     disabled={visualizando}
-                    // value={formValues.cofins}
+                    value={formValues.cofins}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -603,11 +607,11 @@ const AtividadeServico: React.FC = () => {
                     PIS
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="pis"
                     name="pis"
                     disabled={visualizando}
-                    // value={formValues.pis}
+                    value={formValues.pis}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -620,11 +624,11 @@ const AtividadeServico: React.FC = () => {
                     %CSLL
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="csll"
                     name="csll"
                     disabled={visualizando}
-                    // value={formValues.csll}
+                    value={formValues.csll}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -634,11 +638,11 @@ const AtividadeServico: React.FC = () => {
                     %IR
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="ir"
                     name="ir"
                     disabled={visualizando}
-                    // value={formValues.ir}
+                    value={formValues.ir}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -648,11 +652,11 @@ const AtividadeServico: React.FC = () => {
                     %INSS
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="inss"
                     name="inss"
                     disabled={visualizando}
-                    // value={formValues.inss}
+                    value={formValues.inss}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
@@ -660,65 +664,79 @@ const AtividadeServico: React.FC = () => {
               </div>
 
               <div className="grid gap-2 grid-cols-2">
-                <div>
+                <div className="">
                   <label htmlFor="estabelecimento" className="block text-blue font-medium">
                     Estabelecimento
                   </label>
-                  <input
-                    type="text"
-                    id="estabelecimento"
-                    name="estabelecimento"
+                  <MultiSelect
                     disabled={visualizando}
-                    // value={formValues.estabelecimento}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    value={selectedEstablishments}
+                    onChange={(e) => { setSelectedEstablishments(e.value); console.log(selectedEstablishments) }}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione"
+                    maxSelectedLabels={3}
+                    className="w-full border text-black h-[35px] flex items-center"
                   />
                 </div>
                 <div>
-                  <label htmlFor="desconto_impostos" className="block text-blue font-medium">
+                  <label htmlFor="desconta_imp_tot" className="block text-blue font-medium">
                     Desconta Impostos do Total
                   </label>
-                  <input
-                    type="text"
-                    id="desconto_impostos"
-                    name="desconto_impostos"
+                  <select
+                    id="desconta_imp_tot"
+                    name="desconta_imp_tot"
                     disabled={visualizando}
-                    // value={formValues.desconto_impostos}
+                    value={formValues.desconta_imp_tot || "default"}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="default" disabled>Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
                 </div>
+
               </div>
 
               <div className="grid gap-2 grid-cols-2">
                 <div>
-                  <label htmlFor="serv_construcao_civil" className="block text-blue font-medium">
+                  <label htmlFor="servico_const_civil" className="block text-blue font-medium">
                     Serviços de Construção Civil
                   </label>
-                  <input
-                    type="text"
-                    id="serv_construcao_civil"
-                    name="serv_construcao_civil"
+                  <select
+                    id="servico_const_civil"
+                    name="servico_const_civil"
                     disabled={visualizando}
-                    // value={formValues.serv_construcao_civil}
+                    value={formValues.servico_const_civil || "default"}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="default" disabled>Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
                 </div>
+
                 <div>
-                  <label htmlFor="desconto_deducoes" className="block text-blue font-medium">
+                  <label htmlFor="desconta_ded_tot" className="block text-blue font-medium">
                     Desconta Deduções do Total
                   </label>
-                  <input
-                    type="text"
-                    id="desconto_deducoes"
-                    name="desconto_deducoes"
+                  <select
+                    id="desconta_ded_tot"
+                    name="desconta_ded_tot"
                     disabled={visualizando}
-                    // value={formValues.desconto_deducoes}
+                    value={formValues.desconta_ded_tot || "default"}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
+                  >
+                    <option value="default" disabled>Selecione</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
                 </div>
+
               </div>
 
             </div>
@@ -788,7 +806,7 @@ const AtividadeServico: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => handleSaveEdit(formValues.cod_natureza_operacao)}
+                    onClick={() => handleSaveEdit(formValues.cod_atividade_servico)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
@@ -839,7 +857,7 @@ const AtividadeServico: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredAtividadesServico.slice(first, first + rows)}
+                value={filteredAtividadesServicos.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -895,8 +913,8 @@ const AtividadeServico: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="chae"
-                  header="CHAE"
+                  field="cnae"
+                  header="CNAE"
                   style={{
                     width: "0.5%",
                     textAlign: "center",
@@ -987,7 +1005,7 @@ const AtividadeServico: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                        <CancelButton onClick={() => openDialog(rowData.cod_atividade_servico)} />
                       </div>
                     )}
                     className="text-black"
@@ -1018,4 +1036,4 @@ const AtividadeServico: React.FC = () => {
   );
 };
 
-export default AtividadeServico;
+export default AtividadesServicos;

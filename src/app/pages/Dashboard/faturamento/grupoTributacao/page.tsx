@@ -119,9 +119,7 @@ const GrupoTributacao: React.FC = () => {
   };
 
   const handleSaveEdit = async (cod_grupo_tributacao: any) => {
-    setItemEditDisabled(true);
-    setLoading(true);
-    setIsEditing(false);
+
     try {
       const requiredFields = [
         "nome",
@@ -162,6 +160,7 @@ const GrupoTributacao: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);

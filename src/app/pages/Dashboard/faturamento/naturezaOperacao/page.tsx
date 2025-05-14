@@ -156,6 +156,7 @@ const NaturezaOperacao: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);
