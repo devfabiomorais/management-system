@@ -11,16 +11,16 @@ export default function AddButton({ onClick, title = 'Adicionar' }: AddButtonPro
 
   useEffect(() => {
     // Carrega o áudio quando o componente é montado
-    audioRef.current = new Audio('/sounds/new.mp3');
+    audioRef.current = new Audio('/sounds/mouse-click.mp3');
   }, []);
 
   const handleClick = () => {
-    const audio = new Audio('/sounds/new.mp3');
+    const audio = new Audio('/sounds/mouse-click.mp3');
     audio.play();
 
     setTimeout(() => {
       onClick();
-    }, 0);
+    }, 300);
   };
 
   return (
@@ -29,23 +29,29 @@ export default function AddButton({ onClick, title = 'Adicionar' }: AddButtonPro
       className="relative group"
       title={title}
     >
+      {/* Base do botão (sombra) */}
+      <div
+        className="
+          absolute inset-x-0 h-full -bottom-1 
+          bg-gray-400 border border-gray-400 rounded-3xl 
+          shadow-md shadow-black 
+          transition duration-200 
+          group-active:shadow-none
+          group-hover:bg-gray-500
+        "
+      ></div>
 
       {/* Botão visível */}
       <div
         className="
-         bg-green-600 
-         active:bg-green-200
-         active:scale-105
-         active:shadow-2xl      
-         active:shadow-green-200
-         hover:shadow-lg        
-         hover:shadow-green-800
-         p-[3px]          
-         transform 
-         transition-all 
-         duration-50 
-         rounded-full
-         "
+    relative bg-green-600 rounded-3xl 
+    
+    transition transform duration-200 
+    group-active:translate-y-1
+    group-active:bg-green400
+    flex items-center gap-1
+    group-hover:bg-green-700
+  "
       >
         <IoAddCircleOutline
           style={{ fontSize: '2.6rem' }}

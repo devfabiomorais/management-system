@@ -11,16 +11,17 @@ export default function FilterButton({ onClick, title = 'Filtrar' }: FilterButto
 
   useEffect(() => {
     // Carrega o áudio quando o componente é montado
-    audioRef.current = new Audio('/sounds/open.mp3');
+    audioRef.current = new Audio('/sounds/plastic-bottle.mp3');
   }, []);
 
   const handleClick = () => {
-    const audio = new Audio('/sounds/open.mp3');
-    audio.play();
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
 
     setTimeout(() => {
       onClick();
-    }, 0); // Delay de 300ms
+    }, 1);
   };
 
   return (
@@ -29,28 +30,34 @@ export default function FilterButton({ onClick, title = 'Filtrar' }: FilterButto
       className="relative group"
       title={title}
     >
+      {/* Base do botão (sombra) */}
+      <div
+        className="
+          absolute inset-x-0 h-full -bottom-1 
+          bg-gray-400 border border-gray-400 rounded-full 
+          shadow-md shadow-black 
+          transition duration-200 
+          group-active:shadow-none
+          group-hover:bg-gray-500
+        "
+      ></div>
 
       {/* Botão visível */}
       <div
         className="
           relative bg-blue300 rounded-full
-          w-[45px] h-[45px] flex items-center justify-center
+          w-[40px] h-[40px] flex items-center justify-center
           transition transform duration-200
-          active:bg-blue150 
-        active:scale-105
-        active:shadow-lg       
-        active:shadow-blue150
-        hover:shadow-lg        
-        hover:shadow-blue500
+          group-active:translate-y-1
+          group-active:bg-green400
+          group-hover:bg-blue400
         "
       >
-
         <div className="w-[35px] h-[35px] bg-white rounded-full flex items-center justify-center">
-          <div className="w-[30px] h-[30px] bg-blue300 group-active:bg-blue175 rounded-full flex items-center justify-center">
+          <div className="w-[30px] h-[30px] bg-blue300 rounded-full flex items-center justify-center">
             <GiFunnel className="text-white text-xl" />
           </div>
         </div>
-
       </div>
     </button>
   );

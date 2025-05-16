@@ -93,13 +93,13 @@ interface FormValues {
   estados: EstadoRegraGrupo[];
 }
 
-export const validarCamposObrigatorios = (formValues: FormValues) => {
-  const requiredFields = ["tipo", "aliquota", "cst_csosn", "observacoes"];
-  return requiredFields.some((field) => {
-    const value = formValues[field as keyof FormValues];
-    return value === "" || value === null || value === undefined;
-  });
-};
+// export const validarCamposObrigatorios = (formValues: FormValues) => {
+//   const requiredFields = ["tipo", "aliquota", "cst_csosn", "observacoes"];
+//   return requiredFields.some((field) => {
+//     const value = formValues[field as keyof FormValues];
+//     return value === "" || value === null || value === undefined;
+//   });
+// };
 
 export const verificarDuplicidade = (formValues: FormValues, lista: any[]) => {
   const regra = lista.find(

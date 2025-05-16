@@ -4,7 +4,7 @@ export interface NfsProduto {
   cod_nf_produto: number;
   numero_nf?: number;
   serie?: number;
-  cod_natureza_operacao?: number;
+  cod_natureza_operacao: number;
   tipo?: string;
   dt_emissao?: Date;
   hr_emissao?: Date;

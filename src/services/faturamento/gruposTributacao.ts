@@ -1,7 +1,8 @@
 import axios from "axios";
 
 export interface RegraGrupoTributacao {
-  cod_regra_grupo: number | null;
+  id?: number | null;
+  cod_regra_grupo?: number | null;
   cod_grupo_tributacao?: number;
   tipo?: TipoRegraTributaria;
   aliquota?: number;
@@ -24,12 +25,20 @@ export interface GrupoTributacao {
   nome: string;
   descricao?: string;
   situacao?: string;
+  regras?: RegraGrupoTributacao[];
 }
 
 export interface EstadoRegraGrupo {
   cod_estado: number;
   nome: string;
 }
+
+export interface EstadoBackend {
+  cod_estado_regra: number;
+  uf: string;
+  cod_regra_grupo: number;
+}
+
 
 
 export const fetchGruposTributacao = async (token: string | null): Promise<GrupoTributacao[]> => {

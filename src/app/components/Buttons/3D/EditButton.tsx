@@ -10,16 +10,16 @@ export default function EditButton({ onClick }: EditButtonProps) {
 
   useEffect(() => {
     // Carrega o áudio quando o componente é montado
-    audioRef.current = new Audio('/sounds/edit.mp3');
+    audioRef.current = new Audio('/sounds/soft.mp3');
   }, []);
 
   const handleClick = () => {
-    const audio = new Audio('/sounds/edit.mp3');
+    const audio = new Audio('/sounds/soft.mp3');
     audio.play();
 
     setTimeout(() => {
       onClick();
-    }, 0); // 1 segundo = 1000 milissegundos
+    }, 300); // 1 segundo = 1000 milissegundos
   };
 
   return (
@@ -28,27 +28,31 @@ export default function EditButton({ onClick }: EditButtonProps) {
       className="relative group"
       title="Editar"
     >
+      {/* Base do botão (sombra) */}
+      <div
+        className="
+          absolute inset-x-0 h-full -bottom-1 
+          bg-gray-400 border border-gray-400 rounded-2xl 
+          shadow-md shadow-black 
+          transition duration-200 
+          group-active:shadow-none
+        "
+      ></div>
 
       {/* Botão visível */}
       <div
         className="
-       active:bg-yellow200 
-        active:scale-105
-        active:shadow-lg       
-        active:shadow-yellow200
-        hover:shadow-lg        
-        hover:shadow-yellow800
-       p-2
-       bg-yellow600
-       transform
-       transition-all
-       duration-50
-       rounded-full
-       "
+          relative bg-yellow600 rounded-2xl 
+          py-1 px-1
+          transition transform duration-200 
+          group-active:translate-y-1
+          group-active:bg-yellow800
+          group-active:border-gray-400
+        "
       >
         <MdOutlineModeEditOutline
           style={{ fontSize: '1.2rem' }}
-          className="text-white text-2xl"
+          className="text-white text-2xl rounded-2xl"
         />
       </div>
     </button>

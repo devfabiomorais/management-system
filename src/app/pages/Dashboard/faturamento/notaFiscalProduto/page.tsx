@@ -311,77 +311,31 @@ const NfsProduto: React.FC = () => {
   };
 
 
-  const handleSaveEdit = async (cod_natureza_operacao: any) => {
+  const handleSaveEdit = async (cod_nf_produto: number) => {
+    setItemEditDisabled(true);
+    setLoading(true);
+
     try {
       const requiredFields = [
         "numero_nf",
         "serie",
-        "cod_natureza_operacao",
         "tipo",
         "dt_emissao",
         "hr_emissao",
-        "dt_entrada_saida",
-        "hr_entrada_saida",
-        "finalidade_emissao",
-        "forma_emissao",
-        "destinacao_operacao",
-        "tipo_atendimento",
         "cod_entidade",
-        "tipo_en",
-        "cnpj_cpf_ent",
-        "razao_social_ent",
-        "tipo_contribuinte_ent",
-        "insc_estadual_ent",
-        "insc_municipal_ent",
-        "cep_ent",
-        "logradouro_ent",
-        "numero_ent",
-        "estado_ent",
-        "bairro_ent",
-        "cidade_ent",
-        "cod_transportadora",
-        "cnpj_cpf_transp",
-        "razao_social_transp",
-        "tipo_contribuinte_transp",
-        "insc_estadual_transp",
-        "insc_municipal_transp",
-        "cep_transp",
-        "logradouro_transp",
-        "numero_transp",
-        "estado_transp",
-        "bairro_transp",
-        "cidade_transp",
-        "estado_uf",
-        "placa_veiculo",
-        "reg_nac_trans_carga",
-        "modalidade",
-        "total_icms",
-        "total_pis",
-        "total_cofins",
-        "total_ipi",
-        "total_produtos",
-        "total_frete",
         "total_nf",
-        "impostos_federais",
-        "impostos_estaduais",
-        "impostos_municipais",
-        "total_impostos",
-        "informacoes_complementares",
-        "informacoes_fisco",
       ];
 
-
-      const verificarCamposObrigatorios = (dados: NfsProduto): string | null => {
+      const verificarCamposObrigatorios = (dados: any): string | null => {
         for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsProduto];
-
+          const valor = dados[campo as keyof typeof dados];
           if (valor === "" || valor === null || valor === undefined) {
-            return campo; // Retorna o primeiro campo inválido
+            return campo;
           }
-
         }
-        return null; // Todos os campos estão válidos
+        return null;
       };
+
       const campoFaltando = verificarCamposObrigatorios(formValues);
 
       if (campoFaltando) {
@@ -389,54 +343,54 @@ const NfsProduto: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      } else if (selectedEstablishments == null) {
-        toast.info(`Selecione pelo menos um estabelecimento.`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setItemCreateReturnDisabled(false);
+        setItemEditDisabled(false);
         setLoading(false);
         return;
       }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/edit/${cod_natureza_operacao}`,
-        { ...formValues, estabelecimentos: selectedEstablishments },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/edit/${cod_nf_produto}`,
+        {
+          ...formValues,
+          produtos: produtosSelecionados,
+          tipo_en: tipoEntidade,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        clearInputs();
-        const novasNaturezas = await fetchNfsProdutos(token);
-        setNfsProdutos(novasNaturezas);
         toast.success("Nota Fiscal de Produto editada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
+
+        const novasNotas = await fetchNfsProdutos(token); // Atualiza lista
+        setNfsProdutos(novasNotas);
         setVisible(false);
+        clearInputs();
         setIsEditing(false);
       } else {
-        setItemEditDisabled(false);
-        setLoading(false);
         toast.error("Erro ao editar Nota Fiscal de Produto.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
+      console.error("Erro ao editar Nota Fiscal de Produto:", error);
+      toast.error("Erro interno ao tentar editar.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao editar Nota Fiscal de Produto:", error);
     }
   };
+
 
 
   const [rowData, setRowData] = useState<NfsProduto[]>([]);
@@ -526,17 +480,37 @@ const NfsProduto: React.FC = () => {
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
   const handleEdit = (NfsProdutos: any, visualizar: boolean) => {
-    console.log(NfsProdutos)
+
     setVisualizar(visualizar);
 
-    setFormValues(NfsProdutos);
-    // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = NfsProdutos.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
-      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
-    )
-      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+    const formattedValues = {
+      ...NfsProdutos,
+      total_cofins: parseFloat(NfsProdutos.total_cofins) || 0,
+      total_frete: parseFloat(NfsProdutos.total_frete) || 0,
+      total_icms: parseFloat(NfsProdutos.total_icms) || 0,
+      total_impostos: parseFloat(NfsProdutos.total_impostos) || 0,
+      total_ipi: parseFloat(NfsProdutos.total_ipi) || 0,
+      total_nf: parseFloat(NfsProdutos.total_nf) || 0,
+      total_pis: parseFloat(NfsProdutos.total_pis) || 0,
+      total_produtos: parseFloat(NfsProdutos.total_produtos) || 0,
+    };
+    setFormValues(formattedValues);
+    setTotalCOFINSInput(formattedValues.total_cofins);
+    setTotalICMSInput(formattedValues.total_icms);
+    setTotalIPIInput(formattedValues.total_ipi);
+    setTotalPISInput(formattedValues.total_pis);
+    setTotalFreteInput(formattedValues.total_frete);
+    setImpostosEstaduaisInput(formattedValues.impostos_estaduais);
+    setImpostosFederaisInput(formattedValues.impostos_federais);
+    setImpostosMunicipaisInput(formattedValues.impostos_municipais);
 
-    setSelectedEstablishments(selectedEstablishmentsWithNames);
+    setTipoEntidade(NfsProdutos.tipo_en);
+    setUsarEndereco("");
+
+    setProdSelecionados(NfsProdutos.produtos);
+
+    setUsarEnderecoTransp("");
+
     setSelectedNfsProduto(NfsProdutos);
     setIsEditing(true);
     setVisible(true);
@@ -1565,10 +1539,15 @@ const NfsProduto: React.FC = () => {
   );
 
   useEffect(() => {
+    const getNumber = (value: any) => {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    };
+
     const novosFederais =
-      (formValues.total_ipi || 0) +
-      (formValues.total_pis || 0) +
-      (formValues.total_cofins || 0);
+      getNumber(formValues.total_ipi) +
+      getNumber(formValues.total_pis) +
+      getNumber(formValues.total_cofins);
 
     const roundedFederais = parseFloat(novosFederais.toFixed(2));
 
@@ -1595,7 +1574,12 @@ const NfsProduto: React.FC = () => {
   );
 
   useEffect(() => {
-    const impostosEstaduais = formValues.total_icms || 0;
+    const getNumber = (value: any) => {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    };
+
+    const impostosEstaduais = getNumber(formValues.total_icms);
     const roundedEstaduais = parseFloat(impostosEstaduais.toFixed(2));
 
     setImpostosEstaduaisInput(
@@ -1610,6 +1594,7 @@ const NfsProduto: React.FC = () => {
       impostos_estaduais: roundedEstaduais,
     }));
   }, [formValues.total_icms]);
+
 
 
 
@@ -1630,11 +1615,11 @@ const NfsProduto: React.FC = () => {
   );
 
   useEffect(() => {
-    const total =
-      (formValues.impostos_federais || 0) +
-      (formValues.impostos_estaduais || 0) +
-      (formValues.impostos_municipais || 0);
+    const federais = Number(formValues.impostos_federais) || 0;
+    const estaduais = Number(formValues.impostos_estaduais) || 0;
+    const municipais = Number(formValues.impostos_municipais) || 0;
 
+    const total = federais + estaduais + municipais;
     const roundedTotal = parseFloat(total.toFixed(2));
 
     setTotalImpostosInput(
@@ -1653,6 +1638,7 @@ const NfsProduto: React.FC = () => {
     formValues.impostos_estaduais,
     formValues.impostos_municipais,
   ]);
+
 
 
 
@@ -1697,7 +1683,7 @@ const NfsProduto: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este Nota Fiscal de Produto?</p>
+            <p>Tem certeza que deseja cancelar esta Nota Fiscal de Produto?</p>
           </Dialog>
 
           {
@@ -2324,7 +2310,7 @@ const NfsProduto: React.FC = () => {
                             setTipoEntidade('Cliente');
                           }, 100);
                         }}
-
+                        disabled={visualizando}
                         className={`h-[28px] px-8 rounded-full border font-medium 
                         ${tipoEntidade === 'Cliente' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
@@ -2341,6 +2327,7 @@ const NfsProduto: React.FC = () => {
                             setTipoEntidade('Fornecedor');
                           }, 100);
                         }}
+                        disabled={visualizando}
                         className={`h-[28px] px-8 rounded-full border font-medium 
                         ${tipoEntidade === 'Fornecedor' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
@@ -2436,6 +2423,7 @@ const NfsProduto: React.FC = () => {
                       id="insc_estadual_ent"
                       name="insc_estadual_ent"
                       value={formValues.insc_estadual_ent}
+                      disabled={visualizando}
                       onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
@@ -2450,6 +2438,7 @@ const NfsProduto: React.FC = () => {
                       id="insc_municipal_ent"
                       name="insc_municipal_ent"
                       value={formValues.insc_municipal_ent}
+                      disabled={visualizando}
                       onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
@@ -2472,6 +2461,7 @@ const NfsProduto: React.FC = () => {
                             handleUsarEndereco("sim");
                           }, 100);
                         }}
+                        disabled={visualizando}
                         className={`h-[28px] px-8  rounded-full border font-medium ${usarEndereco === "sim" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         SIM
@@ -2487,6 +2477,7 @@ const NfsProduto: React.FC = () => {
                             handleUsarEndereco("nao");
                           }, 100);
                         }}
+                        disabled={visualizando}
                         className={`h-[28px] px-8 rounded-full border font-medium ${usarEndereco === "nao" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         NÃO
@@ -2720,7 +2711,7 @@ const NfsProduto: React.FC = () => {
                         name="vl_total_prod"
                         type="text"
                         disabled
-                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                        className={`w-full border border-[#D9D9D9] pl-1 mt-0 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
                         value={`R$ ${new Intl.NumberFormat('pt-BR', {
                           style: 'decimal',
@@ -2728,11 +2719,9 @@ const NfsProduto: React.FC = () => {
                           maximumFractionDigits: 2
                         }).format(Number(valorTotalProd ? valorTotalProd : 0))}`}
                       />
-                      <div className={visualizando ? "hidden" : "h-10 scale-75 text-sm"}>
+                      <div className={visualizando ? "hidden" : " scale-90 flex items-center"}>
                         <AddButton onClick={handleAdicionarLinha} visualizando={visualizando} />
                       </div>
-
-
                     </div>
                   </div>
                 </div>
@@ -2905,6 +2894,7 @@ const NfsProduto: React.FC = () => {
                       id="insc_estadual_transp"
                       name="insc_estadual_transp"
                       value={formValues.insc_estadual_transp}
+                      disabled={visualizando}
                       onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
@@ -2919,6 +2909,7 @@ const NfsProduto: React.FC = () => {
                       id="insc_municipal_transp"
                       name="insc_municipal_transp"
                       value={formValues.insc_municipal_transp}
+                      disabled={visualizando}
                       onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                     />
@@ -2941,6 +2932,7 @@ const NfsProduto: React.FC = () => {
                             handleUsarEnderecoTransp("sim");
                           }, 100);
                         }}
+                        disabled={visualizando}
                         className={`h-[28px] px-8  rounded-full border font-medium ${usarEnderecoTransp === "sim" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         SIM
@@ -2956,6 +2948,7 @@ const NfsProduto: React.FC = () => {
                             handleUsarEnderecoTransp("nao");
                           }, 100);
                         }}
+                        disabled={visualizando}
                         className={`h-[28px] px-8 rounded-full border font-medium ${usarEnderecoTransp === "nao" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         NÃO
@@ -3522,7 +3515,7 @@ const NfsProduto: React.FC = () => {
                   <textarea
                     id="informacoes_complementares"
                     name="informacoes_complementares"
-
+                    disabled={visualizando}
                     value={formValues.informacoes_complementares}
                     onChange={(e) => setFormValues(prev => ({ ...prev, informacoes_complementares: e.target.value }))}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-24 "
@@ -3536,19 +3529,19 @@ const NfsProduto: React.FC = () => {
                   <textarea
                     id="informacoes_fisco"
                     name="informacoes_fisco"
-
+                    disabled={visualizando}
                     value={formValues.informacoes_fisco}
                     onChange={(e) => setFormValues(prev => ({ ...prev, informacoes_fisco: e.target.value }))}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-24 "
                   />
                 </div>
               </div>
-              <Button
+              {/* <Button
                 label="console.log(formValues)"
                 className="text-black bg-yellow h-8 w-[300px] shadow-lg shadow-black
                 active:scale-95 duration-100 transition-all active:translate-y-2 active:shadow-none"
                 onClick={() => console.log(formValues)}
-              />
+              /> */}
             </div>
 
 
@@ -3616,7 +3609,7 @@ const NfsProduto: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => handleSaveEdit(formValues.cod_natureza_operacao)}
+                    onClick={() => handleSaveEdit(formValues.cod_nf_produto)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
@@ -3895,7 +3888,7 @@ const NfsProduto: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                        <CancelButton onClick={() => openDialog(rowData.cod_nf_produto)} />
                       </div>
                     )}
                     className="text-black"

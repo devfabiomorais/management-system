@@ -10,11 +10,11 @@ export default function EditButton({ onClick }: EditButtonProps) {
 
   useEffect(() => {
     // Carrega o áudio quando o componente é montado
-    audioRef.current = new Audio('/sounds/edit.mp3');
+    audioRef.current = new Audio('/sounds/open.mp3');
   }, []);
 
   const handleClick = () => {
-    const audio = new Audio('/sounds/edit.mp3');
+    const audio = new Audio('/sounds/open.mp3');
     audio.play();
 
     setTimeout(() => {

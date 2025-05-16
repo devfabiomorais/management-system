@@ -43,7 +43,8 @@ export default function Login() {
         setToken(response.data.token);
         setCodUsuarioLogado(response.data.id); // Agora salva o código do usuário
         localStorage.setItem("@Birigui:token", response.data.token);
-        localStorage.setItem("@Birigui:cod_usuario", response.data.cod_usuario);
+        localStorage.setItem("@Birigui:cod_usuario", response.data.id);
+        localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo);
 
         toast.success("Login realizado com sucesso!", {
           position: "top-right",

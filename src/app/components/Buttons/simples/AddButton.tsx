@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { FaPlus } from "react-icons/fa";
 
 interface AddButtonProps {
@@ -9,20 +8,13 @@ interface AddButtonProps {
 const AddButton: React.FC<AddButtonProps> = ({ onClick, visualizando = false }) => {
   if (visualizando) return null;
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Carrega o áudio quando o componente é montado
-    audioRef.current = new Audio('/sounds/soft.mp3');
-  }, []);
-
   const handleClick = () => {
     const audio = new Audio('/sounds/soft.mp3');
     audio.play();
 
     setTimeout(() => {
       onClick();
-    }, 0);
+    }, 300); // Delay de 300ms para sincronia com o som
   };
 
   return (
