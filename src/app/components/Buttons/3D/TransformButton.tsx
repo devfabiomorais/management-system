@@ -17,7 +17,7 @@ export default function TransformButton({ onClick, title = 'Usar' }: TransformBu
     }, []);
 
     const audio = new Audio('/sounds/soft.mp3'); // som ao clicar
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

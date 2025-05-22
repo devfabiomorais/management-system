@@ -15,7 +15,7 @@ export default function CancelButton({ onClick }: CancelButtonProps) {
 
   const handleClick = () => {
     const audio = new Audio('/sounds/cancel.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

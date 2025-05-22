@@ -378,7 +378,7 @@ const GrupoTributacao: React.FC = () => {
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/gruposTributacao/cancel/${gruposTributacaoIdToDelete}`,
+        process.env.NEXT_PUBLIC_API_URL + `/api/gruposTributacao/cancel/${gruposTributacaoIdToDelete}`,
         {},
         {
           headers: {
@@ -388,7 +388,8 @@ const GrupoTributacao: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchGruposTributacao(token); // Aqui é necessário chamar a função que irá atualizar a lista de grupos de operacao
+        const novosGrupos = await fetchGruposTributacao(token);
+        setGruposTributacao(novosGrupos);
         setModalDeleteVisible(false);
         toast.success("Grupo de Tributação cancelado com sucesso!", {
           position: "top-right",

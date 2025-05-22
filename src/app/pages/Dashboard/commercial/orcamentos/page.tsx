@@ -213,6 +213,8 @@ interface Client {
   telefone: string;
   dtCadastro?: string;
   documento?: string;
+  insc_estadual?: string;
+  insc_municipal?: string;
 }
 
 interface CentroCusto {
@@ -1742,20 +1744,6 @@ const OrcamentosPage: React.FC = () => {
   const [freteInput, setFreteInput] = useState(frete.toFixed(2));
   const [valorTotalTotal, setValorTotalTotal] = useState(0);
 
-  useEffect(() => {
-    let total = totalProdutosSomados + totalServicosSomados + frete;
-
-    // Aplicando o desconto, se houver
-    if (descontoUnitTotal === '%') {
-      total = total - (total * (descontoTotal / 100));
-    } else if (descontoUnitTotal === 'R$') {
-      total = total - descontoTotal;
-    }
-
-    setValorTotalTotal(total);
-  }, [totalProdutosSomados, totalServicosSomados, frete, descontoTotal, descontoUnitTotal]); // Executa sempre que algum desses valores mudar
-
-
 
   const handleDescontoTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
@@ -1804,7 +1792,7 @@ const OrcamentosPage: React.FC = () => {
   const [quantidadeParcelas, setQuantidadeParcelas] = useState<number>(1); // Novo estado para quantidade de parcelas
   const [restanteAserPago, setRestanteAserPago] = useState(valorTotalTotal);
   const [totalPagamentos, setTotalPagamentos] = useState(0);
-
+  const [totalPagamentosSemJuros, setTotalPagamentosSemJuros] = useState(0);
 
   const fetchFormasPagamento = async () => {
     try {
@@ -1867,8 +1855,13 @@ const OrcamentosPage: React.FC = () => {
   };
 
   const handleAdicionarMultiplasParcelas = () => {
-    if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) return;
-
+    if (!selectedFormaPagamento || !data_parcela || quantidadeParcelas < 1) {
+      toast.warning("Preencha a forma de pagamento, valor e data da parcela!", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
 
     const novasParcelas: Pagamento[] = Array.from({ length: quantidadeParcelas }, (_, i) => {
       const dataInicial = new Date(data_parcela + 'T00:00:00');
@@ -1902,30 +1895,6 @@ const OrcamentosPage: React.FC = () => {
     setDataParcela("");
     setQuantidadeParcelas(1); // Reseta a quantidade de parcelas para 1 após adicionar
   };
-
-  useEffect(() => {
-    // Atualiza número da próxima parcela
-    setParcela(pagamentos.length > 0 ? pagamentos[pagamentos.length - 1].parcela! + 1 : 1);
-
-    // Calcula o total com juros
-    const totalComJuros = pagamentos.reduce((acc, pagamento) => {
-      const valorParcela = pagamento.valorParcela ?? 0;
-      const juros = pagamento.juros ?? 0;
-      return acc + (valorParcela * (1 + juros / 100));
-    }, 0);
-
-    setTotalPagamentos(totalComJuros);
-
-    // Calcula restante a ser pago
-    const totalPago = pagamentos.reduce((acc, pagamento) => acc + (pagamento.valorParcela ?? 0), 0);
-    setRestanteAserPago(valorTotalTotal - totalPagamentos);
-
-  }, [pagamentos, valorTotalTotal, totalPagamentos]);
-
-
-
-
-
 
   // #endregion
 
@@ -2647,9 +2616,49 @@ const OrcamentosPage: React.FC = () => {
       // Adicionar texto à extrema direita
       doc.text(totalTextoServicos, posXServicos, adjustedTextY2totalFinalServicos);
 
+      // TOTAL FRETE
+      const verticalTotalFinalFrete = verticalTotalFinalServicos + 7; // Posição vertical do texto
+      const paddingTotalFinalFrete = 4;
+      const heightTotalFinalFrete = 7;
+      const widthTotalFinalFrete = 210 - 2 * padding;
+      const rectTotalFinalFrete = padding;
+
+      // Retângulo de fundo
+      doc.setFillColor(220, 220, 220);
+      doc.rect(
+        rectTotalFinalFrete,
+        verticalTotalFinalFrete - paddingTotalFinalFrete,
+        widthTotalFinalFrete,
+        heightTotalFinalFrete,
+        "F"
+      );
+
+      // Borda
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.1);
+      doc.rect(
+        rectTotalFinalFrete,
+        verticalTotalFinalFrete - paddingTotalFinalFrete,
+        widthTotalFinalFrete,
+        heightTotalFinalFrete,
+        "S"
+      );
+
+      // Texto
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+
+      const adjustedTextY2totalFrete = verticalTotalFinalFrete + 1;
+      const totalTextoFrete = `FRETE: R$ ${Number(freteInput).toFixed(2)}`;
+      const textWidthFrete = doc.getTextWidth(totalTextoFrete);
+      const posXFrete = 208 - textWidthFrete - padding;
+      doc.text(totalTextoFrete, posXFrete, adjustedTextY2totalFrete);
+
+
       //TOTAL GERAL
       // Definir a posição e dimensões do retângulo
-      const verticalTotalFinal = verticalTotalFinalServicos + 7; // Posição vertical do texto
+      const verticalTotalFinal = verticalTotalFinalFrete + 7; // Posição vertical do texto
       const paddingTotalFinal = 4; // Espaço acima e abaixo do texto
       const heightTotalFinal = 7; // Altura do retângulo
       const widthTotalFinal = 210 - 2 * padding; // Largura do retângulo (com margens laterais)
@@ -2668,7 +2677,7 @@ const OrcamentosPage: React.FC = () => {
       const adjustedTextY2totalFinal = verticalTotalFinal + 1; // Ajustar o Y para um pouco abaixo
       // Definir o valor total somando produtos e serviços
       const totalGeral = totalProdutosPDF + totalServicosPDF + Number(freteInput);
-      const totalTextoFinal = `TOTAL GERAL (+ frete): R$ ${totalGeral.toFixed(2)}`;
+      const totalTextoFinal = `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}`;
       // Calcular a largura do texto dinamicamente
       const textWidthFinal = doc.getTextWidth(totalTextoFinal);
       // Definir a posição X para alinhar à direita
@@ -2834,13 +2843,52 @@ const OrcamentosPage: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    const frete = Number(formValues.frete || 0);
-    const total = Number(valorTotalTotal);
-    const pagamentos = Number(totalPagamentos);
-    const restante = total - pagamentos;
+    // 1. Calcula o valor total (produtos + serviços + frete - desconto)
+    let total = totalProdutosSomados + totalServicosSomados + frete;
 
+    if (descontoUnitTotal === '%') {
+      total = total - total * (descontoTotal / 100);
+    } else if (descontoUnitTotal === 'R$') {
+      total = total - descontoTotal;
+    }
+
+    setValorTotalTotal(total);
+
+    // 2. Atualiza número da próxima parcela
+    setParcela(
+      pagamentos.length > 0
+        ? pagamentos[pagamentos.length - 1].parcela! + 1
+        : 1
+    );
+
+    // 3. Calcula o total com juros
+    const totalComJuros = pagamentos.reduce((acc, pagamento) => {
+      const valorParcela = pagamento.valorParcela ?? 0;
+      const juros = pagamento.juros ?? 0;
+      return acc + valorParcela * (1 + juros / 100);
+    }, 0);
+    setTotalPagamentos(totalComJuros);
+
+    // 4. Calcula o total sem juros
+    const totalSemJuros = pagamentos.reduce((acc, pagamento) => {
+      const valorParcela = pagamento.valorParcela ?? 0;
+      return acc + valorParcela;
+    }, 0);
+    setTotalPagamentosSemJuros(totalSemJuros);
+
+    // 5. Calcula o restante a ser pago (considerando frete já incluso no total)
+    const restante = total - totalSemJuros;
     setRestanteAserPago(restante);
-  }, [valorTotalTotal, formValues.frete, totalPagamentos]);
+  }, [
+    totalProdutosSomados,
+    totalServicosSomados,
+    frete,
+    descontoTotal,
+    descontoUnitTotal,
+    pagamentos,
+  ]);
+
+
 
   // #endregion
 
@@ -3076,7 +3124,7 @@ const OrcamentosPage: React.FC = () => {
 
     if (Number(restanteAserPago) !== 0 && !isEstrutura) {
       console.log("Restante:", restanteAserPago);
-      toast.info(`O "Restante" deve ser igual a zero!`, {
+      toast.info(`Não pode haver valor excedido nos pagamentos!`, {
         position: "top-right",
         autoClose: 4000,
         progressStyle: { background: "red" },
@@ -3290,6 +3338,7 @@ const OrcamentosPage: React.FC = () => {
 
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
+    console.log("Orçamento selecionado:", selectedOrcamento);
     setFreteInput(orcamento.frete.toString());
 
 
@@ -3764,6 +3813,209 @@ const OrcamentosPage: React.FC = () => {
       }));
     }
   }, [selectedClient, usarEndereco]);
+
+
+
+
+  const handleGerarContaAReceber = async () => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+    try {
+
+      const tipoConta = tipo === "aPagar" ? "PAGAR" : "RECEBER";
+      const nomeDoCliente = clients.find(cliente => cliente.cod_cliente === formValues.cod_cliente)?.nome || "Cliente Desconhecido";
+
+      const numeroMaiorPedido = pedidosVenda.reduce((maior, pedido) => {
+        return pedido.cod_pedido_venda > maior ? pedido.cod_pedido_venda : maior;
+      }, 0);
+
+      const payload = {
+        ...formValues,
+        tipo_conta: tipoConta,
+        cod_fornecedor: null,
+        cod_transportadora: formValues.cod_transportadora,
+        cod_cliente: formValues.cod_cliente,
+        descricao: `Pedido: ${numeroMaiorPedido} - ${nomeDoCliente}`,
+        dt_vencimento: formValues.prazo,
+        cod_centro_custo: formValues.cod_centro_custo,
+        cod_conta_bancaria: 1,
+        cod_plano_conta: 2.1,
+        pagamento_quitado: "NÃO",
+        dt_compensacao: null,
+        nfe: formValues.nf_compra,
+        nfse: null,
+        valor_bruto: null,
+        valor_final: formValues.valor_total,
+        tipo_juros: null,
+        tipo_desconto: null,
+        desconto: formValues.desconto_total,
+        juros: null
+      };
+
+      const pagamentos = selectedOrcamento?.dbs_pagamentos_orcamento.map((pagamento) => ({
+        valor_parcela: pagamento.valorParcela,
+        cod_forma_pagamento: pagamento.cod_forma_pagamento,
+        parcela: pagamento.parcela,
+        dt_parcela: pagamento.data_parcela ? new Date(pagamento.data_parcela).toISOString() : null,
+        juros: pagamento.juros,
+        tipo_juros: (pagamento.tipo_juros).toUpperCase(),
+      })) || [];
+
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/contasFinanceiro/register",
+        {
+          ...payload,
+          pagamentos: pagamentos,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        toast.success("Contas a receber geradas com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao gerar contas a receber.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+      console.error("Erro ao gerar conta financeiras:", error);
+    }
+  };
+
+
+  const handleGerarNFe = async () => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+
+    try {
+
+      const payload = {
+        numero_nf: formValues.cod_orcamento,
+        serie: 0,
+        cod_natureza_operacao: undefined,
+        tipo: "Entrada",
+        dt_emissao: selectedOrcamento?.data_venda,
+        hr_emissao: Date.now(),
+        dt_entrada_saida: Date.now(),
+        hr_entrada_saida: Date.now(),
+        finalidade_emissao: "NF-e normal",
+        forma_emissao: "Emissão normal",
+        destinacao_operacao: "Operação Interna",
+        tipo_atendimento: selectedOrcamento?.canal_venda,
+        cod_entidade: selectedOrcamento?.cod_cliente,
+        tipo_en: "Cliente",
+        cnpj_cpf_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.documento || "",
+        razao_social_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.nome || "",
+        tipo_contribuinte_ent: undefined,
+        insc_estadual_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.insc_estadual || "",
+        insc_municipal_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.insc_municipal || "",
+        cep_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.cep || "",
+        logradouro_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.logradouro || "",
+        numero_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.numero || "",
+        estado_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.estado || "",
+        bairro_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.bairro || "",
+        cidade_ent: clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente)?.cidade || "",
+        cod_transportadora: selectedOrcamento?.cod_transportadora,
+        //@ts-ignore
+        cnpj_cpf_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.documento || "",
+        razao_social_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.nome || "",
+        tipo_contribuinte_transp: undefined,
+        //@ts-ignore
+        insc_estadual_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.insc_estadual || "",
+        //@ts-ignore
+        insc_municipal_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.insc_municipal || "",
+        //@ts-ignore
+        cep_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.cep || "",
+        //@ts-ignore
+        logradouro_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.logradouro || "",
+        //@ts-ignore
+        numero_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.numero || "",
+        //@ts-ignore
+        estado_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.estado || "",
+        //@ts-ignore
+        bairro_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.bairro || "",
+        //@ts-ignore
+        cidade_transp: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.cidade || "",
+        //@ts-ignore
+        estado_uf: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.estado_uf || "",
+        placa_veiculo: undefined,
+        //@ts-ignore
+        reg_nac_trans_carga: transportadoras.find(transportadora => transportadora.cod_transportadora === selectedOrcamento?.cod_transportadora)?.reg_nac_trans_carga || "",
+        modalidade: undefined,
+        total_icms: undefined,
+        total_pis: undefined,
+        total_cofins: undefined,
+        total_ipi: undefined,
+        total_produtos: totalProdutosSomados,
+        total_frete: selectedOrcamento?.frete,
+        total_nf: selectedOrcamento?.valor_total,
+        impostos_federais: undefined,
+        impostos_estaduais: undefined,
+        impostos_municipais: undefined,
+        total_impostos: undefined,
+        informacoes_complementares: selectedOrcamento?.observacoes_gerais,
+        informacoes_fisco: selectedOrcamento?.observacoes_internas,
+      };
+
+      const produtos = selectedOrcamento?.dbs_produtos_orcamento.map((produto) => ({
+        cod_item: produto.dbs_itens.cod_item,
+        ncm: undefined,
+        cfop: undefined,
+        quantidade: produto.quantidade,
+        valor_unitario: produto.valor_unitario,
+        valor_total: produto.valor_total
+      })) || [];
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/register`,
+        {
+          ...payload,
+          produtos: produtos
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Nota Fiscal de Produto salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        router.push("/pages/Dashboard/faturamento/notaFiscalProduto")
+      } else {
+        toast.error("Erro ao salvar Nota Fiscal de Produto.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar Nota Fiscal de Produto:", error);
+      toast.error("Erro interno ao tentar salvar.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+    }
+  };
 
 
   // #region RETURN
@@ -4763,8 +5015,9 @@ const OrcamentosPage: React.FC = () => {
 
                 <button
                   className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 ${isPedido ? 'hidden' : ''}`}
-                  onClick={() => {
-                    handleGerarPedidoVenda();
+                  onClick={async () => {
+                    await handleGerarPedidoVenda();
+                    handleGerarContaAReceber();
                   }}
                 >
                   <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
@@ -4777,13 +5030,13 @@ const OrcamentosPage: React.FC = () => {
                 <button
                   className={`!bg-cyan-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-cyan-800 hover:scale-125 ${!isPedido ? 'hidden' : ''}`}
                   onClick={() => {
-                    handleGerarPedidoVenda();
+                    handleGerarNFe();
                   }}
                 >
                   <div className="bg-cyan-600 w-10 h-10 flex items-center justify-center rounded">
                     <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
                   </div>
-                  <span className="whitespace-nowrap">Gerar Nota Fiscal&nbsp;&nbsp;</span>
+                  <span className="whitespace-nowrap">Gerar NF-e&nbsp;&nbsp;</span>
                 </button>
 
 
@@ -5999,8 +6252,11 @@ const OrcamentosPage: React.FC = () => {
                   <h3 className="text-blue font-medium text-xl mr-2">Pagamentos</h3>
                   <div style={{ height: "16px" }}></div>
                   <div className="grid grid-cols-6 gap-2">
-                    <div>
-                      <label htmlFor="restanteAserPago" className="block text-black font-small">Restante</label>
+                    <div hidden={restanteAserPago === 0}>
+                      <label htmlFor="restanteAserPago" className="block text-black font-small">
+                        {restanteAserPago < 0 ? "Excedido" : "Restante"}
+                      </label>
+
                       <input
                         id="restanteAserPago"
                         name="restanteAserPago"
@@ -6009,7 +6265,7 @@ const OrcamentosPage: React.FC = () => {
                         className={`w-full border ${visualizando ? '!bg-gray-300 !border-gray-400' : `${restanteAserPago < 0 ? '!bg-red50' : '!bg-gray-200'} pl-1 rounded-sm h-6 ${restanteAserPago < 0 ? 'border-red' : 'border-gray-400'}`}`}
                         value={!isEditing
                           ? restanteAserPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentos)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                          : (Number(valorTotalTotal) + Number(formValues.frete || 0) - Number(totalPagamentosSemJuros)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                         }
                       />
                     </div>
@@ -6155,7 +6411,7 @@ const OrcamentosPage: React.FC = () => {
 
                   <br />
 
-                  {/* Pagamentos Parcelas Adicionados */}
+                  {/* linhas adicionadas dePagamentos Parcelas Adicionadas */}
                   {pagamentos.map((pagamento, index) => (
                     <div key={`${pagamento.id}-${index}`} className="grid grid-cols-6 gap-2 items-center mt-2">
                       <div> {/* Forma */}

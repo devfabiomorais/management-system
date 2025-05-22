@@ -70,10 +70,34 @@ export default function Login() {
     }
   };
 
+  const useScreenSize = () => {
+    const [screenSize, setScreenSize] = useState({
+      width: typeof window !== "undefined" ? window.innerWidth : 0,
+      height: typeof window !== "undefined" ? window.innerHeight : 0,
+    });
+
+    useEffect(() => {
+      const handleResize = () => {
+        setScreenSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    return screenSize;
+  };
+
+  const { height } = useScreenSize();
 
   return (
-    <div className="flex flex-col justify-between min-h-screen bg-gray-200">
-      <div className="flex justify-center items-center flex-grow">
+
+
+    <div className="flex flex-col justify-between bg-gray-200 pt-10">
+      <div className="flex justify-center items-center flex-grow app-zoom">
         <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
           <div className="text-center mb-8">
             <img
@@ -151,5 +175,6 @@ export default function Login() {
         <p className="text-blue">Copyright © Grupo ComViver {new Date().getFullYear()}</p>
       </footer>
     </div>
+
   );
 }

@@ -162,3 +162,9 @@ body {
   cursor: text;
   /* Bloqueia o cursor de edição */
 }
+
+.app-zoom {
+  transform: scale(0.8);
+  transform-origin: top left;
+  width: 125%;
+}

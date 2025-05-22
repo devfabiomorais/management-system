@@ -776,7 +776,7 @@ const ContasFinanceiroPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchContasFinanceiro(); // Aqui é necessário chamar a função que irá atualizar a lista de centros de custo
+        fetchContasFinanceiro();
         setModalDeleteVisible(false);
         toast.success("Conta financeira cancelada com sucesso!", {
           position: "top-right",
@@ -1344,6 +1344,10 @@ const ContasFinanceiroPage: React.FC = () => {
 
 
   const filteredContasFinanceiro = contasFinanceiro.filter((contaFinanceiro) => {
+
+    if (contaFinanceiro.situacao !== "Ativo") {
+      return false;
+    }
 
 
     const searchFilter = Object.values(contaFinanceiro).some((value) =>
@@ -2229,7 +2233,8 @@ const ContasFinanceiroPage: React.FC = () => {
                     <input
                       type="text"
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                      value={!isEditing ? pagamento.nome : pagamento.cod_forma_pagamento}
+                      // @ts-ignore
+                      value={pagamento?.dbs_formas_pagamento?.nome || ''}
                       disabled
                       readOnly
                     />
@@ -2249,10 +2254,12 @@ const ContasFinanceiroPage: React.FC = () => {
                     <input
                       type="text"
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                      value={new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format((pagamento as any).valor_parcela / 100)}
+                      value={
+                        new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format((pagamento as any).valor_parcela / ((!visualizando || !isEditing) ? 100 : 1))
+                      }
                       disabled
                       readOnly
                     />
@@ -2309,7 +2316,7 @@ const ContasFinanceiroPage: React.FC = () => {
                         ? new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
-                        }).format(totalPagamentos / 100) // Divide por 100 pra exibir
+                        }).format(totalPagamentos / ((!visualizando || !isEditing) ? 100 : 1))
 
                         : 'R$ 0,00'
                     }

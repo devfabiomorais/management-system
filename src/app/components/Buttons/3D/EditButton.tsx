@@ -15,7 +15,7 @@ export default function EditButton({ onClick }: EditButtonProps) {
 
   const handleClick = () => {
     const audio = new Audio('/sounds/soft.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

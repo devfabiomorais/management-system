@@ -35,6 +35,8 @@ import { fetchClients } from "@/services/commercial/clients";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import { Dropdown } from "primereact/dropdown";
 import AddButton from "@/app/components/Buttons/AddButton";
+import { GiCalculator } from "react-icons/gi";
+import { AiFillFilePdf } from "react-icons/ai";
 
 interface Transportadora {
   cod_transportadora: number;
@@ -1641,6 +1643,44 @@ const NfsProduto: React.FC = () => {
 
 
 
+  async function gerarXmlNota(nfsProduto: NfsProduto) {
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfe/gerar-xml",
+        nfsProduto,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'text', // mantém como texto puro
+        }
+      );
+
+      const xml = response.data;
+
+      // Cria um blob do tipo XML
+      const blob = new Blob([xml], { type: 'application/xml' });
+
+      // Cria uma URL temporária
+      const url = window.URL.createObjectURL(blob);
+
+      // Cria um link de download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'nota-fiscal.xml';
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpa o link e a URL temporária
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return xml;
+    } catch (error) {
+      console.error('Erro ao gerar XML:', error);
+      throw error;
+    }
+  }
 
 
 
@@ -1977,6 +2017,39 @@ const NfsProduto: React.FC = () => {
             onHide={() => closeModal()}
             style={{ position: 'fixed', width: '60rem' }}
           >
+
+            {visualizando && (
+              <div className={`flex gap-10 justify-center items-center pt-4 pb-4`}>
+
+                <button
+                  className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
+                // onClick={gerarPDF}
+                >
+                  <div className="bg-red700 w-10 h-10 flex items-center justify-center rounded">
+                    <AiFillFilePdf className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">
+                    {"PDF NF-e"}&nbsp;&nbsp;
+                  </span>
+                </button>
+
+                <button
+                  className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
+                  onClick={async () => {
+                    if (selectedNfsProduto) {
+                      gerarXmlNota(selectedNfsProduto);
+                    }
+                  }}
+                >
+                  <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">XML da NF-e&nbsp;&nbsp;</span>
+                </button>
+              </div>
+            )}
+
+
             <div
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
@@ -2304,7 +2377,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             setTipoEntidade('Cliente');
@@ -2321,7 +2394,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             setTipoEntidade('Fornecedor');
@@ -2455,7 +2528,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEndereco("sim");
@@ -2471,7 +2544,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEndereco("nao");
@@ -2926,7 +2999,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEnderecoTransp("sim");
@@ -2942,7 +3015,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEnderecoTransp("nao");
@@ -3837,7 +3910,7 @@ const NfsProduto: React.FC = () => {
                   header=""
                   body={(rowData) => (
                     <div className="flex gap-2 justify-center">
-                      <ViewButton onClick={() => handleEdit(rowData, true)} />
+                      <ViewButton onClick={() => { handleEdit(rowData, true); console.log(rowData) }} />
                     </div>
                   )}
                   className="text-black"

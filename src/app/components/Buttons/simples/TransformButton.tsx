@@ -17,7 +17,7 @@ export default function TransformButton({ onClick, title = 'Usar' }: TransformBu
 
   const handleClick = () => {
     const audio = new Audio('/sounds/magic.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

@@ -16,7 +16,7 @@ export default function FilterButton({ onClick, title = 'Filtrar' }: FilterButto
 
   const handleClick = () => {
     const audio = new Audio('/sounds/open.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

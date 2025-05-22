@@ -15,7 +15,7 @@ export default function ViewButton({ onClick }: ViewButtonProps) {
 
   const handleClick = () => {
     const audio = new Audio('/sounds/open.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

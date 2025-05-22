@@ -8,7 +8,6 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
-import { IoAddCircleOutline } from "react-icons/io5";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -23,8 +22,8 @@ import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
 import { MultiSelect } from "primereact/multiselect";
 import { Establishment, fetchEstabilishments } from "@/services/controls/estabilishment";
-import type { NfsProduto } from "@/services/faturamento/nfsProdutos";
-import { fetchNfsProdutos } from "@/services/faturamento/nfsProdutos";
+import type { NfsServico } from "@/services/faturamento/nfsServicos";
+import { fetchNfsServicos } from "@/services/faturamento/nfsServicos";
 import { fetchGruposTributacao, GrupoTributacao } from "@/services/faturamento/gruposTributacao";
 import { Cfop, fetchCfops } from "@/services/faturamento/cfops";
 import NaturezaOperacao from "../naturezaOperacao/page";
@@ -32,101 +31,13 @@ import { fetchNaturezaOperacao } from "@/services/faturamento/naturezaOperacao";
 import { fetchFornecedores, Fornecedor } from "@/services/commercial/fornecedores";
 import type { Client } from "@/services/commercial/clients";
 import { fetchClients } from "@/services/commercial/clients";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { Dropdown } from "primereact/dropdown";
 import AddButton from "@/app/components/Buttons/AddButton";
 
-interface Transportadora {
-  cod_transportadora: number;
-  nome: string;
-  logradouro?: string;
-  cidade?: string;
-  bairro?: string;
-  estado?: string;
-  complemento?: string;
-  numero?: number;
-  cep?: string;
-  tipo: string;
-  responsavel: string;
-  observacoes: string;
-  email: string;
-  celular: string;
-  telefone: string;
-  dtCadastro?: string;
-  estabelecimentos: [];
-  situacao?: string;
-}
 
-interface ProdutoNFS {
-  id: number;
-  cod_item: number;
-  descricao?: string;
-  ncm?: string;
-  cfop?: string;
-  quantidade?: number;
-  valor_unitario?: number;
-  valor_total?: number;
-}
 
-interface ItemFamilia {
-  cod_familia: number;
-  descricao: string;
-  nome: string;
-}
-
-interface ItemMedida {
-  cod_un: number;
-  descricao: string;
-  un: string;
-}
-
-interface ProdutosCadastro {
-  cod_item: string;
-  descricao: string;
-  narrativa: string;
-  dbs_unidades_medida?: {
-    un?: string;
-    cod_un: number;
-  } | null;
-  dbs_familias?: {
-    cod_familia: number;
-    nome: string;
-    descricao: string
-  };
-  dbs_estabelecimentos_item?: Array<{
-    cod_estabel: number;
-    cod_estabel_item: number;
-    cod_item: string;
-  }>;
-  cod_un: { cod_un: number; un: string; descricao: string } | null;
-  cod_familia: { cod_familia: number; nome: string; descricao: string } | null
-  cod_estabelecimento: string[];
-  dt_hr_criacao?: string;
-  anexo?: File;
-  situacao: string;
-  valor_custo: number;
-  valor_venda: number;
-}
-
-interface Produto {
-  id: number; // Novo campo id
-  cod_item: number;
-  cod_produto: string;
-  descricao: string;
-  valor_venda?: string;
-  valor_custo?: string;
-  valor_total?: string;
-  valor_unitario?: string;
-  quantidade?: number;
-  descontoUnitProdtipo?: string;
-  descontoProd?: number;
-  desconto?: number;
-  tipo_juros?: "Percentual" | "Reais";
-  valor_desconto: number;
-  tipo_desconto: "Percentual" | "Reais";
-}
-
-const NfsProduto: React.FC = () => {
+const NfsServico: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
   const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
@@ -141,20 +52,20 @@ const NfsProduto: React.FC = () => {
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
 
-  const [nfsProdutos, setNfsProdutos] = useState<NfsProduto[]>([]);
-  const [selectedNfsProduto, setSelectedNfsProduto] = useState<NfsProduto | null>(null);
+  const [nfsServicos, setNfsServicos] = useState<NfsServico[]>([]);
+  const [selectedNfsServico, setSelectedNfsServico] = useState<NfsServico | null>(null);
 
   // useEffect para carregar os dados ao montar a página
   useEffect(() => {
-    const carregarNfsProdutos = async () => {
-      const nfs = await fetchNfsProdutos(token);
-      setNfsProdutos(nfs);
+    const carregarNfsServicos = async () => {
+      const nfs = await fetchNfsServicos(token);
+      setNfsServicos(nfs);
     };
 
-    carregarNfsProdutos();
+    carregarNfsServicos();
   }, [token]);
 
-  const filteredNfsProdutos = (nfsProdutos ?? []).filter((nfs) => {
+  const filteredNfsServicos = (nfsServicos ?? []).filter((nfs) => {
     if (nfs.situacao !== 'Ativo') return false;
 
     return Object.values(nfs).some((value) =>
@@ -166,24 +77,16 @@ const NfsProduto: React.FC = () => {
 
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [NfsProdutosIdToDelete, setNfsProdutoIdToDelete] = useState<number | null>(null);
+  const [NfsServicosIdToDelete, setNfsServicoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [formValues, setFormValues] = useState<NfsProduto>({
-    cod_nf_produto: 0,
-    numero_nf: 0,
-    serie: 0,
-    cod_natureza_operacao: 0,
-    tipo: "",
+  const [formValues, setFormValues] = useState<NfsServico>({
+    cod_nf_servico: 0,
+    numero_rps: undefined,
+    serie: undefined,
+    cod_natureza_operacao: undefined,
     dt_emissao: undefined,
     hr_emissao: undefined,
-    dt_entrada_saida: undefined,
-    hr_entrada_saida: undefined,
-    finalidade_emissao: "",
-    forma_emissao: "",
-    destinacao_operacao: "",
-    tipo_atendimento: "",
-    cod_entidade: 0,
-    tipo_en: "",
+    cod_entidade: undefined,
     cnpj_cpf_ent: "",
     razao_social_ent: "",
     tipo_contribuinte_ent: "",
@@ -191,71 +94,48 @@ const NfsProduto: React.FC = () => {
     insc_municipal_ent: "",
     cep_ent: "",
     logradouro_ent: "",
-    numero_ent: 0,
+    numero_ent: undefined,
     estado_ent: "",
     bairro_ent: "",
     cidade_ent: "",
-    cod_transportadora: 0,
-    cnpj_cpf_transp: "",
-    razao_social_transp: "",
-    tipo_contribuinte_transp: "",
-    insc_estadual_transp: "",
-    insc_municipal_transp: "",
-    cep_transp: "",
-    logradouro_transp: "",
-    numero_transp: 0,
-    estado_transp: "",
-    bairro_transp: "",
-    cidade_transp: "",
-    estado_uf: "",
-    placa_veiculo: "",
-    reg_nac_trans_carga: "",
-    modalidade: "",
-    total_icms: 0,
-    total_pis: 0,
-    total_cofins: 0,
-    total_ipi: 0,
-    total_produtos: 0,
-    total_frete: 0,
-    total_nf: 0,
-    impostos_federais: 0,
-    impostos_estaduais: 0,
-    impostos_municipais: 0,
-    total_impostos: 0,
-    informacoes_complementares: "",
-    informacoes_fisco: "",
-    situacao: "Ativo"
-  });
-  const [formValuesProdutoNFS, setFormValuesProdutoNFS] = useState<ProdutoNFS>({
-    id: Date.now(),
-    cod_item: 0,
-    descricao: "",
-    ncm: "",
-    cfop: "",
-    quantidade: 0,
-    valor_unitario: 0,
-    valor_total: 0,
+    descricao_servico: "",
+    total_icms: undefined,
+    aliquota_icms: undefined,
+    total_cofins: undefined,
+    aliquota_cofins: undefined,
+    total_pis: undefined,
+    aliquota_pis: undefined,
+    total_csll: undefined,
+    aliquota_csll: undefined,
+    total_ir: undefined,
+    aliquota_ir: undefined,
+    total_inss: undefined,
+    aliquota_inss: undefined,
+    observacoes: "",
+    informacoes_adicionais: "",
+    descontar_impostos: undefined,
+    total_nf: undefined,
+    valor_servicos: undefined,
+    valor_deducoes: undefined,
+    valor_iss: undefined,
+    aliquota: undefined,
+    descontos: undefined,
+    base_calculo: undefined,
+    iss_retido: undefined,
+    situacao: "Ativo",
   });
 
 
   const clearInputs = () => {
     setVisualizar(false)
     setFormValues({
-      cod_nf_produto: 0,
-      numero_nf: 0,
-      serie: 0,
-      cod_natureza_operacao: 0,
-      tipo: "",
+      cod_nf_servico: 0,
+      numero_rps: undefined,
+      serie: undefined,
+      cod_natureza_operacao: undefined,
       dt_emissao: undefined,
       hr_emissao: undefined,
-      dt_entrada_saida: undefined,
-      hr_entrada_saida: undefined,
-      finalidade_emissao: "",
-      forma_emissao: "",
-      destinacao_operacao: "",
-      tipo_atendimento: "",
-      cod_entidade: 0,
-      tipo_en: "",
+      cod_entidade: undefined,
       cnpj_cpf_ent: "",
       razao_social_ent: "",
       tipo_contribuinte_ent: "",
@@ -263,40 +143,35 @@ const NfsProduto: React.FC = () => {
       insc_municipal_ent: "",
       cep_ent: "",
       logradouro_ent: "",
-      numero_ent: 0,
+      numero_ent: undefined,
       estado_ent: "",
       bairro_ent: "",
       cidade_ent: "",
-      cod_transportadora: 0,
-      cnpj_cpf_transp: "",
-      razao_social_transp: "",
-      tipo_contribuinte_transp: "",
-      insc_estadual_transp: "",
-      insc_municipal_transp: "",
-      cep_transp: "",
-      logradouro_transp: "",
-      numero_transp: 0,
-      estado_transp: "",
-      bairro_transp: "",
-      cidade_transp: "",
-      estado_uf: "",
-      placa_veiculo: "",
-      reg_nac_trans_carga: "",
-      modalidade: "",
-      total_icms: 0,
-      total_pis: 0,
-      total_cofins: 0,
-      total_ipi: 0,
-      total_produtos: 0,
-      total_frete: 0,
-      total_nf: 0,
-      impostos_federais: 0,
-      impostos_estaduais: 0,
-      impostos_municipais: 0,
-      total_impostos: 0,
-      informacoes_complementares: "",
-      informacoes_fisco: "",
-      situacao: "Ativo"
+      descricao_servico: "",
+      total_icms: undefined,
+      aliquota_icms: undefined,
+      total_cofins: undefined,
+      aliquota_cofins: undefined,
+      total_pis: undefined,
+      aliquota_pis: undefined,
+      total_csll: undefined,
+      aliquota_csll: undefined,
+      total_ir: undefined,
+      aliquota_ir: undefined,
+      total_inss: undefined,
+      aliquota_inss: undefined,
+      observacoes: "",
+      informacoes_adicionais: "",
+      descontar_impostos: undefined,
+      total_nf: undefined,
+      valor_servicos: undefined,
+      valor_deducoes: undefined,
+      valor_iss: undefined,
+      aliquota: undefined,
+      descontos: undefined,
+      base_calculo: undefined,
+      iss_retido: undefined,
+      situacao: "Ativo",
     });
     setSelectedEstablishments([]);
   };
@@ -350,7 +225,7 @@ const NfsProduto: React.FC = () => {
         "total_pis",
         "total_cofins",
         "total_ipi",
-        "total_produtos",
+        "total_servicos",
         "total_frete",
         "total_nf",
         "impostos_federais",
@@ -362,9 +237,9 @@ const NfsProduto: React.FC = () => {
       ];
 
 
-      const verificarCamposObrigatorios = (dados: NfsProduto): string | null => {
+      const verificarCamposObrigatorios = (dados: NfsServico): string | null => {
         for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsProduto];
+          const valor = dados[campo as keyof NfsServico];
 
           if (valor === "" || valor === null || valor === undefined) {
             return campo; // Retorna o primeiro campo inválido
@@ -394,7 +269,7 @@ const NfsProduto: React.FC = () => {
       }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/edit/${cod_natureza_operacao}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/edit/${cod_natureza_operacao}`,
         { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
@@ -406,9 +281,9 @@ const NfsProduto: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        const novasNaturezas = await fetchNfsProdutos(token);
-        setNfsProdutos(novasNaturezas);
-        toast.success("Nota Fiscal de Produto editada com sucesso!", {
+        const novasNaturezas = await fetchNfsServicos(token);
+        setNfsServicos(novasNaturezas);
+        toast.success("Nota Fiscal de Servico editada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -417,7 +292,7 @@ const NfsProduto: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao editar Nota Fiscal de Produto.", {
+        toast.error("Erro ao editar Nota Fiscal de Servico.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -425,12 +300,12 @@ const NfsProduto: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao editar Nota Fiscal de Produto:", error);
+      console.error("Erro ao editar Nota Fiscal de Servico:", error);
     }
   };
 
 
-  const [rowData, setRowData] = useState<NfsProduto[]>([]);
+  const [rowData, setRowData] = useState<NfsServico[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const handleSaveReturn = async (fecharTela: boolean) => {
@@ -451,9 +326,9 @@ const NfsProduto: React.FC = () => {
         "cod_cfop_externo",
       ];
 
-      const verificarCamposObrigatorios = (dados: NfsProduto): string | null => {
+      const verificarCamposObrigatorios = (dados: NfsServico): string | null => {
         for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsProduto];
+          const valor = dados[campo as keyof NfsServico];
 
           if (valor === "" || valor === null || valor === undefined) {
             return campo; // Retorna o primeiro campo inválido
@@ -476,7 +351,7 @@ const NfsProduto: React.FC = () => {
 
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/register`,
         { ...formValues, estabelecimentos: selectedEstablishments },
         {
           headers: {
@@ -486,22 +361,22 @@ const NfsProduto: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        toast.success("Nota Fiscal de Produto salva com sucesso!", {
+        toast.success("Nota Fiscal de Servico salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
-        const novasNaturezas = await fetchNfsProdutos(token);
-        setNfsProdutos(novasNaturezas);
+        const novasNaturezas = await fetchNfsServicos(token);
+        setNfsServicos(novasNaturezas);
         clearInputs();
         setVisible(fecharTela);
       } else {
-        toast.error("Erro ao salvar Nota Fiscal de Produto.", {
+        toast.error("Erro ao salvar Nota Fiscal de Servico.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.error("Erro ao salvar Nota Fiscal de Produto:", error);
+      console.error("Erro ao salvar Nota Fiscal de Servico:", error);
       toast.error("Erro interno ao tentar salvar.", {
         position: "top-right",
         autoClose: 3000,
@@ -516,19 +391,19 @@ const NfsProduto: React.FC = () => {
 
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (NfsProdutos: any, visualizar: boolean) => {
-    console.log(NfsProdutos)
+  const handleEdit = (NfsServicos: any, visualizar: boolean) => {
+    console.log(NfsServicos)
     setVisualizar(visualizar);
 
-    setFormValues(NfsProdutos);
+    setFormValues(NfsServicos);
     // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = NfsProdutos.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
+    const selectedEstablishmentsWithNames = NfsServicos.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
       establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
     )
       .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
 
     setSelectedEstablishments(selectedEstablishmentsWithNames);
-    setSelectedNfsProduto(NfsProdutos);
+    setSelectedNfsServico(NfsServicos);
     setIsEditing(true);
     setVisible(true);
   };
@@ -550,21 +425,21 @@ const NfsProduto: React.FC = () => {
 
 
   const openDialog = (id: number) => {
-    setNfsProdutoIdToDelete(id);
+    setNfsServicoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setNfsProdutoIdToDelete(null);
+    setNfsServicoIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (NfsProdutosIdToDelete === null) return;
+    if (NfsServicosIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsProdutos/cancel/${NfsProdutosIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/cancel/${NfsServicosIdToDelete}`,
         {},
         {
           headers: {
@@ -574,22 +449,22 @@ const NfsProduto: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        const novasNaturezas = await fetchNfsProdutos(token);
-        setNfsProdutos(novasNaturezas);
+        const novasNaturezas = await fetchNfsServicos(token);
+        setNfsServicos(novasNaturezas);
         setModalDeleteVisible(false);
-        toast.success("Nota Fiscal de Produto cancelado com sucesso!", {
+        toast.success("Nota Fiscal de Servico cancelado com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar Nota Fiscal de Produto.", {
+        toast.error("Erro ao cancelar Nota Fiscal de Servico.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao cancelar Nota Fiscal de Produto:", error);
-      toast.error("Erro ao cancelar Nota Fiscal de Produto. Tente novamente.", {
+      console.log("Erro ao cancelar Nota Fiscal de Servico:", error);
+      toast.error("Erro ao cancelar Nota Fiscal de Servico. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -784,61 +659,6 @@ const NfsProduto: React.FC = () => {
     }
   };
 
-  const [transportadoras, setTransportadoras] = useState<Transportadora[]>([]);
-  const fetchTransportadoras = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/transportadoras", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setRowData(response.data.transportadoras);
-      setIsDataLoaded(true);
-      setTransportadoras(response.data.transportadoras);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar transportadoras:", error);
-    }
-  };
-
-  const handleSelectTransp = (id: string) => {
-    let transp: any;
-
-    transp = transportadoras.find((f) => f.cod_transportadora.toString() === id);
-
-    setTransportadoraSelecionada(transp);
-
-    if (transp) {
-      setFormValues((prev) => ({
-        ...prev,
-        cod_transportadora: transp.cod_transportadora,
-        razao_social_transp: transp.nome,
-        cnpj_cpf_transp: "",
-        insc_estadual_transp: "",
-        insc_municipal_transp: "",
-        ...(usarEnderecoTransp === "sim"
-          ? {
-            cep_transp: transp.cep || "",
-            logradouro_transp: transp.logradouro || "",
-            numero_transp: Number(transp.numero) || 0,
-            estado_transp: transp.estado || "",
-            bairro_transp: transp.bairro || "",
-            cidade_transp: transp.cidade || "",
-          }
-          : {
-            cep_transp: "",
-            logradouro_transp: "",
-            numero_transp: 0,
-            estado_transp: "",
-            bairro_transp: "",
-            cidade_transp: "",
-          }),
-      }));
-    }
-
-  };
 
 
   const handleUsarEndereco = (valor: string) => {
@@ -855,17 +675,7 @@ const NfsProduto: React.FC = () => {
     }
   };
 
-  const handleUsarEnderecoTransp = (valor: string) => {
-    setUsarEnderecoTransp(valor);
 
-    if (valor === "sim") {
-      setIsDisabledTransp(true);
-      restaurarEnderecoDaTransp(transportadoraSelecionada);
-    } else {
-      setIsDisabledTransp(false);
-      clearInputsEnderecoTransp();
-    }
-  };
 
   const handleCepInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -920,59 +730,6 @@ const NfsProduto: React.FC = () => {
     }
   };
 
-  const handleCepInputChangeTransp = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    // Remove caracteres não numéricos
-    const numericValue = value.replace(/\D/g, '');
-
-    // Formata o CEP como 'XXXXX-XXX'
-    let formattedValue = numericValue;
-    if (numericValue.length > 5) {
-      formattedValue = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
-    }
-
-    // Atualiza o estado do formulário
-    setFormValues(prevValues => ({
-      ...prevValues,
-      [name]: formattedValue,
-    }));
-
-    // Se o CEP tiver 8 dígitos, faz a busca do endereço
-    if (numericValue.length === 8) {
-      try {
-        const response = await axios.get(`https://viacep.com.br/ws/${numericValue}/json/`);
-
-        if (!response.data.erro) {
-          setFormValues(prevValues => ({
-            ...prevValues,
-            cep_transp: response.data.cep || "",
-            logradouro_transp: response.data.logradouro || "",
-            bairro_transp: response.data.bairro || "",
-            cidade_transp: response.data.localidade || "",
-            estado_transp: response.data.uf || "",
-          }));
-        } else {
-          toast.info("CEP não encontrado!", {
-            position: "top-center",
-            autoClose: 3000,
-            progressStyle: { background: "yellow" },
-            icon: <span>⚠️</span>,
-          });
-          setFormValues(prevValues => ({
-            ...prevValues,
-            logradouro_transp: "",
-            bairro_transp: "",
-            cidade_transp: "",
-            estado_transp: "",
-          }));
-        }
-      } catch (error) {
-        console.error("Erro ao buscar o CEP:", error);
-      }
-    }
-  };
-
 
 
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -998,519 +755,6 @@ const NfsProduto: React.FC = () => {
   }, [token]);
 
 
-  // #region PRODUTOS  
-  const [visibleProd, setVisibleProd] = useState(false);
-  const [produtosCadastro, setProdutosCadastro] = useState<ProdutosCadastro[]>([]);
-  const [produtos, setProd] = useState<Produto[]>([]);
-  const [produtosSelecionados, setProdSelecionados] = useState<ProdutoNFS[]>([]);
-  const [selectedProd, setSelectedProd] = useState<Produto | null>(null);
-  const [formValuesProd, setFormValuesProd] = useState<Produto>({
-    id: 0, // Inicializando com um id padrão (pode ser 0 ou um valor único)
-    cod_item: 0,
-    descricao: "",
-    valor_custo: "",
-    valor_venda: "",
-    cod_produto: "0",
-    quantidade: 0,
-    descontoUnitProdtipo: "",
-    descontoProd: 0,
-    desconto: 0,
-    valor_total: "",
-    valor_unitario: "",
-    valor_desconto: 0,
-    tipo_juros: "Percentual",
-    tipo_desconto: "Percentual",
-  });
-  useEffect(() => {
-    setFormValuesProd((prev) => ({
-      ...prev,
-      valor_unitario: prev.valor_venda,
-    }));
-  }, [formValuesProd.valor_venda]);
-
-  const clearInputsProd = () => {
-    setFormValuesCadastroProdutos({
-      cod_item: "",
-      descricao: "",
-      narrativa: "",
-      dbs_unidades_medida: {
-        un: "",
-        cod_un: 0
-      },
-      cod_estabelecimento: [],
-      cod_un: null,
-      cod_familia: null,
-      situacao: "",
-      valor_custo: 0,
-      valor_venda: 0,
-    });
-    setSelectedUnit(null);
-    setSelectedFamily(null);
-    setSelectedEstablishments([]);
-  };
-
-  const [quantidadeProd, setQuantidadeProd] = useState(1);
-  const [descontoProd, setDescontoProd] = useState<number>(0);
-  const [descontoUnitProd, setDescontoUnitProd] = useState('Percentual'); // '%' ou 'R$'
-  const [valorTotalProd, setValorTotalProd] = useState(0);
-
-  //produtos-handles
-  const handleRemoveLinhaProd = (id: number) => {
-    setProdSelecionados((prev) => prev.filter((produto) => produto.id !== id));
-  };
-  const handleAdicionarLinha = () => {
-    if (!selectedProd || !quantidadeProd) {
-      toast.info("Após selecionar um produto, insira a quantidade.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-    // Garante que tenha um produto e quantidade antes de adicionar
-
-    const novoProduto: ProdutoNFS = {
-      id: Date.now(),  // Usando Date.now() para criar um identificador único numérico
-      cod_item: Number(selectedProd.cod_item),
-      quantidade: quantidadeProd,
-      ncm: formValuesProdutoNFS.ncm,
-      cfop: formValuesProdutoNFS.cfop,
-      valor_total: valorTotalProd,
-      valor_unitario: Number(selectedProd.valor_venda),
-    };
-
-    // Adiciona o novo produto à lista de selecionados
-    setProdSelecionados((prev) => [...prev, novoProduto]);
-
-    // Reseta os estados para permitir a seleção de um novo produto
-    setSelectedProd(null); // Permite escolher um novo produto
-    setQuantidadeProd(0);
-    setDescontoProd(0);
-    setDescontoUnitProd('%prod');
-    setValorTotalProd(0);
-
-    // Reseta os valores do formValuesProd
-    setFormValuesProd({
-      id: 0, // Adicionando o campo id
-      cod_item: 0,
-      descricao: "",
-      valor_venda: "",
-      valor_custo: "",
-      cod_produto: "",
-      quantidade: 0,
-      valor_total: "",
-      descontoUnitProdtipo: "",
-      descontoProd: 0,
-      desconto: 0,
-      tipo_juros: "Percentual",
-      valor_unitario: "",
-      valor_desconto: 0,
-      tipo_desconto: "Percentual",
-    });
-  };
-  const handleQuantidadeProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setQuantidadeProd(value);
-  };
-
-  const handleDescontoProdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(",", "."); // Permite digitação com vírgula e converte para ponto
-    let numericValue = Number(value);
-
-    const maxValue = descontoUnitProd === "Percentual" ? 100 : quantidadeProd * Number(selectedProd?.valor_venda ?? 0);
-
-    if (numericValue > maxValue) {
-      numericValue = maxValue; // Limita ao máximo permitido
-    } else if (numericValue < 0 || isNaN(numericValue)) {
-      numericValue = 0; // Evita valores negativos ou inválidos
-    }
-
-    setDescontoProd(numericValue);
-  };
-
-
-  const handleDescontoUnitProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value === "%prod" ? "Percentual" : "Reais";
-    setDescontoUnitProd(newValue);
-  };
-
-
-  //autopreenchimento de campos ao selecionar algo PRODUTOS
-  useEffect(() => {
-    if (selectedProd) {
-      console.log('selectedProd mudou:', selectedProd);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: selectedProd.cod_item || 0,
-        descricao: selectedProd.descricao || '',
-        valor_venda: selectedProd.valor_venda || '',
-        valor_custo: selectedProd.valor_custo || '',
-      }));
-
-      let total = (selectedProd.valor_venda ? Number(selectedProd.valor_venda) : 0) * quantidadeProd;
-      if (descontoUnitProd === 'Percentual') {
-        total -= total * (descontoProd / 100);
-      } else {
-        total -= descontoProd;
-      }
-      setValorTotalProd(parseFloat(total.toFixed(2)));
-    }
-  }, [selectedProd, quantidadeProd, descontoProd, descontoUnitProd]);
-
-  const fetchProd = async () => {
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/itens", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setProd(response.data.items);
-      setProdutosCadastro(response.data.items);
-      setFormValuesProd((prevValues) => ({
-        ...prevValues,
-        cod_item: (response.data.items.length + 1).toString(), // Convertendo para string se necessário
-      }));
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar produtos:", error);
-    }
-  };
-
-  useEffect(() => {
-    const total = produtosSelecionados.reduce((acc, produto) => {
-      const valor = Number(produto.valor_total) || 0;
-      return acc + valor;
-    }, 0);
-
-    setFormValues((prev: any) => ({
-      ...prev,
-      total_produtos: Number(total.toFixed(2)),
-    }));
-  }, [produtosSelecionados]);
-
-  useEffect(() => {
-    const {
-      total_icms = 0,
-      total_pis = 0,
-      total_cofins = 0,
-      total_ipi = 0,
-      total_produtos = 0,
-      total_frete = 0,
-    } = formValues;
-
-    const totalNF =
-      Number(total_icms) +
-      Number(total_pis) +
-      Number(total_cofins) +
-      Number(total_ipi) +
-      Number(total_produtos) +
-      Number(total_frete);
-
-    setFormValues((prev: any) => ({
-      ...prev,
-      total_nf: Number(totalNF.toFixed(2)),
-    }));
-  }, [
-    formValues.total_icms,
-    formValues.total_pis,
-    formValues.total_cofins,
-    formValues.total_ipi,
-    formValues.total_produtos,
-    formValues.total_frete,
-  ]);
-
-
-  //produtos-cadastro  
-  const [fileName, setFileName] = useState("");
-  const [families, setFamilies] = useState<ItemFamilia[]>([]);
-  const [selectedFamily, setSelectedFamily] = useState<number | null>(null);
-  const [units, setUnits] = useState<ItemMedida[]>([]);
-  const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
-  const [selectedItem, setSelectedItem] = useState<ProdutosCadastro | null>(null);
-  const [formValuesCadastroProdutos, setFormValuesCadastroProdutos] = useState<ProdutosCadastro>({
-    cod_item: "",
-    descricao: "",
-    narrativa: "",
-    dbs_unidades_medida: {
-      un: "",
-      cod_un: 0
-    },
-    cod_estabelecimento: [],
-    cod_un: null,
-    cod_familia: null,
-    situacao: "",
-    valor_custo: 0,
-    valor_venda: 0,
-  });
-
-  const handleSaveEditProdutos = async (produto: any = selectedItem) => {
-    if (!produto?.cod_item) {
-      toast.error("Item não selecionado ou inválido. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
-
-
-    try {
-      const formData = new FormData();
-      formData.append("descricao", produto.descricao);
-      formData.append("narrativa", produto.narrativa);
-      if (produto.cod_un !== null) {
-        formData.append("cod_un", produto.cod_un.toString());
-      }
-      if (produto.cod_familia !== null) {
-        formData.append("cod_familia", produto.cod_familia.toString());
-      }
-      formData.append("situacao", produto.situacao);
-
-      // Enviar os estabelecimentos como um array serializado
-      formData.append("cod_estabelecimento", JSON.stringify(selectedEstablishments.map(e => e.cod_estabelecimento)));
-
-      // Adicionar arquivo de anexo, se presente
-      if (produto.anexo) {
-        formData.append("anexo", produto.anexo);
-      }
-
-      // Caso a situação seja "DESATIVADO", atualiza os dados do item
-      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/itens/edit/${produto.cod_item}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.status >= 200 && response.status < 300) {
-        clearInputsProd();
-        fetchProd();
-        toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
-        setVisibleProd(false);
-      } else {
-        toast.error("Erro ao salvar item.", { position: "top-right", autoClose: 3000 });
-      }
-    } catch (error: any) {
-      console.error("Erro ao atualizar item:", error);
-      toast.error(`Erro ao atualizar item: ${error.response?.data?.msg || "Erro desconhecido"}`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-  const handleSaveReturnProdutos = async (fecharTela: boolean) => {
-    try {
-      const requiredFields = [
-        "descricao",
-        "narrativa",
-        "cod_un",
-        "situacao",
-        "cod_familia",
-        "valor_custo",
-        "valor_venda"
-      ];
-
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValuesCadastroProdutos[field as keyof typeof formValuesCadastroProdutos];
-        return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
-      });
-
-      if (selectedEstablishments.length === 0) {
-        toast.info("Você deve selecionar pelo menos um estabelecimento!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      if (isEmptyField) {
-        toast.info("Todos os campos devem ser preenchidos!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("descricao", formValuesCadastroProdutos.descricao);
-      formData.append("narrativa", formValuesCadastroProdutos.narrativa);
-      formData.append("cod_item", formValuesCadastroProdutos.cod_item);
-      if (formValuesCadastroProdutos.cod_un && formValuesCadastroProdutos.cod_un.cod_un !== undefined) {
-        formData.append("cod_un", formValuesCadastroProdutos.cod_un.cod_un.toString());
-      }
-
-      formData.append("situacao", formValuesCadastroProdutos.situacao);
-      formData.append("valor_custo", formValuesCadastroProdutos.valor_custo.toString());
-      formData.append("valor_venda", formValuesCadastroProdutos.valor_venda.toString());
-
-      if (formValuesCadastroProdutos.cod_familia && formValuesCadastroProdutos.cod_familia.cod_familia !== undefined) {
-        formData.append("cod_familia", formValuesCadastroProdutos.cod_familia.cod_familia.toString());
-      }
-
-      selectedEstablishments.forEach((establishment) => {
-        if (establishment.cod_estabelecimento) {
-          console.log(establishment.cod_estabelecimento);
-          formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
-        } else {
-          console.error("Valor inválido para cod_estabelecimento:", establishment);
-        }
-      });
-
-      if (formValuesCadastroProdutos.anexo) {
-        const file = formValuesCadastroProdutos.anexo;
-        formData.append("anexo", file);
-      }
-
-      // Verificar se o "nome" já existe no banco de dados no storedRowData
-      const nomeExists = produtosCadastro.some((item) => item.descricao === formValuesCadastroProdutos.descricao);
-
-      if (nomeExists) {
-        const itemEncontrado = produtosCadastro.find((item) => item.descricao === formValuesCadastroProdutos.descricao);
-        const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
-
-        if (situacaoAtivo) {
-          // Caso o nome exista e a situação seja ATIVO, não permite a ação
-          toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
-            position: "top-right",
-            autoClose: 3000,
-            progressStyle: { background: "yellow" },
-            icon: <span>⚠️</span>, // Usa o emoji de alerta
-          });
-          return;
-        } else {
-          // Caso a situação seja DESATIVADO, atualiza os dados
-          if (itemEncontrado) {
-            setSelectedItem(itemEncontrado);
-          } else {
-            setSelectedItem(null);
-          }
-          await handleSaveEditProdutos(itemEncontrado); // Passa o serviço diretamente para atualização
-          fetchProd();  // Recarrega os produtos
-          clearInputsProd();
-          setVisibleProd(fecharTela);
-          toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
-            position: "top-right",
-            autoClose: 10000,
-            progressStyle: { background: "green" },
-            icon: <span>♻️</span>, // Ícone de recarga
-          });
-          return;
-        }
-      }
-
-      // Se o nome não existir, cadastra o item normalmente
-      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/itens/register",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-      if (response.status >= 200 && response.status < 300) {
-        clearInputsProd();
-        fetchProd();
-        toast.success("Item salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        clearInputsProd();
-        setVisibleProd(fecharTela);
-      } else {
-        toast.error("Erro ao salvar item.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao salvar item:", error);
-    }
-  };
-
-
-  useEffect(() => {
-    fetchUnits();
-    fetchFamilias();
-    fetchProd();
-    fetchTransportadoras();
-  }, []);
-
-
-
-  const fetchUnits = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setUnits(response.data.units);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar unidades de medida:", error);
-    }
-  };
-
-  const fetchFamilias = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/familia/itens/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setFamilies(response.data.families);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar famílias de itens:", error);
-    }
-  };
-
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const file = files[0]; // Pega o primeiro arquivo selecionado
-      setFileName(file.name); // Atualiza o nome do arquivo no estado
-    }
-  };
-
-  const handleProdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = produtos.find((produto) => produto.cod_item === Number(e.target.value));
-    setSelectedProd(selected || null);
-
-    if (selected) {
-      setFormValuesProd({
-        id: selected.id || 0, // Adiciona o id do produto selecionado
-        cod_item: selected.cod_item,
-        descricao: selected.descricao || '',
-        valor_venda: selected.valor_venda || '',
-        valor_custo: selected.valor_custo || '',
-        cod_produto: selected.cod_produto || '',
-        valor_total: '',
-        quantidade: 0,
-        descontoUnitProdtipo: '',
-        descontoProd: 0,
-        desconto: 0,
-        tipo_juros: 'Percentual',
-        valor_unitario: selected.valor_venda || '',
-        valor_desconto: 0,
-        tipo_desconto: "Percentual",
-      });
-      console.log('formValuesProd atualizado:', formValuesProd);
-    }
-  };
-
-  const closeModalProd = () => {
-    clearInputsProd();
-    setVisibleProd(false);
-  };
-
-  // #endregion
-
   const [totalICMSInput, setTotalICMSInput] = useState(
     formValues.total_icms?.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
@@ -1529,22 +773,8 @@ const NfsProduto: React.FC = () => {
       maximumFractionDigits: 2,
     }) || ''
   );
-  const [totalIPIInput, setTotalIPIInput] = useState(
-    formValues.total_ipi?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || ''
-  );
-
-  const [totalFreteInput, setTotalFreteInput] = useState(
-    formValues.total_frete?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || ''
-  );
 
   const impostosFederais =
-    (formValues.total_ipi || 0) +
     (formValues.total_pis || 0) +
     (formValues.total_cofins || 0);
 
@@ -1557,7 +787,6 @@ const NfsProduto: React.FC = () => {
 
   useEffect(() => {
     const novosFederais =
-      (formValues.total_ipi || 0) +
       (formValues.total_pis || 0) +
       (formValues.total_cofins || 0);
 
@@ -1567,7 +796,7 @@ const NfsProduto: React.FC = () => {
         maximumFractionDigits: 2,
       })
     );
-  }, [formValues.total_ipi, formValues.total_pis, formValues.total_cofins]);
+  }, [formValues.total_pis, formValues.total_cofins]);
 
 
   const [impostosEstaduaisInput, setImpostosEstaduaisInput] = useState(
@@ -1586,40 +815,6 @@ const NfsProduto: React.FC = () => {
       })
     );
   }, [formValues.total_icms]);
-
-
-
-  const [impostosMunicipaisInput, setImpostosMunicipaisInput] = useState(
-    formValues.impostos_municipais?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || '0,00'
-  );
-
-
-  const [totalImpostosInput, setTotalImpostosInput] = useState(
-    ((formValues.impostos_federais || 0) +
-      (formValues.impostos_estaduais || 0) +
-      (formValues.impostos_municipais || 0)
-    ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
-
-  useEffect(() => {
-    const total =
-      (formValues.impostos_federais || 0) +
-      (formValues.impostos_estaduais || 0) +
-      (formValues.impostos_municipais || 0);
-
-    setTotalImpostosInput(
-      total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-  }, [
-    formValues.impostos_federais,
-    formValues.impostos_estaduais,
-    formValues.impostos_municipais
-  ]);
-
-
 
 
 
@@ -1661,289 +856,13 @@ const NfsProduto: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este Nota Fiscal de Produto?</p>
+            <p>Tem certeza que deseja cancelar este Nota Fiscal de Servico?</p>
           </Dialog>
 
-          {
-            //#region MODAL PRODUTOS
-          }
-          <Dialog
-            header={"Novo Item"}
-            visible={visibleProd}
-            headerStyle={{
-              backgroundColor: "#D9D9D9",
-              color: "#1B405D",
-              fontWeight: "bold",
-              padding: "0.8rem",
-              height: "3rem",
-            }}
-            onHide={() => closeModalProd()}
-          // style={{ width: "60vw", maxHeight: "80vh", overflowY: "auto" }}
-          >
-            <div className="p-fluid grid gap-3 mt-2 space-y-0">
-              <div className="grid grid-cols-4 gap-2">
-
-                <div className="">
-                  <label htmlFor="code" className="block text-blue font-medium">
-                    Código
-                  </label>
-                  <input
-                    type="text"
-                    id="code"
-                    name="descricao"
-                    value={formValuesCadastroProdutos.cod_item}
-                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_item: e.target.value })}
-                    className="w-full  border border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
-                  />
-                </div>
-
-              </div>
-
-              <div className="">
-                <label htmlFor="description" className="block text-blue  font-medium">
-                  Descrição
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  name="descricao"
-                  value={formValuesCadastroProdutos.descricao}
-                  onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, descricao: e.target.value })}
-                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  placeholder="" />
-              </div>
-
-              <div className="">
-                <label htmlFor="narrative" className="block text-blue  font-medium">
-                  Narrativa
-                </label>
-                <textarea
-                  id="narrative"
-                  rows={3}
-                  name="narrativa"
-                  value={formValuesCadastroProdutos.narrativa}
-                  onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, narrativa: e.target.value })}
-                  className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-16"
-                  placeholder="" />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="">
-                  <label htmlFor="un" className="block text-blue  font-medium">
-                    UN
-                  </label>
-                  <Dropdown
-                    id="un"
-                    name="cod_un"
-                    value={selectedUnit}
-                    onChange={(e) => {
-                      setSelectedUnit(e.value);
-                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_un: e.value });
-                    }}
-                    options={units}
-                    optionLabel="descricao"
-                    placeholder="Selecione"
-                    filter
-
-                    className="w-full h-[35px] flex items-center" />
-                </div>
-                <div className="">
-                  <label htmlFor="family" className="block text-blue  font-medium">
-                    Família
-                  </label>
-                  <Dropdown
-                    id="family"
-                    name="cod_familia"
-                    value={selectedFamily}
-                    onChange={(e) => {
-                      console.log(e.value);
-                      setSelectedFamily(e.value);
-                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, cod_familia: e.value });
-                    }}
-                    options={families}
-                    optionLabel="nome"
-                    placeholder="Selecione a Família"
-                    filter
-                    className="w-full md:w-14rem h-[35px] flex items-center" />
-                </div>
-
-                <div>
-                  <label htmlFor="situation" className="block text-blue  font-medium">
-                    Situação
-                  </label>
-                  <Dropdown
-                    id="situacao"
-                    name="situacao"
-                    value={formValuesCadastroProdutos.situacao}
-                    onChange={(e) => setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, situacao: e.value })}
-                    options={[
-                      { label: 'Ativo', value: 'ATIVO' },
-                      { label: 'Inativo', value: 'DESATIVADO' }
-                    ]}
-                    placeholder="Selecione"
-                    className="w-full md:w-14rem h-[35px] flex items-center"
-                    style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-
-                <div className="">
-                  <label htmlFor="valor_venda" className="block text-blue  font-medium">
-                    Valor Venda
-                  </label>
-                  <input
-                    id="valor_venda"
-                    name="valor_venda"
-                    type="text"
-                    value={`R$ ${Number(formValuesCadastroProdutos.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_venda: numericValue });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
-                  />
-
-                </div>
-
-                <div className="">
-                  <label htmlFor="valor_custo" className="block text-blue  font-medium">
-                    Valor Unitário
-                  </label>
-                  <input
-                    id="valor_custo"
-                    name="valor_custo"
-                    type="text"
-                    value={`R$ ${Number(formValuesCadastroProdutos.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValuesCadastroProdutos({ ...formValuesCadastroProdutos, valor_custo: numericValue });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-[35px]"
-                  />
-
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2">
-                  <label htmlFor="photo" className="block text-blue font-medium">
-                    Foto
-                  </label>
-
-                  <input
-                    type="file"
-                    id="photo"
-                    name="foto"
-                    onChange={handleFileChange}
-                    className="file-input"
-                    style={{ display: "none" }}  // Esconde o input real
-                  />
-
-                  <label
-                    htmlFor="photo"
-                    className="custom-file-input w-full"
-                    style={{
-                      display: "inline-block",
-                      padding: "10px 20px",
-                      backgroundColor: "#f0f0f0",  // Cor de fundo cinza claro
-                      color: "#1D4ED8",  // Cor do texto blue (Tailwind)
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      border: "2px solid #D1D5DB",  // Borda cinza escuro
-                      transition: "background-color 0.3s ease",
-                      lineHeight: "12.5px",
-                    }}
-                  >
-                    <span>Escolher arquivo</span>
-                  </label>
-
-                  {/* Exibe o nome do arquivo selecionado, se houver */}
-                  {fileName && (
-                    <div className="mt-2 text-blue-500 ">
-                      <strong>Arquivo selecionado: </strong> {fileName}
-                    </div>
-                  )}
-                </div>
-
-                <div className="">
-                  <label htmlFor="estabilishments" className="block text-blue  font-medium">
-                    Estabelecimentos
-                  </label>
-
-                  <MultiSelect
-                    value={selectedEstablishments}
-                    onChange={(e) => setSelectedEstablishments(e.value)}
-                    options={establishments}
-                    optionLabel="nome"
-                    filter
-                    placeholder="Selecione os Estabelecimentos"
-                    maxSelectedLabels={3}
-                    className="w-full border text-black h-[35px] flex items-center"
-                  />
-
-                </div>
-              </div>
-            </div>
-
-            <br></br>
-            <br></br>
-
-            {/* Botões */}
-            <div className="grid grid-cols-2 gap-3 w-full">
-
-              {!isEditing && (
-                <>
-                  <Button
-                    label="Salvar e Voltar à Listagem"
-                    className="text-white"
-                    icon="pi pi-refresh"
-                    onClick={() => { handleSaveReturnProdutos(false) }}
-                    style={{
-                      backgroundColor: "#007bff",
-                      border: "1px solid #007bff",
-                      padding: "0.75rem 2rem",
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  />
-                  <Button
-                    label="Salvar e Adicionar Outro"
-                    className="text-white"
-                    icon="pi pi-check"
-                    onClick={() => { handleSaveReturnProdutos(true) }}
-                    style={{
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.75rem 2rem",
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  />
-                </>
-              )}
-            </div>
-
-
-          </Dialog>
-          {
-            //#endregion
-          }
 
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Nota Fiscal de Produto" : "Editar Nota Fiscal de Produto") : "Nova Nota Fiscal de Produto"}
+            header={isEditing ? (visualizando ? "Visualizando Nota Fiscal de Servico" : "Editar Nota Fiscal de Servico") : "Nova Nota Fiscal de Servico"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -1960,34 +879,17 @@ const NfsProduto: React.FC = () => {
               p-fluid grid gap-2 mt-2`}>
               <div className="grid gap-2 grid-cols-4">
                 <div>
-                  <label htmlFor="cod_nf_produto" className="block text-blue font-medium">
-                    Código
-                  </label>
-                  <input
-                    type="text"
-                    id="cod_nf_produto"
-                    name="cod_nf_produto"
-                    disabled
-                    value={formValues.cod_nf_produto}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200 cursor-not-allowed"
-                  />
-                </div>
-
-
-
-                <div>
-                  <label htmlFor="serie" className="block text-blue font-medium">
-                    Série
+                  <label htmlFor="numero_rps" className="block text-blue font-medium">
+                    Nº RPS
                   </label>
                   <input
                     type="number"
-                    id="serie"
-                    name="serie"
-                    disabled={visualizando}
-                    value={formValues.serie}
+                    id="numero_rps"
+                    name="numero_rps"
+                    disabled
+                    value={formValues.numero_rps}
                     onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200 cursor-not-allowed"
                   />
                 </div>
 
@@ -2017,33 +919,6 @@ const NfsProduto: React.FC = () => {
                 </div>
 
 
-                <div>
-                  <label htmlFor="tipo" className="block text-blue font-medium">
-                    Tipo
-                  </label>
-                  <select
-                    id="tipo"
-                    name="tipo"
-                    disabled={visualizando}
-                    value={formValues.tipo}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        tipo: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    <option value="Entrada">Entrada</option>
-                    <option value="Saida">Saída</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
                 <div>
                   <label htmlFor="dt_emissao" className="block text-blue font-medium">
                     Data de Emissão
@@ -2094,252 +969,38 @@ const NfsProduto: React.FC = () => {
                       now.setMilliseconds(0);
                       setFormValues((prevValues) => ({
                         ...prevValues,
-                        hr_emissao: value ? new Date(now) : undefined,
+                        hr_emissao: value ? value : undefined,
                       }));
                     }}
                   />
                 </div>
-
-                <div>
-                  <label htmlFor="dt_entrada_saida" className="block text-blue font-medium">
-                    Data de Entrada/Saída
-                  </label>
-                  <input
-                    type="date"
-                    id="dt_entrada_saida"
-                    name="dt_entrada_saida"
-                    className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    disabled={visualizando}
-                    value={!isEditing ?
-                      (formValues.dt_entrada_saida ? new Date(formValues.dt_entrada_saida).toISOString().split("T")[0] : "") :
-                      (formValues.dt_entrada_saida ? new Date(formValues.dt_entrada_saida).toISOString().split("T")[0] : "")}
-
-
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        dt_entrada_saida: value ? new Date(value) : undefined,
-                      }));
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="hr_entrada_saida" className="block text-blue font-medium">
-                    Hora de Entrada/Saída
-                  </label>
-                  <input
-                    type="time"
-                    id="hr_entrada_saida"
-                    name="hr_entrada_saida"
-                    className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
-                    disabled={visualizando}
-                    value={
-                      formValues.hr_entrada_saida
-                        ? new Date(formValues.hr_entrada_saida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value; // formato: "HH:MM"
-                      const [hours, minutes] = value.split(':');
-                      const now = new Date();
-                      now.setHours(parseInt(hours));
-                      now.setMinutes(parseInt(minutes));
-                      now.setSeconds(0);
-                      now.setMilliseconds(0);
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        hr_entrada_saida: value ? new Date(now) : undefined,
-                      }));
-                    }}
-                  />
-                </div>
-
-
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                <div>
-                  <label htmlFor="finalidade_emissao" className="block text-blue font-medium">
-                    Finalidade de Emissão
-                  </label>
-                  <select
-                    id="finalidade_emissao"
-                    name="finalidade_emissao"
-                    disabled={visualizando}
-                    value={formValues.finalidade_emissao}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        finalidade_emissao: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    <option value="NF-e normal">NF-e normal</option>
-                    <option value="NF-e complementar">NF-e complementar</option>
-                    <option value="NF-e de ajuste">NF-e de ajuste</option>
-                    <option value="Devolução de mercadoria">Devolução de mercadoria</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="forma_emissao" className="block text-blue font-medium">
-                    Forma de Emissão
-                  </label>
-                  <select
-                    id="forma_emissao"
-                    name="forma_emissao"
-                    disabled={visualizando}
-                    value={formValues.forma_emissao}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        forma_emissao: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    <option value="Normal">Emissão normal</option>
-                    <option value="Contingencia">Contingência</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="destinacao_operacao" className="block text-blue font-medium">
-                    Destino da Operação
-                  </label>
-                  <select
-                    id="destinacao_operacao"
-                    name="destinacao_operacao"
-                    disabled={visualizando}
-                    value={formValues.destinacao_operacao}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        destinacao_operacao: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    <option value="Interna">Operação Interna</option>
-                    <option value="Interestadual">Operação Interestadual</option>
-                    <option value="Exterior">Operação com Exterior</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="tipo_atendimento" className="block text-blue font-medium">
-                    Tipo de Atendimento
-                  </label>
-                  <select
-                    id="tipo_atendimento"
-                    name="tipo_atendimento"
-                    disabled={visualizando}
-                    value={formValues.tipo_atendimento}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        tipo_atendimento: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    <option value="Não se aplica">Não se aplica</option>
-                    <option value="Operação presencial">Operação presencial</option>
-                    <option value="Operação não presencial, pela internet">Operação não presencial, pela internet</option>
-                    <option value="Operação não presencial, teleatendimento">Operação não presencial, teleatendimento</option>
-                    <option value="Operação não presencial, outros">Operação não presencial, outros</option>
-                  </select>
-                </div>
-
-              </div>
 
               {
-                // #region Destinatário
+                // #region Cliente
               }
               <div className="border border-gray-300 rounded p-2 bg-gray-50 mt-2 space-y-2">
-                <h2 className="text-blue text-lg font-bold mb-4">Destinatário</h2>
+                <h2 className="text-blue text-lg font-bold mb-4">Cliente</h2>
 
                 <div className="grid grid-cols-4 gap-2">
 
                   <div className="col-span-3">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
-
-                          setTimeout(() => {
-                            setTipoEntidade('cliente');
-                          }, 100);
-                        }}
-
-                        className={`h-[28px] px-8 rounded-full border font-medium 
-                        ${tipoEntidade === 'cliente' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
-                      >
-                        Cliente
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
-
-                          setTimeout(() => {
-                            setTipoEntidade('fornecedor');
-                          }, 100);
-                        }}
-                        className={`h-[28px] px-8 rounded-full border font-medium 
-                        ${tipoEntidade === 'fornecedor' ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
-                      >
-                        Fornecedor
-                      </button>
-                    </div>
-
-                    <select
-                      id="tipo_en"
+                    <label htmlFor="cod_entidade" className="block text-blue font-medium">
+                      Cliente
+                    </label>
+                    <input
+                      type="text"
+                      id="cod_entidade"
+                      name="cod_entidade"
                       disabled={visualizando}
-                      value={formValues.tipo_en || ""}
-                      onChange={(e) => {
-                        handleSelectEntidade(e.target.value);
-                      }}
-
-                      className="w-full border text-black h-[34px] px-2 rounded mt-1"
-                    >
-                      <option value="">Selecione</option>
-                      {tipoEntidade === "fornecedor" ? (
-                        fornecedores.map((fornecedor) => (
-                          <option key={fornecedor.cod_fornecedor} value={fornecedor.cod_fornecedor}>
-                            {fornecedor.nome}
-                          </option>
-                        ))
-                      ) : (
-                        clients.map((client) => (
-                          <option key={client.cod_cliente} value={client.cod_cliente}>
-                            {client.nome}
-                          </option>
-                        ))
-                      )}
-                    </select>
+                      value={formValues.cod_entidade}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
                   </div>
 
-                  <div className="pt-[8px]">
+                  <div className="">
                     <label htmlFor="cnpj_cpf_ent" className="block text-blue font-medium">
                       Documento (CNPJ/CPF)
                     </label>
@@ -2430,7 +1091,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEndereco("sim");
@@ -2445,7 +1106,7 @@ const NfsProduto: React.FC = () => {
                         type="button"
                         onClick={() => {
                           const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
+                          //audio.play();
 
                           setTimeout(() => {
                             handleUsarEndereco("nao");
@@ -2555,541 +1216,288 @@ const NfsProduto: React.FC = () => {
               }
 
               {
-                //#region Produtos
+                //#region Servicos
               }
-              <div className="border border-gray-300 rounded p-2 bg-gray-50 mt-2 ">
+              <div className="border border-gray-300 rounded space-y-1 p-2 bg-gray-50 mt-2 ">
                 <div className="flex items-center top-0">
-                  <h3 className="text-blue text-lg font-bold pt-1 mr-1">Produtos</h3>
-
-                  <div className={visualizando ? "hidden" : "h-10 scale-75 text-sm"}>
-                    <RegisterButton onClick={() => { console.log(produtos); setVisibleProd(true) }} title="Cadastrar" />
-                  </div>
+                  <h3 className="text-blue text-lg font-bold pt-1 mr-1">Servicos</h3>
                 </div>
                 <div style={{ height: "16px" }}></div>
 
-                {/* Linha principal (para entrada de dados) */}
-                <div className="grid grid-cols-12 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div className="col-span-4">
-                    <label htmlFor="produto" className="block text-blue font-medium">
-                      Produto
+                    <label htmlFor="descricao_servico" className="block text-blue font-medium">
+                      Descrição do Serviço
                     </label>
-                    <select
-                      id="produto"
-                      name="produto"
-                      value={selectedProd ? selectedProd.cod_item : ''}
+                    <textarea
+                      id="descricao_servico"
+                      name="descricao_servico"
+                      value={formValues.descricao_servico}
                       disabled={visualizando}
-                      onChange={handleProdChange}
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
-
-                    >
-                      <option
-                        value=''
-                        disabled
-                        selected
-                      >
-                        Selecione
-                      </option>
-                      {produtos.map((produto) => (
-                        <option key={produto.cod_item} value={produto.cod_item}>
-                          {produto.descricao}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="ncm" className="block text-blue font-medium">
-                      NCM
-                    </label>
-                    <input
-                      id="ncm"
-                      name="ncm"
-                      type="text"
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
-
-                      disabled={visualizando}
-                      value={formValuesProdutoNFS.ncm}
                       onChange={(e) =>
-                        setFormValuesProdutoNFS((prev) => ({
+                        setFormValues((prev) => ({
                           ...prev,
-                          ncm: e.target.value,
+                          descricao_servico: e.target.value,
                         }))
                       }
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cfop" className="block text-blue font-medium">
-                      CFOP
-                    </label>
-                    <input
-                      id="cfop"
-                      name="cfop"
-                      type="text"
                       className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
-                      disabled={visualizando}
-                      value={formValuesProdutoNFS.cfop}
-                      onChange={(e) =>
-                        setFormValuesProdutoNFS((prev) => ({
-                          ...prev,
-                          cfop: e.target.value,
-                        }))
-                      }
                     />
                   </div>
-                  <div>
-                    <label htmlFor="quantidadeProd" className="block text-blue font-medium">
-                      Quant.
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="col-span-4">
+                    <label htmlFor="atividade_servico" className="block text-blue font-medium">
+                      Atividade do Serviço
                     </label>
                     <input
-                      id="quantidadeProd"
-                      name="quantidadeProd"
+                      type="text"
+                      id="atividade_servico"
+                      name="atividade_servico"
+                      // value={formValues.atividade_servico}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          atividade_servico: e.target.value,
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="">
+                    <label htmlFor="item_lista_servico" className="block text-blue font-medium">
+                      Item da Lista de Serviço
+                    </label>
+                    <input
+                      type="text"
+                      id="item_lista_servico"
+                      name="item_lista_servico"
+                      // value={formValues.item_lista_servico}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          descricao_servico: e.target.value,
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+
+                  <div className="">
+                    <label htmlFor="ctm" className="block text-blue font-medium">
+                      Cód Tributação Municipal
+                    </label>
+                    <input
+                      type="text"
+                      id="ctm"
+                      name="ctm"
+                      // value={formValues.ctm}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          ctm: e.target.value,
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+
+                  <div className="">
+                    <label htmlFor="cnae" className="block text-blue font-medium">
+                      CNAE
+                    </label>
+                    <input
+                      type="text"
+                      id="cnae"
+                      name="cnae"
+                      // value={formValues.cnae}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          cnae: e.target.value,
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="col-span-4">
+                    <label htmlFor="descricao_atividade" className="block text-blue font-medium">
+                      Descrição da Atividade
+                    </label>
+                    <input
+                      type="text"
+                      id="descricao_atividade"
+                      name="descricao_atividade"
+                      // value={formValues.descricao_atividade}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          descricao_atividade: e.target.value,
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="">
+                    <label htmlFor="valor_servicos" className="block text-blue font-medium">
+                      Valor dos Serviços
+                    </label>
+                    <input
+                      type="text"
+                      id="valor_servicos"
+                      name="valor_servicos"
+                      // value={formValues.valor_servicos}
+                      disabled={visualizando}
+                      // onChange={(e) =>
+                      //   setFormValues((prev) => ({
+                      //     ...prev,
+                      //     valor_servicos: e.target.value,
+                      //   }))
+                      // }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+
+                    />
+                  </div>
+
+                  <div className="">
+                    <label htmlFor="base_calculo" className="block text-blue font-medium">
+                      Base de Cálculo
+                    </label>
+                    <input
                       type="number"
-                      min="1"
-                      defaultValue="1"
+                      id="base_calculo"
+                      name="base_calculo"
+                      value={formValues.base_calculo}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          base_calculo: parseFloat(e.target.value),
+                        }))
+                      }
                       className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
-                      disabled={visualizando}
-                      value={quantidadeProd}
-                      onChange={handleQuantidadeProdChange}
                     />
                   </div>
-                  <div className="col-span-2">
-                    <label htmlFor="vl_unit_prod" className="block text-blue font-medium">
-                      Valor Unitário
+
+                  <div className="">
+                    <label htmlFor="aliquota" className="block text-blue font-medium">
+                      %Alíquota
                     </label>
                     <input
-                      id="vl_unit_prod"
-                      name="vl_unit_prod"
-                      type="text"
-                      disabled
+                      type="number"
+                      id="aliquota"
+                      name="aliquota"
+                      value={formValues.aliquota}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          aliquota: parseFloat(e.target.value),
+                        }))
+                      }
                       className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
-                      value={new Intl.NumberFormat('pt-BR', {
-                        style: 'decimal',
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      }).format(Number(formValuesProd.valor_venda ? formValuesProd.valor_venda : 0))}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="">
+                    <label htmlFor="valor_deducoes" className="block text-blue font-medium">
+                      Valor dos Serviços
+                    </label>
+                    <input
+                      type="number"
+                      id="valor_deducoes"
+                      name="valor_deducoes"
+                      value={formValues.valor_deducoes}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          valor_deducoes: parseFloat(e.target.value),
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
                     />
                   </div>
 
-
-                  <div className="flex flex-col items-start col-span-3">
-                    <label htmlFor="vl_total_prod" className="block text-blue font-medium">
-                      Valor Total
+                  <div className="">
+                    <label htmlFor="descontos" className="block text-blue font-medium">
+                      Descontos
                     </label>
-                    <div className="flex items-center w-full">
-                      <input
-                        id="vl_total_prod"
-                        name="vl_total_prod"
-                        type="text"
-                        disabled
-                        className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                    <input
+                      type="number"
+                      id="descontos"
+                      name="descontos"
+                      value={formValues.descontos}
+                      disabled={visualizando}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          descontos: parseFloat(e.target.value),
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
 
-                        value={`R$ ${new Intl.NumberFormat('pt-BR', {
-                          style: 'decimal',
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        }).format(Number(valorTotalProd ? valorTotalProd : 0))}`}
-                      />
-                      <div className={visualizando ? "hidden" : "h-10 scale-75 text-sm"}>
-                        <AddButton onClick={handleAdicionarLinha} visualizando={visualizando} />
-                      </div>
-
-
-                    </div>
+                    />
                   </div>
-                </div>
 
-                <br></br>
-
-                {/* Linhas adicionadas de produtos */}
-                {produtosSelecionados.map((produto, index) => (
-                  <div key={`${produto.cod_item}-${index}`} className="grid grid-cols-12 gap-2">
-                    <div className="col-span-4">
+                  <div className="">
+                    <label htmlFor="valor_iss" className="block text-blue font-medium mb-1">
+                      Valor ISS
+                    </label>
+                    <div className="flex items-center">
                       <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={
-                          produtos.find(p => p.cod_item === produto.cod_item)?.descricao ?? ''
+                        type="number"
+                        id="valor_iss"
+                        name="valor_iss"
+                        value={formValues.valor_iss ?? ""}
+                        disabled={visualizando}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            valor_iss: parseFloat(e.target.value),
+                          }))
                         }
-                        disabled
+                        className={`flex-1 w-[100px] border border-[#D9D9D9] rounded-l-sm h-8 ${visualizando ? 'hidden' : ''}`}
                       />
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.ncm}
-                        disabled
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.cfop}
-                        disabled
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.quantidade}
-                        disabled
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={!isEditing ?
-                          (produto.valor_unitario ?? produto.valor_unitario) :
-                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.valor_venda : produto.valor_unitario)
+                      <Button
+                        label={formValues.iss_retido === "Sim" ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
+                        onClick={() =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            iss_retido: prev.iss_retido === "Sim" ? "Nao" : "Sim",
+                          }))
                         }
-                        disabled
+                        className={`h-8 w-[80px] rounded-l-none rounded-r-sm bg-blue text-white text-sm  ${formValues.iss_retido === "Sim" ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'} transition-all ${visualizando ? 'hidden' : ''}`}
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 col-span-3">
-                      <input
-                        type="text"
-                        className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
-                        value={produto.valor_total}
-                        disabled
-                      />
-                      <button
-                        className={`bg-red-200 rounded p-2 flex h-[30px] w-[30px] items-center justify-center hover:scale-150 duration-50 transition-all ${visualizando ? 'hidden' : ''}`}
-                        onClick={() => handleRemoveLinhaProd(produto.id)}
-                      >
-                        <FaTimes className="text-red text-2xl" />
-                      </button>
-
-                    </div>
-
                   </div>
-                ))}
 
+                </div>
               </div>
-              {
-                //#endregion
-              }
-
-              {
-                //#region Transporte
-              }
-              <div className="border border-gray-300 rounded p-2 bg-gray-50 mt-2 space-y-2">
-                <h2 className="text-blue text-lg font-bold mb-4">Transporte</h2>
-
-                <div className="grid grid-cols-4 gap-2">
-
-                  <div className="col-span-3">
-                    <label htmlFor="cod_transportadora" className="block text-blue font-medium">
-                      Transportadora
-                    </label>
-
-                    <select
-                      id="cod_transportadora"
-                      disabled={visualizando}
-                      value={formValues.cod_transportadora || 0}
-                      onChange={(e) => {
-                        handleSelectTransp(e.target.value);
-                      }}
-                      className="w-full border text-black h-[34px] px-2 rounded mt-1"
-                    >
-                      <option value="">Selecione</option>
-                      {transportadoras.map((transportadora) => (
-                        <option key={transportadora.cod_transportadora} value={transportadora.cod_transportadora}>
-                          {transportadora.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="pt-[8px]">
-                    <label htmlFor="cnpj_cpf_transp" className="block text-blue font-medium">
-                      Documento (CNPJ/CPF)
-                    </label>
-                    <input
-                      type="text"
-                      id="cnpj_cpf_transp"
-                      name="cnpj_cpf_transp"
-                      disabled
-                      value={formValues.cnpj_cpf_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label htmlFor="razao_social_transp" className="block text-blue font-medium">
-                      Razão Social
-                    </label>
-                    <input
-                      type="text"
-                      id="razao_social_transp"
-                      name="razao_social_transp"
-                      disabled
-                      value={formValues.razao_social_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="tipo_contribuinte_transp" className="block text-blue font-medium">
-                      Tipo de Contribuinte
-                    </label>
-                    <select
-                      id="tipo_contribuinte_transp"
-                      name="tipo_contribuinte_transp"
-                      value={formValues.tipo_contribuinte_transp || ""}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 bg-white"
-                      disabled={visualizando}
-                    >
-                      <option value="">Selecione</option>
-                      <option value="Contribuinte ICMS">Contribuinte ICMS</option>
-                      <option value="Contribuinte ISENTO">Contribuinte ISENTO</option>
-                      <option value="Não Contribuinte">Não Contribuinte</option>
-                    </select>
-                  </div>
 
 
-                  <div>
-                    <label htmlFor="insc_estadual_transp" className="block text-blue font-medium">
-                      Inscrição Estadual
-                    </label>
-                    <input
-                      type="text"
-                      id="insc_estadual_transp"
-                      name="insc_estadual_transp"
-                      value={formValues.insc_estadual_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
 
-                  <div>
-                    <label htmlFor="insc_municipal_transp" className="block text-blue font-medium">
-                      Inscrição Municipal
-                    </label>
-                    <input
-                      type="text"
-                      id="insc_municipal_transp"
-                      name="insc_municipal_transp"
-                      value={formValues.insc_municipal_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="mb-2">
-                    <label className="block text-blue font-medium mb-1">
-                      Usar Endereço da Transp.
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
-
-                          setTimeout(() => {
-                            handleUsarEnderecoTransp("sim");
-                          }, 100);
-                        }}
-                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEnderecoTransp === "sim" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
-                      >
-                        SIM
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const audio = new Audio('/sounds/selection-button.mp3');
-                          audio.play();
-
-                          setTimeout(() => {
-                            handleUsarEnderecoTransp("nao");
-                          }, 100);
-                        }}
-                        className={`h-[28px] px-8 rounded-full border font-medium ${usarEnderecoTransp === "nao" ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
-                      >
-                        NÃO
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="cep_transp" className="block text-blue font-medium">
-                      CEP
-                    </label>
-                    <input
-                      id="cep_transp"
-                      name="cep_transp"
-                      type="text"
-                      value={formValues.cep_transp ?? ""}
-                      onChange={handleCepInputChangeTransp}
-                      maxLength={9}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                    />
-                  </div>
-
-                  <div className="col-span-2">
-                    <label htmlFor="logradouro_transp" className="block text-blue font-medium">
-                      Logradouro
-                    </label>
-                    <input
-                      id="logradouro_transp"
-                      name="logradouro_transp"
-                      type="text"
-                      value={formValues.logradouro_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                    />
-                  </div>
-
-                </div>
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  <div>
-                    <label htmlFor="numero_transp" className="block text-blue font-medium">
-                      Número
-                    </label>
-                    <input
-                      id="numero_transp"
-                      name="numero_transp"
-                      type="text"
-                      value={formValues.numero_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="estado_transp" className="block text-blue font-medium">
-                      Estado (sigla)
-                    </label>
-                    <input
-                      id="estado_transp"
-                      name="estado_transp"
-                      type="text"
-                      value={formValues.estado_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                      maxLength={2}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="bairro_transp" className="block text-blue font-medium">
-                      Bairro
-                    </label>
-                    <input
-                      id="bairro_transp"
-                      name="bairro_transp"
-                      type="text"
-                      value={formValues.bairro_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cidade_transp" className="block text-blue font-medium">
-                      Cidade
-                    </label>
-                    <input
-                      id="cidade_transp"
-                      name="cidade_transp"
-                      type="text"
-                      value={formValues.cidade_transp}
-                      onChange={handleInputChange}
-                      className="w-full border border-gray-400 pl-1 rounded-sm h-8 disabled:cursor-not-allowed disabled:!bg-gray-300"
-                      disabled={isDisabledTransp || visualizando}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label htmlFor="estado_uf" className="block text-blue font-medium">
-                      UF do Veículo
-                    </label>
-                    <input
-                      type="text"
-                      id="estado_uf"
-                      name="estado_uf"
-                      maxLength={2}
-                      disabled={visualizando}
-                      value={formValues.estado_uf}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="placa_veiculo" className="block text-blue font-medium">
-                      Placa do Veículo
-                    </label>
-                    <input
-                      type="text"
-                      id="placa_veiculo"
-                      name="placa_veiculo"
-                      disabled={visualizando}
-                      value={formValues.placa_veiculo}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="reg_nac_trans_carga" className="block text-blue font-medium">
-                      Reg. Nac. Transp. Carga
-                    </label>
-                    <input
-                      type="text"
-                      id="reg_nac_trans_carga"
-                      name="reg_nac_trans_carga"
-                      disabled={visualizando}
-                      value={formValues.reg_nac_trans_carga}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="modalidade" className="block text-blue font-medium">
-                      Modalidade
-                    </label>
-                    <select
-                      id="modalidade"
-                      name="modalidade"
-                      disabled={visualizando}
-                      value={formValues.modalidade}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    >
-                      <option value="">Selecione</option>
-                      <option value="0">Contratação do Frete por conta do Remetente (CIF)</option>
-                      <option value="1">Contratação do Frete por conta do Destinatário (FOB)</option>
-                      <option value="2">Contratação do Frete por conta de Terceiros</option>
-                      <option value="3">Transporte Próprio por conta do Remetente</option>
-                      <option value="4">Transporte Próprio por conta do Destinatário</option>
-                      <option value="9">Sem Ocorrência de Transporte</option>
-                    </select>
-                  </div>
-                </div>
-
-              </div>
-              {
-                //#endregion
-              }
               {
                 //#region Totais
               }
@@ -3097,8 +1505,100 @@ const NfsProduto: React.FC = () => {
                 <h2 className="text-blue text-lg font-bold mb-4">Totais</h2>
                 <div className="grid gap-2 grid-cols-4">
                   <div>
+                    <label htmlFor="total_cofins" className="block text-blue font-medium">
+                      %COFINS
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_cofins"
+                        name="total_cofins"
+                        value={totalCOFINSInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setTotalCOFINSInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_cofins: numericValue,
+                          }));
+
+                          setTotalCOFINSInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="total_pis" className="block text-blue font-medium">
+                      %PIS
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_pis"
+                        name="total_pis"
+                        value={totalPISInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setTotalPISInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_pis: numericValue,
+                          }));
+
+                          setTotalPISInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
                     <label htmlFor="total_icms" className="block text-blue font-medium">
-                      Total ICMS
+                      %CSLL
                     </label>
                     <div className="flex items-center">
                       <input
@@ -3129,6 +1629,101 @@ const NfsProduto: React.FC = () => {
                           }));
 
                           setTotalICMSInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="total_ipi" className="block text-blue font-medium">
+                      %IR
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_ipi"
+                        name="total_ipi"
+                        // value={totalIPIInput}
+                        // disabled={visualizando}
+                        // onChange={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   setTotalIPIInput(rawValue.replace('.', ','));
+                        // }}
+                        // onBlur={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   const numericValue = parseFloat(rawValue) || 0;
+
+                        //   setFormValues((prevValues) => ({
+                        //     ...prevValues,
+                        //     total_ipi: numericValue,
+                        //   }));
+
+                        //   setTotalIPIInput(
+                        //     numericValue.toLocaleString('pt-BR', {
+                        //       minimumFractionDigits: 2,
+                        //       maximumFractionDigits: 2,
+                        //     })
+                        //   );
+                        // }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="grid gap-2 grid-cols-4">
+                  <div>
+                    <label htmlFor="total_cofins" className="block text-blue font-medium">
+                      Total COFINS
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_cofins"
+                        name="total_cofins"
+                        value={totalCOFINSInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setTotalCOFINSInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_cofins: numericValue,
+                          }));
+
+                          setTotalCOFINSInput(
                             numericValue.toLocaleString('pt-BR', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
@@ -3191,8 +1786,105 @@ const NfsProduto: React.FC = () => {
                   </div>
 
                   <div>
+                    <label htmlFor="total_icms" className="block text-blue font-medium">
+                      Valor CSLL
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_icms"
+                        name="total_icms"
+                        value={totalICMSInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          // Permite apenas números e vírgula, substitui vírgula por ponto para parse
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          // Atualiza o input com vírgula para visualização
+                          setTotalICMSInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_icms: numericValue,
+                          }));
+
+                          setTotalICMSInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="total_ipi" className="block text-blue font-medium">
+                      Valor IR
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_ipi"
+                        name="total_ipi"
+                        // value={totalIPIInput}
+                        // disabled={visualizando}
+                        // onChange={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   setTotalIPIInput(rawValue.replace('.', ','));
+                        // }}
+                        // onBlur={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   const numericValue = parseFloat(rawValue) || 0;
+
+                        //   setFormValues((prevValues) => ({
+                        //     ...prevValues,
+                        //     total_ipi: numericValue,
+                        //   }));
+
+                        //   setTotalIPIInput(
+                        //     numericValue.toLocaleString('pt-BR', {
+                        //       minimumFractionDigits: 2,
+                        //       maximumFractionDigits: 2,
+                        //     })
+                        //   );
+                        // }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="grid gap-2 grid-cols-4">
+                  <div>
                     <label htmlFor="total_cofins" className="block text-blue font-medium">
-                      Total COFINS
+                      %INSS
                     </label>
                     <div className="flex items-center">
                       <input
@@ -3237,126 +1929,101 @@ const NfsProduto: React.FC = () => {
                   </div>
 
                   <div>
+                    <label htmlFor="total_pis" className="block text-blue font-medium">
+                      Valor INSS
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_pis"
+                        name="total_pis"
+                        value={totalPISInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          setTotalPISInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_pis: numericValue,
+                          }));
+
+                          setTotalPISInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="total_icms" className="block text-blue font-medium">
+                      Descontar Impostos
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value="R$"
+                        readOnly
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
+                      />
+                      <input
+                        type="text"
+                        id="total_icms"
+                        name="total_icms"
+                        value={totalICMSInput}
+                        disabled={visualizando}
+                        onChange={(e) => {
+                          // Permite apenas números e vírgula, substitui vírgula por ponto para parse
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          // Atualiza o input com vírgula para visualização
+                          setTotalICMSInput(rawValue.replace('.', ','));
+                        }}
+                        onBlur={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numericValue = parseFloat(rawValue) || 0;
+
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_icms: numericValue,
+                          }));
+
+                          setTotalICMSInput(
+                            numericValue.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          );
+                        }}
+                        style={{
+                          textAlign: 'left',
+                        }}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                      />
+
+                    </div>
+                  </div>
+
+                  <div>
                     <label htmlFor="total_ipi" className="block text-blue font-medium">
-                      Total IPI
-                    </label>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_ipi"
-                        name="total_ipi"
-                        value={totalIPIInput}
-                        disabled={visualizando}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalIPIInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
-
-                          setFormValues((prevValues) => ({
-                            ...prevValues,
-                            total_ipi: numericValue,
-                          }));
-
-                          setTotalIPIInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
-                      />
-
-                    </div>
-                  </div>
-
-                </div>
-                <div className="grid gap-2 grid-cols-4">
-                  <div>
-                    <label htmlFor="total_produtos" className="block text-blue font-medium">
-                      Total Produtos
-                    </label>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm rounded-r-none h-8 !bg-gray-300 cursor-not-allowed"
-                      />
-                      <input
-                        type="text"
-                        id="total_produtos"
-                        name="total_produtos"
-                        disabled
-                        value={formValues.total_produtos?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        onChange={handleInputChange}
-                        className="w-full border border-l-0 border-[#D9D9D9] pl-1 rounded-r-sm rounded-l-none h-8 !bg-gray-300 cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="total_frete" className="block text-blue font-medium">
-                      Total Frete
-                    </label>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_frete"
-                        name="total_frete"
-                        value={totalFreteInput}
-                        disabled={visualizando}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalFreteInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
-
-                          setFormValues((prevValues) => ({
-                            ...prevValues,
-                            total_frete: numericValue,
-                          }));
-
-                          setTotalFreteInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
-                      />
-
-                    </div>
-                  </div>
-
-
-                  <div className="col-span-2">
-                    <label htmlFor="total_nf" className="block text-blue font-medium">
                       Total Nota
                     </label>
                     <div className="flex items-center">
@@ -3364,85 +2031,43 @@ const NfsProduto: React.FC = () => {
                         type="text"
                         value="R$"
                         readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm rounded-r-none h-8 !bg-gray-300 cursor-not-allowed"
+                        className="w-[34px] px-1 text-blue font-bold border border-r-0 !bg-gray-300 !border-gray-400 rounded-l-sm rounded-r-none h-8"
                       />
                       <input
                         type="text"
-                        id="total_nf"
-                        name="total_nf"
+                        id="total_ipi"
+                        name="total_ipi"
+                        // value={totalIPIInput}
+                        // disabled={visualizando}
+                        // onChange={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   setTotalIPIInput(rawValue.replace('.', ','));
+                        // }}
+                        // onBlur={(e) => {
+                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        //   const numericValue = parseFloat(rawValue) || 0;
+
+                        //   setFormValues((prevValues) => ({
+                        //     ...prevValues,
+                        //     total_ipi: numericValue,
+                        //   }));
+
+                        //   setTotalIPIInput(
+                        //     numericValue.toLocaleString('pt-BR', {
+                        //       minimumFractionDigits: 2,
+                        //       maximumFractionDigits: 2,
+                        //     })
+                        //   );
+                        // }}
+                        style={{
+                          textAlign: 'left',
+                        }
+                        }
                         disabled
-                        value={formValues.total_nf?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        onChange={handleInputChange}
-                        className="w-full border border-l-0 border-[#D9D9D9] pl-1 rounded-r-sm rounded-l-none h-8 !bg-gray-300 cursor-not-allowed"
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : '!bg-gray-300 !border-gray-400 border-l-gray-300'} border border-l-0 pl-1 rounded-r-sm rounded-l-none h-8 w-full`}
                       />
+
                     </div>
-                  </div>
-
-                </div>
-                <h2 className="text-blue text-lg font-bold mb-4 pt-4">Lei da Transparência</h2>
-                <div className="grid gap-2 grid-cols-4">
-                  {/* Impostos Federais */}
-                  <div>
-                    <label htmlFor="impostos_federais" className="block text-blue font-medium">
-                      Impostos Federais
-                    </label>
-                    <input
-                      type="text"
-                      id="impostos_federais"
-                      name="impostos_federais"
-                      disabled
-                      value={impostosFederaisInput}
-                      onChange={() => { }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-
-                  {/* Impostos Estaduais */}
-                  <div>
-                    <label htmlFor="impostos_estaduais" className="block text-blue font-medium">
-                      Impostos Estaduais
-                    </label>
-                    <input
-                      type="text"
-                      id="impostos_estaduais"
-                      name="impostos_estaduais"
-                      disabled
-                      value={impostosEstaduaisInput}
-                      onChange={() => { }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-
-                  {/* Impostos Municipais */}
-                  <div>
-                    <label htmlFor="impostos_municipais" className="block text-blue font-medium">
-                      Impostos Municipais
-                    </label>
-                    <input
-                      type="text"
-                      id="impostos_municipais"
-                      name="impostos_municipais"
-                      disabled
-                      value={impostosMunicipaisInput}
-                      onChange={() => { }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-
-
-                  <div>
-                    <label htmlFor="total_impostos" className="block text-blue font-medium">
-                      Total Impostos
-                    </label>
-                    <input
-                      type="text"
-                      id="total_impostos"
-                      name="total_impostos"
-                      disabled
-                      value={totalImpostosInput}
-                      onChange={() => { }}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
-                    />
                   </div>
 
                 </div>
@@ -3452,29 +2077,29 @@ const NfsProduto: React.FC = () => {
               }
               <div className="grid gap-2 grid-cols-2">
                 <div>
-                  <label htmlFor="informacoes_complementares" className="block text-blue font-medium">
-                    Informações Complementares
+                  <label htmlFor="observacoes" className="block text-blue font-medium">
+                    Observações
                   </label>
                   <textarea
-                    id="informacoes_complementares"
-                    name="informacoes_complementares"
+                    id="observacoes"
+                    name="observacoes"
 
-                    value={formValues.informacoes_complementares}
-                    onChange={(e) => setFormValues(prev => ({ ...prev, informacoes_complementares: e.target.value }))}
+                    value={formValues.observacoes}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, observacoes: e.target.value }))}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-24 "
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="informacoes_fisco" className="block text-blue font-medium">
-                    Informações para o Fisco
+                  <label htmlFor="informacoes_adicionais" className="block text-blue font-medium">
+                    Informações Adicionais
                   </label>
                   <textarea
-                    id="informacoes_fisco"
-                    name="informacoes_fisco"
+                    id="informacoes_adicionais"
+                    name="informacoes_adicionais"
 
-                    value={formValues.informacoes_fisco}
-                    onChange={(e) => setFormValues(prev => ({ ...prev, informacoes_fisco: e.target.value }))}
+                    value={formValues.informacoes_adicionais}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, informacoes_adicionais: e.target.value }))}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-24 "
                   />
                 </div>
@@ -3577,7 +2202,7 @@ const NfsProduto: React.FC = () => {
               <div>
                 <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">
-                  Nota Fiscal de Produto
+                  Nota Fiscal de Servico
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -3603,7 +2228,7 @@ const NfsProduto: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredNfsProdutos.slice(first, first + rows)}
+                value={filteredNfsServicos.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -3782,8 +2407,8 @@ const NfsProduto: React.FC = () => {
   );
 };
 
-export default NfsProduto;
-function setSelectedNfsProduto(arg0: any[]) {
+export default NfsServico;
+function setSelectedNfsServico(arg0: any[]) {
   throw new Error("Function not implemented.");
 }
 

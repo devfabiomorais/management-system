@@ -539,7 +539,7 @@ const ServicosPage: React.FC = () => {
                     disabled={visualizando}
                     value={formValues.descricao || ""}
                     className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
-
+                    maxLength={255}
                     onChange={(e) => {
                       setFormValues((prevValues) => ({
                         ...prevValues,

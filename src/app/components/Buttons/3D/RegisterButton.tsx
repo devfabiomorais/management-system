@@ -16,7 +16,7 @@ export default function AddButton({ onClick, title = 'Adicionar' }: AddButtonPro
 
   const handleClick = () => {
     const audio = new Audio('/sounds/mouse-click.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

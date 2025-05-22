@@ -10,7 +10,7 @@ const AddButton: React.FC<AddButtonProps> = ({ onClick, visualizando = false }) 
 
   const handleClick = () => {
     const audio = new Audio('/sounds/soft.mp3');
-    audio.play();
+    //audio.play();
 
     setTimeout(() => {
       onClick();

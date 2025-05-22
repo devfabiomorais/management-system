@@ -44,6 +44,9 @@ interface Fornecedor {
   dtCadastro?: string;
   estabelecimentos: [];
   situacao?: string;
+  insc_estadual?: string;
+  insc_municipal?: string;
+  documento?: string;
 }
 
 interface Establishment {
@@ -109,6 +112,9 @@ const FornecedoresPage: React.FC = () => {
     numero: undefined,
     cep: "",
     estabelecimentos: [],
+    documento: "",
+    insc_estadual: "",
+    insc_municipal: "",
   });
   const [tipos, setTipos] = useState<string[]>([]);
 
@@ -202,6 +208,9 @@ const FornecedoresPage: React.FC = () => {
       numero: 0,
       cep: "",
       estabelecimentos: [],
+      documento: "",
+      insc_estadual: "",
+      insc_municipal: "",
     });
   };
 
@@ -280,6 +289,9 @@ const FornecedoresPage: React.FC = () => {
         "estado",
         "numero",
         "cep",
+        "insc_estadual",
+        "insc_municipal",
+        "documento"
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -707,6 +719,32 @@ const FornecedoresPage: React.FC = () => {
     setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
   };
 
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    let formattedValue = value;
+
+    if (value.length <= 11) {
+      // CPF: ###.###.###-##
+      formattedValue = value
+        .replace(/^(\d{3})(\d)/, "$1.$2")
+        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+    } else {
+      // CNPJ: ##.###.###/####-##
+      formattedValue = value
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+    }
+
+    // Atualiza o estado com a versão formatada
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      documento: formattedValue,
+    }));
+  };
+
 
   return (
     <>
@@ -888,6 +926,56 @@ const FornecedoresPage: React.FC = () => {
                   />
                   {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
 
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="insc_municipal" className="block text-blue font-medium">
+                    Inscrição Municipal
+                  </label>
+                  <input
+                    type="text"
+                    id="insc_municipal"
+                    name="insc_municipal"
+                    disabled={visualizando}
+                    value={formValues.insc_municipal}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="insc_estadual" className="block text-blue font-medium">
+                    Inscrição Estadual
+                  </label>
+                  <input
+                    type="text"
+                    id="insc_estadual"
+                    name="insc_estadual"
+                    disabled={visualizando}
+                    value={formValues.insc_estadual}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="documento" className="block text-blue font-medium">
+                    Documento
+                  </label>
+                  <input
+                    type="text"
+                    id="documento"
+                    name="documento"
+                    disabled={visualizando}
+                    value={formValues.documento}
+                    onChange={handleDocumentChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    placeholder="CPF ou CNPJ"
+                    minLength={14}
+                    maxLength={18}
+                  />
                 </div>
               </div>
 

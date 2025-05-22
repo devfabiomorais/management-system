@@ -43,6 +43,8 @@ interface Client {
   telefone: string;
   dtCadastro?: string;
   documento?: string;
+  insc_estadual?: string;
+  insc_municipal?: string;
 }
 
 const ClientsPage: React.FC = () => {
@@ -93,6 +95,8 @@ const ClientsPage: React.FC = () => {
     situacao: "",
     tipo: "",
     documento: "",
+    insc_estadual: "",
+    insc_municipal: "",
   });
 
   const [isValidEmail, setIsValidEmail] = useState(true);
@@ -126,6 +130,8 @@ const ClientsPage: React.FC = () => {
       situacao: "default",
       tipo: "default",
       documento: "",
+      insc_estadual: "",
+      insc_municipal: "",
     });
   };
 
@@ -146,7 +152,9 @@ const ClientsPage: React.FC = () => {
         "celular",
         "situacao",
         "tipo",
-        "documento"
+        "documento",
+        "insc_estadual",
+        "insc_municipal",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -219,6 +227,8 @@ const ClientsPage: React.FC = () => {
         "situacao",
         "tipo",
         "documento",
+        "insc_estadual",
+        "insc_municipal",
       ];
 
       const isEmptyField = requiredFields.some((field) => {
@@ -760,6 +770,40 @@ const ClientsPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
+                  <label htmlFor="insc_municipal" className="block text-blue font-medium">
+                    Inscrição Municipal
+                  </label>
+                  <input
+                    type="text"
+                    id="insc_municipal"
+                    name="insc_municipal"
+                    disabled={visualizando}
+                    value={formValues.insc_municipal}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    style={{ outline: "none" }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="insc_estadual" className="block text-blue font-medium">
+                    Inscrição Estadual
+                  </label>
+                  <input
+                    type="text"
+                    id="insc_estadual"
+                    name="insc_estadual"
+                    disabled={visualizando}
+                    value={formValues.insc_estadual}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    style={{ outline: "none" }}
+                  />
+                </div>
+
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
                   <label
                     htmlFor="celular"
                     className="block text-blue font-medium"
@@ -797,151 +841,155 @@ const ClientsPage: React.FC = () => {
                 </div>
 
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label htmlFor="cep" className="block text-blue font-medium">
-                    CEP
-                  </label>
-                  <input
-                    type="text"
-                    id="cep"
-                    name="cep"
-                    disabled={visualizando}
-                    value={formValues.cep}
-                    onChange={handleCepChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    maxLength={15} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="logradouro"
-                    className="block text-blue font-medium"
-                  >
-                    Logradouro
-                  </label>
-                  <input
-                    type="text"
-                    id="logradouro"
-                    name="logradouro"
-                    disabled={visualizando}
-                    value={formValues.logradouro}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="numero"
-                    className="block text-blue font-medium"
-                  >
-                    Número
-                  </label>
-                  <input
-                    type="text"
-                    id="numero"
-                    name="numero"
-                    disabled={visualizando}
-                    value={formValues.numero}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-
-                <div>
-                  <label
-                    htmlFor="estado"
-                    className="block text-blue font-medium"
-                  >
-                    Estado
-                  </label>
-                  <input
-                    type="text"
-                    id="estado"
-                    name="estado"
-                    disabled={visualizando}
-                    value={formValues.estado}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="bairro"
-                    className="block text-blue font-medium"
-                  >
-                    Bairro
-                  </label>
-                  <input
-                    type="text"
-                    id="bairro"
-                    name="bairro"
-                    disabled={visualizando}
-                    value={formValues.bairro}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cidade"
-                    className="block text-blue font-medium"
-                  >
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    id="cidade"
-                    name="cidade"
-                    disabled={visualizando}
-                    value={formValues.cidade}
-                    onChange={handleAlphabeticInputChange} // Não permite números
-                    onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="complemento" className="block text-blue font-medium">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    id="complemento"
-                    name="complemento"
-                    disabled={visualizando}
-                    value={formValues.complemento}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
+              <div className="border border-gray-300 rounded p-2 bg-gray-50 mt-2 space-y-2">
+                <h2 className="text-blue text-lg font-bold mb-4">Endereço</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label htmlFor="cep" className="block text-blue font-medium">
+                      CEP
+                    </label>
+                    <input
+                      type="text"
+                      id="cep"
+                      name="cep"
+                      disabled={visualizando}
+                      value={formValues.cep}
+                      onChange={handleCepChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      maxLength={15} // Limita o campo ao comprimento máximo do CEP formatado (XXXXX-XXX)
+                    />
+                  </div>
                   <div>
                     <label
-                      htmlFor="situacao"
+                      htmlFor="logradouro"
                       className="block text-blue font-medium"
                     >
-                      Situação
+                      Logradouro
                     </label>
-                    <select
-                      id="situacao"
-                      name="situacao"
+                    <input
+                      type="text"
+                      id="logradouro"
+                      name="logradouro"
                       disabled={visualizando}
-                      value={formValues.situacao}
-                      defaultValue={"default"}
-                      onChange={(e) =>
-                        setFormValues({ ...formValues, situacao: e.target.value })
-                      }
+                      value={formValues.logradouro}
+                      onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    >
-                      <option value="default">Selecione</option>
-                      <option value="ATIVO">Ativo</option>
-                      <option value="DESATIVADO">Inativo</option>
-                    </select>
+                    />
                   </div>
+
+                  <div>
+                    <label
+                      htmlFor="numero"
+                      className="block text-blue font-medium"
+                    >
+                      Número
+                    </label>
+                    <input
+                      type="text"
+                      id="numero"
+                      name="numero"
+                      disabled={visualizando}
+                      value={formValues.numero}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+
+                  <div>
+                    <label
+                      htmlFor="estado"
+                      className="block text-blue font-medium"
+                    >
+                      Estado
+                    </label>
+                    <input
+                      type="text"
+                      id="estado"
+                      name="estado"
+                      disabled={visualizando}
+                      value={formValues.estado}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="bairro"
+                      className="block text-blue font-medium"
+                    >
+                      Bairro
+                    </label>
+                    <input
+                      type="text"
+                      id="bairro"
+                      name="bairro"
+                      disabled={visualizando}
+                      value={formValues.bairro}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="cidade"
+                      className="block text-blue font-medium"
+                    >
+                      Cidade
+                    </label>
+                    <input
+                      type="text"
+                      id="cidade"
+                      name="cidade"
+                      disabled={visualizando}
+                      value={formValues.cidade}
+                      onChange={handleAlphabeticInputChange} // Não permite números
+                      onKeyPress={handleAlphabeticKeyPress} // Bloqueia números
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="complemento" className="block text-blue font-medium">
+                      Complemento
+                    </label>
+                    <input
+                      type="text"
+                      id="complemento"
+                      name="complemento"
+                      disabled={visualizando}
+                      value={formValues.complemento}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    />
+                  </div>
+
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                <div>
+                  <label
+                    htmlFor="situacao"
+                    className="block text-blue font-medium"
+                  >
+                    Situação
+                  </label>
+                  <select
+                    id="situacao"
+                    name="situacao"
+                    disabled={visualizando}
+                    value={formValues.situacao}
+                    defaultValue={"default"}
+                    onChange={(e) =>
+                      setFormValues({ ...formValues, situacao: e.target.value })
+                    }
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  >
+                    <option value="default">Selecione</option>
+                    <option value="ATIVO">Ativo</option>
+                    <option value="DESATIVADO">Inativo</option>
+                  </select>
                 </div>
               </div>
             </div>
