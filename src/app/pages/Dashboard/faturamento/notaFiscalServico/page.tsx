@@ -788,11 +788,14 @@ const NfsServico: React.FC = () => {
   const [xmlSaida, setXmlSaida] = useState<string | null>(null);
 
   async function gerarNFSe(nfsServico: NfsServico) {
+    setLoading(true);
+
     const xml = await gerarXmlNota(nfsServico);
     const xmlExemplo = '<?xml version="1.0" encoding="utf-8"?><tbnfd><nfd><numeronfd>0</numeronfd><codseriedocumento>7</codseriedocumento><codnaturezaoperacao>2</codnaturezaoperacao><codigocidade>3</codigocidade><inscricaomunicipalemissor>47634</inscricaomunicipalemissor><dataemissao>27/05/2025</dataemissao><razaotomador>Joana TESTE TERCAFEIRA</razaotomador><nomefantasiatomador>Joana Teste Segunda AAAAAA</nomefantasiatomador><enderecotomador>Rua Via Coletora B</enderecotomador><numeroendereco>444</numeroendereco><cidadetomador>Santo Antonio de Jesus</cidadetomador><estadotomador>BA</estadotomador><paistomador>BRASIL</paistomador><fonetomador>14999999999</fonetomador><faxtomador /><ceptomador>44444444</ceptomador><bairrotomador>Nossa Senhora das Gracas</bairrotomador><emailtomador>cliente@email.com</emailtomador><tppessoa>F</tppessoa><cpfcnpjtomador>41425612354</cpfcnpjtomador><inscricaoestadualtomador /><inscricaomunicipaltomador /><observacao>Nota fiscal de teadssadsdasteadssad</observacao><tbfatura><fatura><numfatura>1</numfatura><vencimentofatura>16/06/2025</vencimentofatura><valorfatura>10</valorfatura></fatura></tbfatura><tbservico><servico><quantidade>3,00</quantidade><descricao>Parafuso Frances Prata</descricao><codatividade>1406</codatividade><valorunitario>10,00</valorunitario><aliquota>4</aliquota><impostoretido>true</impostoretido></servico></tbservico><VlrAproxImposto>4,00</VlrAproxImposto><AliquotaImpostoAprox>4,00</AliquotaImpostoAprox><FonteImpostoAprox>IBPT</FonteImpostoAprox><razaotransportadora /><cpfcnpjtransportadora /><enderecotransportadora /><tipofrete>3</tipofrete><quantidade>4</quantidade><especie /><pesoliquido>0</pesoliquido><pesobruto>0</pesobruto><pis>0,00</pis><cofins>0,00</cofins><csll>0,00</csll><irrf>0,00</irrf><inss>0,00</inss><descdeducoesconstrucao /><totaldeducoesconstrucao>0,00</totaldeducoesconstrucao><tributadonomunicipio>false</tributadonomunicipio><numerort>0</numerort><codigoseriert>1</codigoseriert><dataemissaort>23/05/2025</dataemissaort></nfd></tbnfd>';
 
     if (!xml) {
       toast.error("Erro ao gerar XML para gerar NFSe");
+      setLoading(false);
       return;
     }
 
@@ -811,7 +814,6 @@ const NfsServico: React.FC = () => {
       const XMLsaida = response.data;
       console.log(XMLsaida);
       setXmlSaida(XMLsaida);
-      setLoading(true);
       // Tenta fazer parse se for JSON válido:
       try {
         const data = JSON.parse(XMLsaida);
@@ -820,7 +822,7 @@ const NfsServico: React.FC = () => {
           setLoading(false);
         }
       } catch {
-        // Se não for JSON, ignora
+        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -931,7 +933,6 @@ const NfsServico: React.FC = () => {
                   onClick={async () => {
                     if (!loading && selectedNfsServico) {
                       gerarNFSe(selectedNfsServico);
-                      setLoading(true);
                     }
                   }}
                   disabled={loading}
