@@ -34,6 +34,9 @@ import { fetchClients } from "@/services/commercial/clients";
 import { FaTimes } from "react-icons/fa";
 import { Dropdown } from "primereact/dropdown";
 import AddButton from "@/app/components/Buttons/AddButton";
+import { AtividadesServicos, fetchAtividadesServicos } from "@/services/faturamento/atividadesServicos";
+import { AiFillFilePdf } from "react-icons/ai";
+import { GiCalculator } from "react-icons/gi";
 
 
 
@@ -89,7 +92,7 @@ const NfsServico: React.FC = () => {
     cod_entidade: undefined,
     cnpj_cpf_ent: "",
     razao_social_ent: "",
-    tipo_contribuinte_ent: "",
+    tipo_contribuinte_ent: "Cliente",
     insc_estadual_ent: "",
     insc_municipal_ent: "",
     cep_ent: "",
@@ -98,6 +101,7 @@ const NfsServico: React.FC = () => {
     estado_ent: "",
     bairro_ent: "",
     cidade_ent: "",
+    cod_atividade_servico: undefined,
     descricao_servico: "",
     total_icms: undefined,
     aliquota_icms: undefined,
@@ -113,7 +117,7 @@ const NfsServico: React.FC = () => {
     aliquota_inss: undefined,
     observacoes: "",
     informacoes_adicionais: "",
-    descontar_impostos: undefined,
+    descontar_impostos: "Sim",
     total_nf: undefined,
     valor_servicos: undefined,
     valor_deducoes: undefined,
@@ -123,6 +127,7 @@ const NfsServico: React.FC = () => {
     base_calculo: undefined,
     iss_retido: undefined,
     situacao: "Ativo",
+    item_lista_servico: "",
   });
 
 
@@ -147,6 +152,7 @@ const NfsServico: React.FC = () => {
       estado_ent: "",
       bairro_ent: "",
       cidade_ent: "",
+      cod_atividade_servico: undefined,
       descricao_servico: "",
       total_icms: undefined,
       aliquota_icms: undefined,
@@ -177,100 +183,12 @@ const NfsServico: React.FC = () => {
   };
 
 
-  const handleSaveEdit = async (cod_natureza_operacao: any) => {
+  const handleSaveEdit = async (cod_nf_servico: any) => {
     try {
-      const requiredFields = [
-        "numero_nf",
-        "serie",
-        "cod_natureza_operacao",
-        "tipo",
-        "dt_emissao",
-        "hr_emissao",
-        "dt_entrada_saida",
-        "hr_entrada_saida",
-        "finalidade_emissao",
-        "forma_emissao",
-        "destinacao_operacao",
-        "tipo_atendimento",
-        "cod_entidade",
-        "tipo_en",
-        "cnpj_cpf_ent",
-        "razao_social_ent",
-        "tipo_contribuinte_ent",
-        "insc_estadual_ent",
-        "insc_municipal_ent",
-        "cep_ent",
-        "logradouro_ent",
-        "numero_ent",
-        "estado_ent",
-        "bairro_ent",
-        "cidade_ent",
-        "cod_transportadora",
-        "cnpj_cpf_transp",
-        "razao_social_transp",
-        "tipo_contribuinte_transp",
-        "insc_estadual_transp",
-        "insc_municipal_transp",
-        "cep_transp",
-        "logradouro_transp",
-        "numero_transp",
-        "estado_transp",
-        "bairro_transp",
-        "cidade_transp",
-        "estado_uf",
-        "placa_veiculo",
-        "reg_nac_trans_carga",
-        "modalidade",
-        "total_icms",
-        "total_pis",
-        "total_cofins",
-        "total_ipi",
-        "total_servicos",
-        "total_frete",
-        "total_nf",
-        "impostos_federais",
-        "impostos_estaduais",
-        "impostos_municipais",
-        "total_impostos",
-        "informacoes_complementares",
-        "informacoes_fisco",
-      ];
-
-
-      const verificarCamposObrigatorios = (dados: NfsServico): string | null => {
-        for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsServico];
-
-          if (valor === "" || valor === null || valor === undefined) {
-            return campo; // Retorna o primeiro campo inválido
-          }
-
-        }
-        return null; // Todos os campos estão válidos
-      };
-      const campoFaltando = verificarCamposObrigatorios(formValues);
-
-      if (campoFaltando) {
-        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      } else if (selectedEstablishments == null) {
-        toast.info(`Selecione pelo menos um estabelecimento.`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/edit/${cod_natureza_operacao}`,
-        { ...formValues, estabelecimentos: selectedEstablishments },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/edit/${cod_nf_servico}`,
+        formValues,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -281,9 +199,9 @@ const NfsServico: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        const novasNaturezas = await fetchNfsServicos(token);
-        setNfsServicos(novasNaturezas);
-        toast.success("Nota Fiscal de Servico editada com sucesso!", {
+        const novasNfsServicos = await fetchNfsServicos(token);
+        setNfsServicos(novasNfsServicos);
+        toast.success("Nota Fiscal de Serviço editada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -292,7 +210,7 @@ const NfsServico: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao editar Nota Fiscal de Servico.", {
+        toast.error("Erro ao editar Nota Fiscal de Serviço.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -300,7 +218,7 @@ const NfsServico: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao editar Nota Fiscal de Servico:", error);
+      console.error("Erro ao editar Nota Fiscal de Serviço:", error);
     }
   };
 
@@ -313,46 +231,11 @@ const NfsServico: React.FC = () => {
     setLoading(true);
 
     try {
-      const requiredFields = [
-        "nome",
-        "padrao",
-        "tipo",
-        "finalidade_emissao",
-        "tipo_agendamento",
-        "consumidor_final",
-        "observacoes",
-        "cod_grupo_tributacao",
-        "cod_cfop_interno",
-        "cod_cfop_externo",
-      ];
-
-      const verificarCamposObrigatorios = (dados: NfsServico): string | null => {
-        for (const campo of requiredFields) {
-          const valor = dados[campo as keyof NfsServico];
-
-          if (valor === "" || valor === null || valor === undefined) {
-            return campo; // Retorna o primeiro campo inválido
-          }
-
-        }
-        return null; // Todos os campos estão válidos
-      };
-      const campoFaltando = verificarCamposObrigatorios(formValues);
-
-      if (campoFaltando) {
-        toast.info(`O campo obrigatório "${campoFaltando}" não foi preenchido.`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      }
 
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/register`,
-        { ...formValues, estabelecimentos: selectedEstablishments },
+        { ...formValues },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -361,7 +244,7 @@ const NfsServico: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        toast.success("Nota Fiscal de Servico salva com sucesso!", {
+        toast.success("Nota Fiscal de Serviço salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -370,13 +253,13 @@ const NfsServico: React.FC = () => {
         clearInputs();
         setVisible(fecharTela);
       } else {
-        toast.error("Erro ao salvar Nota Fiscal de Servico.", {
+        toast.error("Erro ao salvar Nota Fiscal de Serviço.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.error("Erro ao salvar Nota Fiscal de Servico:", error);
+      console.error("Erro ao salvar Nota Fiscal de Serviço:", error);
       toast.error("Erro interno ao tentar salvar.", {
         position: "top-right",
         autoClose: 3000,
@@ -396,13 +279,7 @@ const NfsServico: React.FC = () => {
     setVisualizar(visualizar);
 
     setFormValues(NfsServicos);
-    // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = NfsServicos.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
-      establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
-    )
-      .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
 
-    setSelectedEstablishments(selectedEstablishmentsWithNames);
     setSelectedNfsServico(NfsServicos);
     setIsEditing(true);
     setVisible(true);
@@ -452,19 +329,19 @@ const NfsServico: React.FC = () => {
         const novasNaturezas = await fetchNfsServicos(token);
         setNfsServicos(novasNaturezas);
         setModalDeleteVisible(false);
-        toast.success("Nota Fiscal de Servico cancelado com sucesso!", {
+        toast.success("Nota Fiscal de Serviço cancelada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar Nota Fiscal de Servico.", {
+        toast.error("Erro ao cancelar Nota Fiscal de Serviço.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao cancelar Nota Fiscal de Servico:", error);
-      toast.error("Erro ao cancelar Nota Fiscal de Servico. Tente novamente.", {
+      console.log("Erro ao cancelar Nota Fiscal de Serviço:", error);
+      toast.error("Erro ao cancelar Nota Fiscal de Serviço. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -601,8 +478,8 @@ const NfsServico: React.FC = () => {
           cod_entidade: entidade.cod_fornecedor,
           razao_social_ent: entidade.nome,
           cnpj_cpf_ent: "",
-          insc_estadual_ent: "",
-          insc_municipal_ent: "",
+          insc_estadual_ent: entidade.insc_estadual,
+          insc_municipal_ent: entidade.insc_municipal,
           ...(usarEndereco === "sim"
             ? {
               cep_ent: entidade.cep || "",
@@ -635,8 +512,8 @@ const NfsServico: React.FC = () => {
           cod_entidade: entidade.cod_cliente,
           razao_social_ent: entidade.nome,
           cnpj_cpf_ent: entidade.documento || "",
-          insc_estadual_ent: "",
-          insc_municipal_ent: "",
+          insc_estadual_ent: entidade.insc_estadual,
+          insc_municipal_ent: entidade.insc_municipal,
           ...(usarEndereco === "sim"
             ? {
               cep_ent: entidade.cep || "",
@@ -755,85 +632,229 @@ const NfsServico: React.FC = () => {
   }, [token]);
 
 
-  const [totalICMSInput, setTotalICMSInput] = useState(
-    formValues.total_icms?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || ''
-  );
-  const [totalPISInput, setTotalPISInput] = useState(
-    formValues.total_pis?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || ''
-  );
-  const [totalCOFINSInput, setTotalCOFINSInput] = useState(
-    formValues.total_cofins?.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) || ''
-  );
+  const [totalsInput, setTotalsInput] = useState({
+    total_pis: formValues.total_pis?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '',
+    total_cofins: formValues.total_cofins?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '',
+    total_csll: formValues.total_csll?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '',
+    total_ir: formValues.total_ir?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '',
+    total_inss: formValues.total_inss?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '',
+  });
+  const handleTotalsChange = (key: keyof typeof totalsInput, value: string) => {
+    setTotalsInput(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
-  const impostosFederais =
-    (formValues.total_pis || 0) +
-    (formValues.total_cofins || 0);
-
-  const [impostosFederaisInput, setImpostosFederaisInput] = useState(
-    impostosFederais.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
+  const [totalComAliquota, setTotalComAliquota] = useState('0,00');
 
   useEffect(() => {
-    const novosFederais =
-      (formValues.total_pis || 0) +
-      (formValues.total_cofins || 0);
+    if (formValues.descontar_impostos === 'Sim') {
+      const totais = [
+        formValues.total_icms,
+        formValues.total_cofins,
+        formValues.total_pis,
+        formValues.total_csll,
+        formValues.total_ir,
+        formValues.total_inss,
+      ];
 
-    setImpostosFederaisInput(
-      novosFederais.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    );
-  }, [formValues.total_pis, formValues.total_cofins]);
+      const aliquotas = [
+        formValues.aliquota_icms,
+        formValues.aliquota_cofins,
+        formValues.aliquota_pis,
+        formValues.aliquota_csll,
+        formValues.aliquota_ir,
+        formValues.aliquota_inss,
+      ];
+
+      const somaTotais = totais.reduce((acc, val) => (acc ?? 0) + (parseFloat(val as any) || 0), 0);
+      const somaAliquotas = aliquotas.reduce((acc, val) => (acc ?? 0) + (parseFloat(val as any) || 0), 0);
+
+      const resultado = (somaTotais ?? 0) * (somaAliquotas ?? 0);
+
+      const resultadoFormatado = resultado.toFixed(2).replace('.', ',');
+
+      setTotalComAliquota(resultadoFormatado);
+
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        total_nf: parseFloat(resultadoFormatado.replace(',', '.')) || 0,
+      }));
+    } else {
+      // Se não descontar impostos, zera o total ou mantém conforme a regra de negócio
+      setTotalComAliquota('0,00');
+
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        total_nf: 0,
+      }));
+    }
+  }, [
+    formValues.descontar_impostos,
+    formValues.total_icms,
+    formValues.aliquota_icms,
+    formValues.total_cofins,
+    formValues.aliquota_cofins,
+    formValues.total_pis,
+    formValues.aliquota_pis,
+    formValues.total_csll,
+    formValues.aliquota_csll,
+    formValues.total_ir,
+    formValues.aliquota_ir,
+    formValues.total_inss,
+    formValues.aliquota_inss,
+  ]);
 
 
-  const [impostosEstaduaisInput, setImpostosEstaduaisInput] = useState(
-    (formValues.total_icms || 0).toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
 
+
+  const [atividadesServicos, setAtividadesServicos] = useState<AtividadesServicos[]>([]);
+  const [selectedAtividadesServicos, setSelectedAtividadesServicos] = useState<AtividadesServicos[]>([]);
+
+  // useEffect para carregar dados
   useEffect(() => {
-    const impostosEstaduais = (formValues.total_icms || 0);
-    setImpostosEstaduaisInput(
-      impostosEstaduais.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    );
-  }, [formValues.total_icms]);
+    const carregarAtividades = async () => {
+      const atividades = await fetchAtividadesServicos(token);
+      setAtividadesServicos(atividades);
+    };
+
+    carregarAtividades();
+  }, [token]);
+
+  async function gerarXmlNotaDownload(nfsServico: NfsServico) {
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfse/gerar-xml",
+        nfsServico,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'text', // mantém como texto puro
+        }
+      );
+
+      const xml = response.data;
+
+      // Cria um blob do tipo XML
+      const blob = new Blob([xml], { type: 'application/xml' });
+
+      // Cria uma URL temporária
+      const url = window.URL.createObjectURL(blob);
+
+      // Cria um link de download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedNfsServico ? selectedNfsServico.cod_nf_servico : ''}-XML-NFS-e.xml`;
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpa o link e a URL temporária
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return xml;
+    } catch (error) {
+      console.error('Erro ao gerar XML:', error);
+      throw error;
+    }
+  }
 
 
+  async function gerarXmlNota(nfsServico: NfsServico) {
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfse/gerar-xml",
+        nfsServico,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'text', // mantém como texto puro
+        }
+      );
+
+      const xml = response.data;
+
+      return xml;
+    } catch (error) {
+      console.error('Erro ao gerar XML:', error);
+      throw error;
+    }
+  }
+
+  const [xmlSaida, setXmlSaida] = useState<string | null>(null);
+
+  async function gerarNFSe(nfsServico: NfsServico) {
+    const xml = await gerarXmlNota(nfsServico);
+    const xmlExemplo = '<?xml version="1.0" encoding="utf-8"?><tbnfd><nfd><numeronfd>0</numeronfd><codseriedocumento>7</codseriedocumento><codnaturezaoperacao>2</codnaturezaoperacao><codigocidade>3</codigocidade><inscricaomunicipalemissor>47634</inscricaomunicipalemissor><dataemissao>27/05/2025</dataemissao><razaotomador>Joana TESTE TERCAFEIRA</razaotomador><nomefantasiatomador>Joana Teste Segunda AAAAAA</nomefantasiatomador><enderecotomador>Rua Via Coletora B</enderecotomador><numeroendereco>444</numeroendereco><cidadetomador>Santo Antonio de Jesus</cidadetomador><estadotomador>BA</estadotomador><paistomador>BRASIL</paistomador><fonetomador>14999999999</fonetomador><faxtomador /><ceptomador>44444444</ceptomador><bairrotomador>Nossa Senhora das Gracas</bairrotomador><emailtomador>cliente@email.com</emailtomador><tppessoa>F</tppessoa><cpfcnpjtomador>41425612354</cpfcnpjtomador><inscricaoestadualtomador /><inscricaomunicipaltomador /><observacao>Nota fiscal de teadssadsdasteadssad</observacao><tbfatura><fatura><numfatura>1</numfatura><vencimentofatura>16/06/2025</vencimentofatura><valorfatura>10</valorfatura></fatura></tbfatura><tbservico><servico><quantidade>3,00</quantidade><descricao>Parafuso Frances Prata</descricao><codatividade>1406</codatividade><valorunitario>10,00</valorunitario><aliquota>4</aliquota><impostoretido>true</impostoretido></servico></tbservico><VlrAproxImposto>4,00</VlrAproxImposto><AliquotaImpostoAprox>4,00</AliquotaImpostoAprox><FonteImpostoAprox>IBPT</FonteImpostoAprox><razaotransportadora /><cpfcnpjtransportadora /><enderecotransportadora /><tipofrete>3</tipofrete><quantidade>4</quantidade><especie /><pesoliquido>0</pesoliquido><pesobruto>0</pesobruto><pis>0,00</pis><cofins>0,00</cofins><csll>0,00</csll><irrf>0,00</irrf><inss>0,00</inss><descdeducoesconstrucao /><totaldeducoesconstrucao>0,00</totaldeducoesconstrucao><tributadonomunicipio>false</tributadonomunicipio><numerort>0</numerort><codigoseriert>1</codigoseriert><dataemissaort>23/05/2025</dataemissaort></nfd></tbnfd>';
+
+    if (!xml) {
+      toast.error("Erro ao gerar XML para gerar NFSe");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfse/emitir-nfse",
+        { xml },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'text', // mantém como texto puro
+        }
+      );
+
+      const XMLsaida = response.data;
+      console.log(XMLsaida);
+      setXmlSaida(XMLsaida);
+      setLoading(true);
+      // Tenta fazer parse se for JSON válido:
+      try {
+        const data = JSON.parse(XMLsaida);
+        if (data.message) {
+          toast.success(data.message);
+          setLoading(false);
+        }
+      } catch {
+        // Se não for JSON, ignora
+      } finally {
+        setLoading(false);
+      }
+
+      return XMLsaida;
+    } catch (error: any) {
+      console.error('Erro ao emitir NFS-e:', error);
+
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Erro ao emitir NFS-e');
+      }
+
+      throw error;
+    }
+  }
 
   return (
     <>
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[99999]">
+          <BeatLoader
+            color={color}
+            loading={loading}
+            size={30}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        </div>
+      )}
+
       <SidebarLayout>
         <div className="flex justify-center">
-          {loading && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <BeatLoader
-                color={color}
-                loading={loading}
-                size={30}
-                aria-label="Loading Spinner"
-                data-testid="loader"
-              />
-            </div>
-          )}
-
           <Dialog
             header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
@@ -856,13 +877,13 @@ const NfsServico: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este Nota Fiscal de Servico?</p>
+            <p>Tem certeza que deseja cancelar este Nota Fiscal de Serviço?</p>
           </Dialog>
 
 
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Nota Fiscal de Servico" : "Editar Nota Fiscal de Servico") : "Nova Nota Fiscal de Servico"}
+            header={isEditing ? (visualizando ? "Visualizando Nota Fiscal de Serviço" : "Editar Nota Fiscal de Serviço") : "Nova Nota Fiscal de Serviço"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -874,6 +895,60 @@ const NfsServico: React.FC = () => {
             onHide={() => closeModal()}
             style={{ position: 'fixed', width: '60rem' }}
           >
+
+            {visualizando && (
+              <div className={`flex gap-10 justify-center items-center pt-4 pb-4`}>
+
+                <button
+                  className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
+                // onClick={gerarPDF}
+                >
+                  <div className="bg-red700 w-10 h-10 flex items-center justify-center rounded">
+                    <AiFillFilePdf className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">
+                    {"PDF NF-e"}&nbsp;&nbsp;
+                  </span>
+                </button>
+
+                <button
+                  className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
+                  onClick={async () => {
+                    if (selectedNfsServico) {
+                      gerarXmlNotaDownload(selectedNfsServico);
+                    }
+                  }}
+                >
+                  <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">XML da NFS-e&nbsp;&nbsp;</span>
+                </button>
+
+                <button
+                  className={`${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-cyan-500 hover:scale-125'
+                    } text-white rounded flex items-center gap-2 p-0 transition-all duration-150`}
+                  onClick={async () => {
+                    if (!loading && selectedNfsServico) {
+                      gerarNFSe(selectedNfsServico);
+                      setLoading(true);
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <div className="bg-cyan-700 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: '24px' }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">
+                    {loading ? 'Aguarde...' : 'Gerar NFS-e'}
+                  </span>
+                </button>
+
+
+              </div>
+            )}
+
+
             <div
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
@@ -969,7 +1044,7 @@ const NfsServico: React.FC = () => {
                       now.setMilliseconds(0);
                       setFormValues((prevValues) => ({
                         ...prevValues,
-                        hr_emissao: value ? value : undefined,
+                        hr_emissao: value ? new Date(now) : undefined,
                       }));
                     }}
                   />
@@ -986,18 +1061,28 @@ const NfsServico: React.FC = () => {
                 <div className="grid grid-cols-4 gap-2">
 
                   <div className="col-span-3">
-                    <label htmlFor="cod_entidade" className="block text-blue font-medium">
+                    <label htmlFor="clients" className="block text-blue font-medium">
                       Cliente
                     </label>
-                    <input
-                      type="text"
-                      id="cod_entidade"
-                      name="cod_entidade"
+                    <select
+                      id="clients"
+                      name="clients"
+                      value={formValues.cod_entidade || ""}
+                      onChange={(e) => {
+                        handleSelectEntidade(e.target.value);
+                      }}
+                      className={`w-full pl-1 rounded-sm h-8 ${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'}`}
                       disabled={visualizando}
-                      value={formValues.cod_entidade}
-                      onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                    />
+                    >
+                      <option value="" disabled>
+                        Selecione
+                      </option>
+                      {clients.map((cliente) => (
+                        <option key={cliente.cod_cliente} value={cliente.cod_cliente}>
+                          {cliente.nome}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="">
@@ -1062,7 +1147,8 @@ const NfsServico: React.FC = () => {
                       name="insc_estadual_ent"
                       value={formValues.insc_estadual_ent}
                       onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      disabled
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
                     />
                   </div>
 
@@ -1076,7 +1162,8 @@ const NfsServico: React.FC = () => {
                       name="insc_municipal_ent"
                       value={formValues.insc_municipal_ent}
                       onChange={handleInputChange}
-                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                      disabled
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -1220,7 +1307,7 @@ const NfsServico: React.FC = () => {
               }
               <div className="border border-gray-300 rounded space-y-1 p-2 bg-gray-50 mt-2 ">
                 <div className="flex items-center top-0">
-                  <h3 className="text-blue text-lg font-bold pt-1 mr-1">Servicos</h3>
+                  <h3 className="text-blue text-lg font-bold pt-1 mr-1">Serviços</h3>
                 </div>
                 <div style={{ height: "16px" }}></div>
 
@@ -1240,7 +1327,7 @@ const NfsServico: React.FC = () => {
                           descricao_servico: e.target.value,
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1250,22 +1337,38 @@ const NfsServico: React.FC = () => {
                     <label htmlFor="atividade_servico" className="block text-blue font-medium">
                       Atividade do Serviço
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="atividade_servico"
                       name="atividade_servico"
-                      // value={formValues.atividade_servico}
+                      value={formValues.cod_atividade_servico || ''}  // Garante que mostre a opção selecionada
                       disabled={visualizando}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const selectedCod = Number(e.target.value);
                         setFormValues((prev) => ({
                           ...prev,
-                          atividade_servico: e.target.value,
-                        }))
-                      }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                          cod_atividade_servico: selectedCod,
+                        }));
 
-                    />
+                        const atividadeSelecionada = atividadesServicos.find(
+                          (atividade) => atividade.cod_atividade_servico === selectedCod
+                        );
+
+                        setSelectedAtividadesServicos(atividadeSelecionada ? [atividadeSelecionada] : []);
+                      }}
+
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
+                    >
+                      <option value="" disabled>
+                        Selecione
+                      </option>
+                      {atividadesServicos.map((atividade) => (
+                        <option key={atividade.cod_atividade_servico} value={atividade.cod_atividade_servico}>
+                          {atividade.cod_atividade_servico}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="">
@@ -1276,15 +1379,15 @@ const NfsServico: React.FC = () => {
                       type="text"
                       id="item_lista_servico"
                       name="item_lista_servico"
-                      // value={formValues.item_lista_servico}
+                      value={formValues.item_lista_servico}
                       disabled={visualizando}
                       onChange={(e) =>
                         setFormValues((prev) => ({
                           ...prev,
-                          descricao_servico: e.target.value,
+                          item_lista_servico: e.target.value,
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1297,15 +1400,9 @@ const NfsServico: React.FC = () => {
                       type="text"
                       id="ctm"
                       name="ctm"
-                      // value={formValues.ctm}
-                      disabled={visualizando}
-                      onChange={(e) =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          ctm: e.target.value,
-                        }))
-                      }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      value={selectedAtividadesServicos[0]?.cod_tributacao}
+                      disabled
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 cursor-not-allowed !bg-gray-300`}
 
                     />
                   </div>
@@ -1318,15 +1415,9 @@ const NfsServico: React.FC = () => {
                       type="text"
                       id="cnae"
                       name="cnae"
-                      // value={formValues.cnae}
-                      disabled={visualizando}
-                      onChange={(e) =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          cnae: e.target.value,
-                        }))
-                      }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      value={selectedAtividadesServicos[0]?.cnae}
+                      disabled
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 cursor-not-allowed !bg-gray-300`}
 
                     />
                   </div>
@@ -1340,15 +1431,9 @@ const NfsServico: React.FC = () => {
                       type="text"
                       id="descricao_atividade"
                       name="descricao_atividade"
-                      // value={formValues.descricao_atividade}
-                      disabled={visualizando}
-                      onChange={(e) =>
-                        setFormValues((prev) => ({
-                          ...prev,
-                          descricao_atividade: e.target.value,
-                        }))
-                      }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      value={selectedAtividadesServicos[0]?.descricao || ""}
+                      disabled
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 cursor-not-allowed !bg-gray-300`}
 
                     />
                   </div>
@@ -1362,15 +1447,15 @@ const NfsServico: React.FC = () => {
                       type="text"
                       id="valor_servicos"
                       name="valor_servicos"
-                      // value={formValues.valor_servicos}
+                      value={formValues.valor_servicos}
                       disabled={visualizando}
-                      // onChange={(e) =>
-                      //   setFormValues((prev) => ({
-                      //     ...prev,
-                      //     valor_servicos: e.target.value,
-                      //   }))
-                      // }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      onChange={(e) =>
+                        setFormValues((prev) => ({
+                          ...prev,
+                          valor_servicos: Number(e.target.value),
+                        }))
+                      }
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1391,7 +1476,7 @@ const NfsServico: React.FC = () => {
                           base_calculo: parseFloat(e.target.value),
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1412,7 +1497,7 @@ const NfsServico: React.FC = () => {
                           aliquota: parseFloat(e.target.value),
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1420,7 +1505,7 @@ const NfsServico: React.FC = () => {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="">
                     <label htmlFor="valor_deducoes" className="block text-blue font-medium">
-                      Valor dos Serviços
+                      Valor Deduções
                     </label>
                     <input
                       type="number"
@@ -1434,7 +1519,7 @@ const NfsServico: React.FC = () => {
                           valor_deducoes: parseFloat(e.target.value),
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1455,7 +1540,7 @@ const NfsServico: React.FC = () => {
                           descontos: parseFloat(e.target.value),
                         }))
                       }
-                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                      className={`w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 `}
 
                     />
                   </div>
@@ -1477,17 +1562,21 @@ const NfsServico: React.FC = () => {
                             valor_iss: parseFloat(e.target.value),
                           }))
                         }
-                        className={`flex-1 w-[100px] border border-[#D9D9D9] rounded-l-sm h-8 ${visualizando ? 'hidden' : ''}`}
+                        className={`flex-1 w-[100px] border border-[#D9D9D9] rounded-l-sm h-8 `}
                       />
                       <Button
                         label={formValues.iss_retido === "Sim" ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
                         onClick={() =>
                           setFormValues((prev) => ({
                             ...prev,
-                            iss_retido: prev.iss_retido === "Sim" ? "Nao" : "Sim",
+                            iss_retido: prev.iss_retido === "Sim" ? "Não" : "Sim",
                           }))
                         }
-                        className={`h-8 w-[80px] rounded-l-none rounded-r-sm bg-blue text-white text-sm  ${formValues.iss_retido === "Sim" ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'} transition-all ${visualizando ? 'hidden' : ''}`}
+                        className={`h-8 w-[80px] rounded-l-none rounded-r-sm text-white text-sm transition-all
+                          ${formValues.iss_retido === "Sim" ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'}                          
+                          focus:outline-none focus:ring-0 focus:border-none
+                        `}
+
                       />
                     </div>
 
@@ -1505,186 +1594,103 @@ const NfsServico: React.FC = () => {
                 <h2 className="text-blue text-lg font-bold mb-4">Totais</h2>
                 <div className="grid gap-2 grid-cols-4">
                   <div>
-                    <label htmlFor="total_cofins" className="block text-blue font-medium">
+                    <label htmlFor="aliquota_cofins" className="block text-blue font-medium">
                       %COFINS
                     </label>
                     <div className="flex items-center">
+
                       <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_cofins"
-                        name="total_cofins"
-                        value={totalCOFINSInput}
-                        disabled={visualizando}
+                        type="number"
+                        id="aliquota_cofins"
+                        name="aliquota_cofins"
+                        value={formValues.aliquota_cofins}
                         onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalCOFINSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_cofins: numericValue,
-                          }));
-
-                          setTotalCOFINSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                            aliquota_cofins: parseFloat(e.target.value),
+                          }))
+                        }
+                        }
+                        disabled={visualizando}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border  pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="total_pis" className="block text-blue font-medium">
+                    <label htmlFor="aliquota_pis" className="block text-blue font-medium">
                       %PIS
                     </label>
                     <div className="flex items-center">
                       <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_pis"
-                        name="total_pis"
-                        value={totalPISInput}
+                        type="number"
+                        id="aliquota_pis"
+                        name="aliquota_pis"
+                        value={formValues.aliquota_pis}
                         disabled={visualizando}
                         onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalPISInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_pis: numericValue,
-                          }));
-
-                          setTotalPISInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                            aliquota_pis: parseFloat(e.target.value),
+                          }))
+                        }
+                        }
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="total_icms" className="block text-blue font-medium">
+                    <label htmlFor="aliquota_csll" className="block text-blue font-medium">
                       %CSLL
                     </label>
                     <div className="flex items-center">
+
                       <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_icms"
-                        name="total_icms"
-                        value={totalICMSInput}
+                        type="number"
+                        id="aliquota_csll"
+                        name="aliquota_csll"
+                        value={formValues.aliquota_csll}
                         disabled={visualizando}
                         onChange={(e) => {
-                          // Permite apenas números e vírgula, substitui vírgula por ponto para parse
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          // Atualiza o input com vírgula para visualização
-                          setTotalICMSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_icms: numericValue,
-                          }));
-
-                          setTotalICMSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                            aliquota_csll: parseFloat(e.target.value),
+                          }))
+                        }
+                        }
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="total_ipi" className="block text-blue font-medium">
+                    <label htmlFor="aliquota_ir" className="block text-blue font-medium">
                       %IR
                     </label>
                     <div className="flex items-center">
-                      <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_ipi"
-                        name="total_ipi"
-                        // value={totalIPIInput}
-                        // disabled={visualizando}
-                        // onChange={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   setTotalIPIInput(rawValue.replace('.', ','));
-                        // }}
-                        // onBlur={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   const numericValue = parseFloat(rawValue) || 0;
 
-                        //   setFormValues((prevValues) => ({
-                        //     ...prevValues,
-                        //     total_ipi: numericValue,
-                        //   }));
+                      <input
+                        type="number"
+                        id="aliquota_ir"
+                        name="aliquota_ir"
+                        value={formValues.aliquota_ir}
+                        disabled={visualizando}
+                        onChange={(e) => {
 
-                        //   setTotalIPIInput(
-                        //     numericValue.toLocaleString('pt-BR', {
-                        //       minimumFractionDigits: 2,
-                        //       maximumFractionDigits: 2,
-                        //     })
-                        //   );
-                        // }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            aliquota_ir: parseFloat(e.target.value),
+                          }))
+                        }
+                        }
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
@@ -1695,7 +1701,7 @@ const NfsServico: React.FC = () => {
                 <div className="grid gap-2 grid-cols-4">
                   <div>
                     <label htmlFor="total_cofins" className="block text-blue font-medium">
-                      Total COFINS
+                      Valor COFINS
                     </label>
                     <div className="flex items-center">
                       <input
@@ -1708,40 +1714,37 @@ const NfsServico: React.FC = () => {
                         type="text"
                         id="total_cofins"
                         name="total_cofins"
-                        value={totalCOFINSInput}
                         disabled={visualizando}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalCOFINSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
+                        value={totalsInput.total_cofins}
+                        onChange={(e) => handleTotalsChange('total_cofins', e.target.value)}
+                        onBlur={() => {
+                          const numericValue = parseFloat(
+                            totalsInput.total_cofins.replace(/\./g, '').replace(',', '.')
+                          );
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
                             total_cofins: numericValue,
                           }));
 
-                          setTotalCOFINSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
+                          setTotalsInput((prev) => ({
+                            ...prev,
+                            total_cofins: !isNaN(numericValue)
+                              ? numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '',
+                          }));
                         }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
+
 
                     </div>
                   </div>
 
                   <div>
                     <label htmlFor="total_pis" className="block text-blue font-medium">
-                      Total PIS
+                      Valor PIS
                     </label>
                     <div className="flex items-center">
                       <input
@@ -1754,39 +1757,35 @@ const NfsServico: React.FC = () => {
                         type="text"
                         id="total_pis"
                         name="total_pis"
-                        value={totalPISInput}
                         disabled={visualizando}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalPISInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
+                        value={totalsInput.total_pis}
+                        onChange={(e) => handleTotalsChange('total_pis', e.target.value)}
+                        onBlur={() => {
+                          const numericValue = parseFloat(
+                            totalsInput.total_pis.replace(/\./g, '').replace(',', '.')
+                          );
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
                             total_pis: numericValue,
                           }));
 
-                          setTotalPISInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
+                          setTotalsInput((prev) => ({
+                            ...prev,
+                            total_pis: !isNaN(numericValue)
+                              ? numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '',
+                          }));
                         }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
-
                     </div>
                   </div>
 
+
                   <div>
-                    <label htmlFor="total_icms" className="block text-blue font-medium">
+                    <label htmlFor="total_csll" className="block text-blue font-medium">
                       Valor CSLL
                     </label>
                     <div className="flex items-center">
@@ -1798,43 +1797,37 @@ const NfsServico: React.FC = () => {
                       />
                       <input
                         type="text"
-                        id="total_icms"
-                        name="total_icms"
-                        value={totalICMSInput}
+                        id="total_csll"
+                        name="total_csll"
                         disabled={visualizando}
-                        onChange={(e) => {
-                          // Permite apenas números e vírgula, substitui vírgula por ponto para parse
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          // Atualiza o input com vírgula para visualização
-                          setTotalICMSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
+                        value={totalsInput.total_csll}
+                        onChange={(e) => handleTotalsChange('total_csll', e.target.value)}
+                        onBlur={() => {
+                          const numericValue = parseFloat(
+                            totalsInput.total_csll.replace(/\./g, '').replace(',', '.')
+                          );
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_icms: numericValue,
+                            total_csll: numericValue,
                           }));
 
-                          setTotalICMSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
+                          setTotalsInput((prev) => ({
+                            ...prev,
+                            total_csll: !isNaN(numericValue)
+                              ? numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '',
+                          }));
                         }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
-
                     </div>
                   </div>
 
+
                   <div>
-                    <label htmlFor="total_ipi" className="block text-blue font-medium">
+                    <label htmlFor="total_ir" className="block text-blue font-medium">
                       Valor IR
                     </label>
                     <div className="flex items-center">
@@ -1846,90 +1839,66 @@ const NfsServico: React.FC = () => {
                       />
                       <input
                         type="text"
-                        id="total_ipi"
-                        name="total_ipi"
-                        // value={totalIPIInput}
-                        // disabled={visualizando}
-                        // onChange={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   setTotalIPIInput(rawValue.replace('.', ','));
-                        // }}
-                        // onBlur={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   const numericValue = parseFloat(rawValue) || 0;
+                        id="total_ir"
+                        name="total_ir"
+                        disabled={visualizando}
+                        value={totalsInput.total_ir}
+                        onChange={(e) => handleTotalsChange('total_ir', e.target.value)}
+                        onBlur={() => {
+                          const numericValue = parseFloat(
+                            totalsInput.total_ir.replace(/\./g, '').replace(',', '.')
+                          );
 
-                        //   setFormValues((prevValues) => ({
-                        //     ...prevValues,
-                        //     total_ipi: numericValue,
-                        //   }));
+                          setFormValues((prevValues) => ({
+                            ...prevValues,
+                            total_ir: numericValue,
+                          }));
 
-                        //   setTotalIPIInput(
-                        //     numericValue.toLocaleString('pt-BR', {
-                        //       minimumFractionDigits: 2,
-                        //       maximumFractionDigits: 2,
-                        //     })
-                        //   );
-                        // }}
-                        style={{
-                          textAlign: 'left',
+                          setTotalsInput((prev) => ({
+                            ...prev,
+                            total_ir: !isNaN(numericValue)
+                              ? numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '',
+                          }));
                         }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
-
                     </div>
                   </div>
+
 
                 </div>
 
                 <div className="grid gap-2 grid-cols-4">
                   <div>
-                    <label htmlFor="total_cofins" className="block text-blue font-medium">
+                    <label htmlFor="aliquota_inss" className="block text-blue font-medium">
                       %INSS
                     </label>
                     <div className="flex items-center">
+
                       <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
-                        id="total_cofins"
-                        name="total_cofins"
-                        value={totalCOFINSInput}
+                        type="number"
+                        id="aliquota_inss"
+                        name="aliquota_inss"
+                        value={formValues.aliquota_inss}
                         disabled={visualizando}
                         onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalCOFINSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_cofins: numericValue,
-                          }));
-
-                          setTotalCOFINSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
-                        }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                            aliquota_inss: parseFloat(e.target.value),
+                          }))
+                        }
+                        }
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border pl-1 rounded-r-sm h-8 w-full`}
                       />
 
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="total_pis" className="block text-blue font-medium">
+                    <label htmlFor="total_inss" className="block text-blue font-medium">
                       Valor INSS
                     </label>
                     <div className="flex items-center">
@@ -1941,89 +1910,65 @@ const NfsServico: React.FC = () => {
                       />
                       <input
                         type="text"
-                        id="total_pis"
-                        name="total_pis"
-                        value={totalPISInput}
+                        id="total_inss"
+                        name="total_inss"
                         disabled={visualizando}
-                        onChange={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          setTotalPISInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
+                        value={totalsInput.total_inss}
+                        onChange={(e) => handleTotalsChange('total_inss', e.target.value)}
+                        onBlur={() => {
+                          const numericValue = parseFloat(
+                            totalsInput.total_inss.replace(/\./g, '').replace(',', '.')
+                          );
 
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_pis: numericValue,
+                            total_inss: numericValue,
                           }));
 
-                          setTotalPISInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
+                          setTotalsInput((prev) => ({
+                            ...prev,
+                            total_inss: !isNaN(numericValue)
+                              ? numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '',
+                          }));
                         }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
                       />
-
                     </div>
                   </div>
+
 
                   <div>
                     <label htmlFor="total_icms" className="block text-blue font-medium">
                       Descontar Impostos
                     </label>
                     <div className="flex items-center">
-                      <input
-                        type="text"
-                        value="R$"
-                        readOnly
-                        className="w-[34px] px-1 text-blue font-bold border border-r-0 border-[#D9D9D9] rounded-l-sm h-8 bg-gray-100"
-                      />
-                      <input
-                        type="text"
+
+                      <select
                         id="total_icms"
                         name="total_icms"
-                        value={totalICMSInput}
+                        value={formValues.descontar_impostos}
                         disabled={visualizando}
                         onChange={(e) => {
-                          // Permite apenas números e vírgula, substitui vírgula por ponto para parse
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          // Atualiza o input com vírgula para visualização
-                          setTotalICMSInput(rawValue.replace('.', ','));
-                        }}
-                        onBlur={(e) => {
-                          const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                          const numericValue = parseFloat(rawValue) || 0;
-
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            total_icms: numericValue,
+                            descontar_impostos: e.target.value === "Sim" ? "Sim" : e.target.value === "Não" ? "Não" : undefined,
                           }));
-
-                          setTotalICMSInput(
-                            numericValue.toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          );
                         }}
-                        style={{
-                          textAlign: 'left',
-                        }}
-                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-l-0 pl-1 rounded-r-sm h-8 w-full`}
-                      />
-
+                        className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
+                          } border  pl-1 rounded-r-sm h-8 w-full`}
+                      >
+                        <option disabled value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                      </select>
                     </div>
                   </div>
 
+
                   <div>
-                    <label htmlFor="total_ipi" className="block text-blue font-medium">
+                    <label htmlFor="total_nf" className="block text-blue font-medium">
                       Total Nota
                     </label>
                     <div className="flex items-center">
@@ -2035,35 +1980,11 @@ const NfsServico: React.FC = () => {
                       />
                       <input
                         type="text"
-                        id="total_ipi"
-                        name="total_ipi"
-                        // value={totalIPIInput}
-                        // disabled={visualizando}
-                        // onChange={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   setTotalIPIInput(rawValue.replace('.', ','));
-                        // }}
-                        // onBlur={(e) => {
-                        //   const rawValue = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-                        //   const numericValue = parseFloat(rawValue) || 0;
-
-                        //   setFormValues((prevValues) => ({
-                        //     ...prevValues,
-                        //     total_ipi: numericValue,
-                        //   }));
-
-                        //   setTotalIPIInput(
-                        //     numericValue.toLocaleString('pt-BR', {
-                        //       minimumFractionDigits: 2,
-                        //       maximumFractionDigits: 2,
-                        //     })
-                        //   );
-                        // }}
-                        style={{
-                          textAlign: 'left',
-                        }
-                        }
+                        id="total_nf"
+                        name="total_nf"
+                        value={totalComAliquota}
                         disabled
+                        readOnly
                         className={`${visualizando ? '!bg-gray-300 !border-gray-400' : '!bg-gray-300 !border-gray-400 border-l-gray-300'} border border-l-0 pl-1 rounded-r-sm rounded-l-none h-8 w-full`}
                       />
 
@@ -2177,7 +2098,7 @@ const NfsServico: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => handleSaveEdit(formValues.cod_natureza_operacao)}
+                    onClick={() => handleSaveEdit(formValues.cod_nf_servico)}
                     disabled={itemEditDisabled}
                     style={{
                       backgroundColor: '#28a745',
@@ -2202,7 +2123,7 @@ const NfsServico: React.FC = () => {
               <div>
                 <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">
-                  Nota Fiscal de Servico
+                  Nota Fiscal de Serviço
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -2246,8 +2167,8 @@ const NfsServico: React.FC = () => {
               >
 
                 <Column
-                  field="nome"
-                  header="Nome"
+                  field="numero_rps"
+                  header="Número"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -2265,8 +2186,8 @@ const NfsServico: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="cod_grupo_tributacao"
-                  header="Tributação"
+                  field="pedido"
+                  header="Pedido"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -2284,10 +2205,40 @@ const NfsServico: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="padrao"
-                  header="Padrão"
+                  field="dt_emissao"
+                  header="Data"
                   style={{
-                    width: "0.5%",
+                    width: "2%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    const date = new Date(rowData.dt_emissao);
+                    const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }).format(date);
+
+                    return <span>{formattedDate}</span>;
+                  }}
+                />
+
+                <Column
+                  field="razao_social_ent"
+                  header="Destinatário"
+                  style={{
+                    width: "4%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -2303,10 +2254,54 @@ const NfsServico: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="cod_cfop_interno"
-                  header="CFOP Interno"
+                  field="cod_natureza_operacao"
+                  header="Natureza da Operação"
                   style={{
-                    width: "0.5%",
+                    width: "4%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="total_nf"
+                  header="Valor"
+                  body={(rowData) => {
+                    return `R$ ${new Intl.NumberFormat('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format(rowData.total_nf)}`;
+                  }}
+                  style={{
+                    width: "1%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}

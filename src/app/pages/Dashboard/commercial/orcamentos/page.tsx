@@ -4017,6 +4017,111 @@ const OrcamentosPage: React.FC = () => {
     }
   };
 
+  const handleGerarNFSe = async () => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+
+    try {
+      const cliente = clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente);
+
+      const descricao_servico = servicosSelecionados
+        .map(s => s.dbs_servicos.nome)
+        .join(', ') + '.';
+
+      const payload = {
+        numero_rps: formValues.cod_orcamento,
+        serie: 0,
+        cod_natureza_operacao: null,
+        dt_emissao: selectedOrcamento?.data_venda,
+        hr_emissao: new Date().toISOString(),
+        cod_entidade: selectedOrcamento?.cod_cliente,
+        cnpj_cpf_ent: cliente?.documento || "",
+        razao_social_ent: cliente?.nome || "",
+        tipo_contribuinte_ent: null,
+        insc_estadual_ent: cliente?.insc_estadual || "",
+        insc_municipal_ent: cliente?.insc_municipal || "",
+        cep_ent: cliente?.cep || "",
+        logradouro_ent: cliente?.logradouro || "",
+        numero_ent: cliente?.numero || "",
+        estado_ent: cliente?.estado || "",
+        bairro_ent: cliente?.bairro || "",
+        cidade_ent: cliente?.cidade || "",
+
+        descricao_servico: descricao_servico,
+
+        total_icms: 0,
+        aliquota_icms: 0,
+
+        total_cofins: 0,
+        aliquota_cofins: 0,
+
+        total_pis: 0,
+        aliquota_pis: 0,
+
+        total_csll: 0,
+        aliquota_csll: 0,
+
+        total_ir: 0,
+        aliquota_ir: 0,
+
+        total_inss: 0,
+        aliquota_inss: 0,
+
+        observacoes: selectedOrcamento?.observacoes_gerais || "",
+        informacoes_adicionais: selectedOrcamento?.observacoes_internas || "",
+
+        descontar_impostos: "Não",
+
+        total_nf: selectedOrcamento?.valor_total || 0,
+
+        valor_servicos: Number(totalServicosSomados),
+        valor_deducoes: 0,
+        valor_iss: 0,
+        aliquota: 0,
+
+        descontos: 0,
+        base_calculo: selectedOrcamento?.valor_total || 0,
+
+        iss_retido: "Não",
+        cod_atividade_servico: null
+      };
+
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/nfsServicos/register`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        toast.success("Nota Fiscal de Serviço salva com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        router.push("/pages/Dashboard/faturamento/notaFiscalServico");
+      } else {
+        toast.error("Erro ao salvar Nota Fiscal de Serviço.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar Nota Fiscal de Serviço:", error);
+      toast.error("Erro interno ao tentar salvar.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setItemCreateReturnDisabled(false);
+      setLoading(false);
+    }
+  };
+
+
 
   // #region RETURN
   return (
@@ -5039,7 +5144,17 @@ const OrcamentosPage: React.FC = () => {
                   <span className="whitespace-nowrap">Gerar NF-e&nbsp;&nbsp;</span>
                 </button>
 
-
+                <button
+                  className={`!bg-cyan-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-cyan-800 hover:scale-125 ${!isPedido ? 'hidden' : ''}`}
+                  onClick={() => {
+                    handleGerarNFSe();
+                  }}
+                >
+                  <div className="bg-cyan-600 w-10 h-10 flex items-center justify-center rounded">
+                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap">Gerar NFS-e&nbsp;&nbsp;</span>
+                </button>
 
 
               </div>

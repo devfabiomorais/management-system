@@ -6,7 +6,7 @@ export interface NfsServico {
   serie?: number;
   cod_natureza_operacao?: number;
   dt_emissao?: Date;
-  hr_emissao?: string; // TIME(0) como string 'HH:mm:ss'
+  hr_emissao?: Date;
   cod_entidade?: number;
   cnpj_cpf_ent?: string;
   razao_social_ent?: string;
@@ -19,6 +19,7 @@ export interface NfsServico {
   estado_ent?: string;
   bairro_ent?: string;
   cidade_ent?: string;
+  cod_atividade_servico?: number;
   descricao_servico?: string;
   total_icms?: number;
   aliquota_icms?: number;
@@ -34,7 +35,7 @@ export interface NfsServico {
   aliquota_inss?: number;
   observacoes?: string;
   informacoes_adicionais?: string;
-  descontar_impostos?: "Sim" | "Nao";
+  descontar_impostos?: "Sim" | "Não";
   total_nf?: number;
   valor_servicos?: number;
   valor_deducoes?: number;
@@ -42,8 +43,9 @@ export interface NfsServico {
   aliquota?: number;
   descontos?: number;
   base_calculo?: number;
-  iss_retido?: "Sim" | "Nao";
+  iss_retido?: "Sim" | "Não";
   situacao?: string;
+  item_lista_servico?: string;
 }
 
 // Função para buscar Notas Fiscais de Serviços
