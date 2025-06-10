@@ -10,6 +10,8 @@ import { FaChartBar } from "react-icons/fa";
 import { redirect } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import loadingGif from "../../../assets/imgs/loading.gif";
+import { BsBoxes } from "react-icons/bs";
+import { LuMapPin } from "react-icons/lu";
 
 export default function StockPage() {
   const [openedCategory, setOpenedCategory] = useState(false);
@@ -97,6 +99,30 @@ export default function StockPage() {
                     >
                       <AiFillGold className="text-5xl" />
                       <span className="text-sm mt-3 font-bold">Itens</span>
+                      {loadingButton === "stock/itens" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("stock/depositos")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <BsBoxes className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Depósitos</span>
+                      {loadingButton === "stock/itens" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
+                          <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => handleRedirect("stock/localizacoes")}
+                      className="relative flex flex-col justify-center items-center w-36 h-36 bg-blue cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200"
+                    >
+                      <LuMapPin className="text-5xl" />
+                      <span className="text-sm mt-3 font-bold">Localizações</span>
                       {loadingButton === "stock/itens" && (
                         <div className="absolute inset-0 flex items-center justify-center bg-green100 bg-opacity-75 rounded-lg">
                           <img src={loadingGif.src} alt="Carregando..." className="w-10 h-10" />

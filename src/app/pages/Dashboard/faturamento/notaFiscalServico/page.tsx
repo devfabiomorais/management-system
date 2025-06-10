@@ -37,6 +37,7 @@ import AddButton from "@/app/components/Buttons/AddButton";
 import { AtividadesServicos, fetchAtividadesServicos } from "@/services/faturamento/atividadesServicos";
 import { AiFillFilePdf } from "react-icons/ai";
 import { GiCalculator } from "react-icons/gi";
+import { TbFileTypeXml, TbInvoice } from "react-icons/tb";
 
 
 
@@ -91,6 +92,9 @@ const NfsServico: React.FC = () => {
     hr_emissao: undefined,
     cod_entidade: undefined,
     cnpj_cpf_ent: "",
+    telefone_ent: "",
+    celular_ent: "",
+    email_ent: "",
     razao_social_ent: "",
     tipo_contribuinte_ent: "Cliente",
     insc_estadual_ent: "",
@@ -128,6 +132,7 @@ const NfsServico: React.FC = () => {
     iss_retido: undefined,
     situacao: "Ativo",
     item_lista_servico: "",
+    venc_fatura: undefined,
   });
 
 
@@ -142,8 +147,11 @@ const NfsServico: React.FC = () => {
       hr_emissao: undefined,
       cod_entidade: undefined,
       cnpj_cpf_ent: "",
+      telefone_ent: "",
+      celular_ent: "",
+      email_ent: "",
       razao_social_ent: "",
-      tipo_contribuinte_ent: "",
+      tipo_contribuinte_ent: "Cliente",
       insc_estadual_ent: "",
       insc_municipal_ent: "",
       cep_ent: "",
@@ -168,7 +176,7 @@ const NfsServico: React.FC = () => {
       aliquota_inss: undefined,
       observacoes: "",
       informacoes_adicionais: "",
-      descontar_impostos: undefined,
+      descontar_impostos: "Sim",
       total_nf: undefined,
       valor_servicos: undefined,
       valor_deducoes: undefined,
@@ -178,6 +186,8 @@ const NfsServico: React.FC = () => {
       base_calculo: undefined,
       iss_retido: undefined,
       situacao: "Ativo",
+      item_lista_servico: "",
+      venc_fatura: undefined,
     });
     setSelectedEstablishments([]);
   };
@@ -279,6 +289,8 @@ const NfsServico: React.FC = () => {
     setVisualizar(visualizar);
 
     setFormValues(NfsServicos);
+
+
 
     setSelectedNfsServico(NfsServicos);
     setIsEditing(true);
@@ -512,6 +524,9 @@ const NfsServico: React.FC = () => {
           cod_entidade: entidade.cod_cliente,
           razao_social_ent: entidade.nome,
           cnpj_cpf_ent: entidade.documento || "",
+          telefone_ent: entidade.telefone || "",
+          celular_ent: entidade.celular || "",
+          email_ent: entidade.email || "",
           insc_estadual_ent: entidade.insc_estadual,
           insc_municipal_ent: entidade.insc_municipal,
           ...(usarEndereco === "sim"
@@ -791,7 +806,6 @@ const NfsServico: React.FC = () => {
     setLoading(true);
 
     const xml = await gerarXmlNota(nfsServico);
-    const xmlExemplo = '<?xml version="1.0" encoding="utf-8"?><tbnfd><nfd><numeronfd>0</numeronfd><codseriedocumento>7</codseriedocumento><codnaturezaoperacao>2</codnaturezaoperacao><codigocidade>3</codigocidade><inscricaomunicipalemissor>47634</inscricaomunicipalemissor><dataemissao>27/05/2025</dataemissao><razaotomador>Joana TESTE TERCAFEIRA</razaotomador><nomefantasiatomador>Joana Teste Segunda AAAAAA</nomefantasiatomador><enderecotomador>Rua Via Coletora B</enderecotomador><numeroendereco>444</numeroendereco><cidadetomador>Santo Antonio de Jesus</cidadetomador><estadotomador>BA</estadotomador><paistomador>BRASIL</paistomador><fonetomador>14999999999</fonetomador><faxtomador /><ceptomador>44444444</ceptomador><bairrotomador>Nossa Senhora das Gracas</bairrotomador><emailtomador>cliente@email.com</emailtomador><tppessoa>F</tppessoa><cpfcnpjtomador>41425612354</cpfcnpjtomador><inscricaoestadualtomador /><inscricaomunicipaltomador /><observacao>Nota fiscal de teadssadsdasteadssad</observacao><tbfatura><fatura><numfatura>1</numfatura><vencimentofatura>16/06/2025</vencimentofatura><valorfatura>10</valorfatura></fatura></tbfatura><tbservico><servico><quantidade>3,00</quantidade><descricao>Parafuso Frances Prata</descricao><codatividade>1406</codatividade><valorunitario>10,00</valorunitario><aliquota>4</aliquota><impostoretido>true</impostoretido></servico></tbservico><VlrAproxImposto>4,00</VlrAproxImposto><AliquotaImpostoAprox>4,00</AliquotaImpostoAprox><FonteImpostoAprox>IBPT</FonteImpostoAprox><razaotransportadora /><cpfcnpjtransportadora /><enderecotransportadora /><tipofrete>3</tipofrete><quantidade>4</quantidade><especie /><pesoliquido>0</pesoliquido><pesobruto>0</pesobruto><pis>0,00</pis><cofins>0,00</cofins><csll>0,00</csll><irrf>0,00</irrf><inss>0,00</inss><descdeducoesconstrucao /><totaldeducoesconstrucao>0,00</totaldeducoesconstrucao><tributadonomunicipio>false</tributadonomunicipio><numerort>0</numerort><codigoseriert>1</codigoseriert><dataemissaort>23/05/2025</dataemissaort></nfd></tbnfd>';
 
     if (!xml) {
       toast.error("Erro ao gerar XML para gerar NFSe");
@@ -807,29 +821,40 @@ const NfsServico: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          responseType: 'text', // mantém como texto puro
+          responseType: 'text', // Recebe como texto
         }
       );
 
       const XMLsaida = response.data;
-      console.log(XMLsaida);
-      setXmlSaida(XMLsaida);
-      // Tenta fazer parse se for JSON válido:
+      console.log("RESPONSE DATA:", XMLsaida);
+
       try {
         const data = JSON.parse(XMLsaida);
+        console.log("DATA PARSED:", data);
+
         if (data.message) {
           toast.success(data.message);
-          setLoading(false);
         }
-      } catch {
+
+        const { xmlResposta } = data;
+        console.log("XML RESPOSTA:", xmlResposta);
+
+        if (xmlResposta) {
+          setXmlSaida(xmlResposta);
+        }
+
         setLoading(false);
-      } finally {
+        return data;
+
+      } catch (parseError) {
+        console.error("Erro ao fazer parse do retorno:", parseError);
+        toast.error("Erro ao interpretar retorno da NFS-e");
         setLoading(false);
       }
 
-      return XMLsaida;
     } catch (error: any) {
       console.error('Erro ao emitir NFS-e:', error);
+      setLoading(false);
 
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
@@ -841,13 +866,69 @@ const NfsServico: React.FC = () => {
     }
   }
 
+  const [LoadingPDF, setLoadingPDF] = useState<boolean>(false);
+
+  async function gerarPdfDanfe(xml: string) {
+    setLoadingPDF(true);
+
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfse/gerar-pdf",
+        { xml },
+        {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>DANFSe PDF</title></head>
+            <body style="margin:0">
+              <iframe 
+                src="${pdfUrl}" 
+                frameborder="0" 
+                style="border:none; width:100vw; height:100vh"
+                allowfullscreen>
+              </iframe>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        // Popup bloqueado, faz o download como fallback
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = 'danfse.pdf';
+        link.click();
+      }
+
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Falha ao gerar o PDF. Veja o console para detalhes.');
+    } finally {
+      setLoadingPDF(false);
+    }
+  }
+
+
+
+
   return (
     <>
-      {loading && (
+      {(loading || LoadingPDF) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[99999]">
           <BeatLoader
             color={color}
-            loading={loading}
+            loading={(loading || LoadingPDF)}
             size={30}
             aria-label="Loading Spinner"
             data-testid="loader"
@@ -902,16 +983,27 @@ const NfsServico: React.FC = () => {
               <div className={`flex gap-10 justify-center items-center pt-4 pb-4`}>
 
                 <button
-                  className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
-                // onClick={gerarPDF}
+                  className={`${LoadingPDF ? 'bg-gray-400 cursor-not-allowed' : '!bg-red500 hover:bg-red700 hover:scale-125'}
+    text-white rounded flex items-center gap-2 p-0 transition-all duration-150`}
+                  onClick={() => {
+                    if (!LoadingPDF) {
+                      if (xmlSaida) {
+                        gerarPdfDanfe(xmlSaida);
+                      } else {
+                        toast.error("Primeiro gere a NFS-e!");
+                      }
+                    }
+                  }}
+                  disabled={LoadingPDF}
                 >
-                  <div className="bg-red700 w-10 h-10 flex items-center justify-center rounded">
+                  <div className={`${LoadingPDF ? 'bg-gray-600' : 'bg-red700'} w-10 h-10 flex items-center justify-center rounded`}>
                     <AiFillFilePdf className="text-white" style={{ fontSize: "24px" }} />
                   </div>
                   <span className="whitespace-nowrap px-2">
-                    {"PDF NF-e"}&nbsp;&nbsp;
+                    {LoadingPDF ? 'Aguarde...' : 'PDF da NF-e'}&nbsp;&nbsp;
                   </span>
                 </button>
+
 
                 <button
                   className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
@@ -922,7 +1014,7 @@ const NfsServico: React.FC = () => {
                   }}
                 >
                   <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
-                    <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
+                    <TbFileTypeXml className="text-white" style={{ fontSize: "24px" }} />
                   </div>
                   <span className="whitespace-nowrap px-2">XML da NFS-e&nbsp;&nbsp;</span>
                 </button>
@@ -938,10 +1030,10 @@ const NfsServico: React.FC = () => {
                   disabled={loading}
                 >
                   <div className="bg-cyan-700 w-10 h-10 flex items-center justify-center rounded">
-                    <GiCalculator className="text-white" style={{ fontSize: '24px' }} />
+                    <TbInvoice className="text-white" style={{ fontSize: '24px' }} />
                   </div>
                   <span className="whitespace-nowrap px-2">
-                    {loading ? 'Aguarde...' : 'Gerar NFS-e'}
+                    {loading ? 'Aguarde...' : 'Gerar NFS-e'}&nbsp;&nbsp;
                   </span>
                 </button>
 
@@ -1096,6 +1188,54 @@ const NfsServico: React.FC = () => {
                       name="cnpj_cpf_ent"
                       disabled
                       value={formValues.cnpj_cpf_ent}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+
+                  <div className="">
+                    <label htmlFor="telefone_ent" className="block text-blue font-medium">
+                      Telefone
+                    </label>
+                    <input
+                      type="text"
+                      id="telefone_ent"
+                      name="telefone_ent"
+                      value={formValues.telefone_ent || ""}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
+                      disabled={visualizando}
+                    />
+                  </div>
+
+                  <div className="">
+                    <label htmlFor="celular_ent" className="block text-blue font-medium">
+                      Celular
+                    </label>
+                    <input
+                      type="text"
+                      id="celular_ent"
+                      name="celular_ent"
+                      value={formValues.celular_ent || ""}
+                      onChange={handleInputChange}
+                      className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
+                      disabled={visualizando}
+                    />
+                  </div>
+
+                  <div className="">
+                    <label htmlFor="email_ent" className="block text-blue font-medium">
+                      Email
+                    </label>
+                    <input
+                      type="text"
+                      id="email_ent"
+                      name="email_ent"
+                      disabled
+                      value={formValues.email_ent}
                       onChange={handleInputChange}
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-300 cursor-not-allowed"
                     />
@@ -1997,6 +2137,7 @@ const NfsServico: React.FC = () => {
               {
                 //#endregion
               }
+
               <div className="grid gap-2 grid-cols-2">
                 <div>
                   <label htmlFor="observacoes" className="block text-blue font-medium">
@@ -2026,13 +2167,39 @@ const NfsServico: React.FC = () => {
                   />
                 </div>
               </div>
-              <Button
-                label="console.log(formValues)"
-                className="text-black bg-yellow h-8 w-[300px] shadow-lg shadow-black
-                active:scale-95 duration-100 transition-all active:translate-y-2 active:shadow-none"
-                onClick={() => console.log(formValues)}
-              />
             </div>
+            <div className="grid gap-2 grid-cols-4">
+              <div className="col-start-4 col-span-1">
+                <label htmlFor="venc_fatura" className="block text-blue font-medium">
+                  Vencimento da Fatura
+                </label>
+                <input
+                  type="date"
+                  id="venc_fatura"
+                  name="venc_fatura"
+                  className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'} border border-gray-400 pl-1 rounded-sm h-8 w-full`}
+                  disabled={visualizando}
+                  value={!isEditing ?
+                    (formValues.venc_fatura ? new Date(formValues.venc_fatura).toISOString().split("T")[0] : "") :
+                    (formValues.venc_fatura ? new Date(formValues.venc_fatura).toISOString().split("T")[0] : "")}
+
+
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormValues((prevValues) => ({
+                      ...prevValues,
+                      venc_fatura: value ? new Date(value) : undefined,
+                    }));
+                  }}
+                />
+              </div>
+            </div>
+            <Button
+              label="console.log(formValues)"
+              className="text-black bg-yellow h-8 w-[300px] shadow-lg shadow-black
+                active:scale-95 duration-100 transition-all active:translate-y-2 active:shadow-none"
+              onClick={() => console.log(formValues)}
+            />
 
 
             <div className="flex justify-between items-center mt-16 w-full">

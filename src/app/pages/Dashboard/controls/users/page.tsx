@@ -29,7 +29,7 @@ import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
 
-interface User {
+export interface User {
     cod_usuario: number;
     nome: string;
     usuario: string;
@@ -151,7 +151,7 @@ const UsersPage: React.FC = () => {
     const handleSaveEdit = async () => {
         setUserEditDisabled(true)
         setLoading(true)
-        setIsEditing(false);
+
         try {
             let requiredFields: any[] = []
             if (isEditing) {
@@ -203,6 +203,7 @@ const UsersPage: React.FC = () => {
                     autoClose: 3000,
                 });
                 setVisible(false);
+                setIsEditing(false);
             } else {
                 setUserEditDisabled(false)
                 setLoading(false)

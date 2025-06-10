@@ -19,26 +19,41 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
-import CancelButton from "@/app/components/Buttons/CancelButton";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import { MultiSelect } from "primereact/multiselect";
+import { User } from "../../controls/users/page";
 
-interface Servico {
-  cod_servico: number;
+interface Establishment {
+  cod_estabelecimento: number;
   nome: string;
-  descricao?: string;
-  valor_venda?: string;
-  valor_custo?: string;
-  comissao?: string;
-  dtCadastro?: string;
-  situacao?: string;
+  cep: string;
+  logradouro: string;
+  numero: number;
+  bairro: string;
+  cidade: string;
+  complemento: string;
+  estado: string;
 }
 
-const ServicosPage: React.FC = () => {
+export interface Deposito {
+  id: string;
+  cod_deposito: string;
+  descricao?: string;
+  cod_estabel?: number;
+  tipo: string; // padrão: "Manutenção"
+  cod_usuario?: number;
+  dt_hr_criacao?: Date;
+  situacao: string;
+}
+
+
+const DepositosPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
-  const { permissions } = useUserPermissions(groupCode ?? 0, "Comercial");
+  const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
   let [loading, setLoading] = useState(false);
   let [color, setColor] = useState("#B8D047");
   const [itemCreateDisabled, setItemCreateDisabled] = useState(false);
@@ -46,109 +61,161 @@ const ServicosPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [depositos, setDepositos] = useState<Deposito[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredServicos = servicos.filter((servico) => {
+  const filteredDepositos = depositos.filter((deposito) => {
     // Apenas ATIVO aparecem
-    if (servico.situacao !== 'Ativo') {
+    if (deposito.situacao !== 'Ativo') {
       return false;
     }
 
-    // Função de busca
-    return Object.values(servico).some((value) =>
+    // Lógica de busca
+    return Object.values(deposito).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
   });
 
+
+  const [users, setUsers] = useState<User[]>([]);
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const responseUsers = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/users/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setRowData(responseUsers.data.users);
+      setIsDataLoaded(true);
+
+      const responseGroup = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
+        const matchingGroup = responseGroup.data.groups.find(
+          (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
+        );
+
+        return {
+          ...user,
+          nomeGrupo: matchingGroup ? matchingGroup.nome : "",
+        };
+      });
+
+      //console.log("useerr", usersWithGroupName);             
+      setUsers(usersWithGroupName);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar usuários:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [token]);
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [servicoIdToDelete, setServicoIdToDelete] = useState<number | null>(null);
+  const [depositosIdToDelete, setDepositoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
-  const [formValues, setFormValues] = useState<Servico>({
-    cod_servico: 0,
-    nome: "",
+  const [selectedDeposito, setSelectedDeposito] = useState<Deposito | null>(null);
+  const [formValues, setFormValues] = useState<Deposito>({
+    id: "",
+    cod_deposito: "",
     descricao: "",
-    valor_custo: "",
-    valor_venda: "",
-    comissao: "",
+    cod_estabel: undefined,
+    tipo: "",
+    cod_usuario: undefined,
+    dt_hr_criacao: undefined,
+    situacao: "",
   });
 
   const clearInputs = () => {
-    setVisualizar(false)
+    setVisualizar(false);
+    setSelectedEstablishments([]);
     setFormValues({
-      cod_servico: 0,
-      nome: "",
+      id: "",
+      cod_deposito: "",
       descricao: "",
-      valor_custo: "",
-      valor_venda: "",
-      comissao: "",
+      cod_estabel: undefined,
+      tipo: "",
+      cod_usuario: undefined,
+      dt_hr_criacao: undefined,
+      situacao: "",
     });
   };
 
-  const handleSaveEdit = async (cod_servico: any) => {
-    if (!cod_servico) {
-      toast.error("Serviço não selecionado ou inválido. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
 
-    setItemEditDisabled(true);
+  const fetchEstabilishments = async () => {
     setLoading(true);
-
-
     try {
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/edit/${cod_servico}`,
-        { ...formValues, situacao: "Ativo" },
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const ativos = response.data.estabelecimentos.filter(
+        (estab: any) => estab.situacao === "Ativo"
+      );
+
+      setEstablishments(ativos);
+    } catch (error) {
+      console.error("Erro ao carregar estabelecimentos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEstabilishments();
+  }, [token]);
+
+  const fetchDepositos = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/depositos",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-
-      if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
-        clearInputs();
-        fetchServicos();
-        toast.success("Serviço salvo com sucesso!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setVisible(false);
-        setIsEditing(false);
-      } else {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar serviço.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      setItemEditDisabled(false);
+      setRowData(response.data.depositos);
+      setIsDataLoaded(true);
+      setDepositos(response.data.depositos);
       setLoading(false);
-      console.error("Erro ao salvar serviço:", error);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar depositos:", error);
     }
   };
+  useEffect(() => {
+    fetchDepositos();
+  }, []);
 
 
-  const [rowData, setRowData] = useState<Servico[]>([]);
+  const [rowData, setRowData] = useState<Deposito[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-
-
-  const handleSaveReturn = async (fecharTela: boolean) => {
-    setItemCreateReturnDisabled(true);
+  const handleSaveEdit = async (cod_deposito: any) => {
+    setItemEditDisabled(true);
     setLoading(true);
 
     try {
-      const requiredFields = ["nome", "descricao", "valor_custo", "valor_venda"];
+      const requiredFields = [
+        "descricao",
+        "cod_deposito",
+        "tipo",
+      ];
 
       const isEmptyField = requiredFields.some((field) => {
         const value = formValues[field as keyof typeof formValues];
@@ -156,7 +223,7 @@ const ServicosPage: React.FC = () => {
       });
 
       if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
+        setItemEditDisabled(false);
         setLoading(false);
         toast.info("Todos os campos devem ser preenchidos!", {
           position: "top-right",
@@ -165,28 +232,84 @@ const ServicosPage: React.FC = () => {
         return;
       }
 
-      const servicoEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const situacaoInativo = servicoEncontrado?.situacao === "Inativo";
+      const cod_estabel = selectedEstablishments[0]?.cod_estabelecimento;
 
-      console.log("Servico encontrado:", servicoEncontrado);
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/depositos/edit/${cod_deposito}`,
+        { ...formValues, cod_deposito_old, cod_estabel },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status >= 200 && response.status < 300) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        clearInputs();
+        fetchDepositos();
+        toast.success("Depósito salvo com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setVisible(false);
+        setIsEditing(false);
+      } else {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.error("Erro ao salvar deposito.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      setItemEditDisabled(false);
+      setLoading(false);
+      console.error("Erro ao salvar deposito:", error);
+    }
+  };
 
-      if (servicoEncontrado && !situacaoInativo) {
+  const handleSaveReturn = async (fecharTela: boolean) => {
+    setItemCreateReturnDisabled(true);
+    setLoading(true);
+
+    try {
+      const requiredFields = ["descricao", "cod_deposito", "tipo"];
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (isEmptyField) {
+        toast.info("Todos os campos devem ser preenchidos!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
         setItemCreateReturnDisabled(false);
         setLoading(false);
-        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+        return;
+      }
+
+      const centroEncontrado = rowData.find(
+        (item) => item.cod_deposito === formValues.cod_deposito
+      );
+      const situacaoInativo = centroEncontrado?.situacao === "Inativo";
+
+      if (centroEncontrado && !situacaoInativo) {
+        toast.info("Esse código de depósito já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
           icon: <span>⚠️</span>,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
-      if (servicoEncontrado && situacaoInativo) {
-        await handleSaveEdit(servicoEncontrado.cod_servico); // Passa o serviço diretamente
-        fetchServicos();
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
+      if (centroEncontrado && situacaoInativo) {
+        await handleSaveEdit(centroEncontrado.cod_deposito);
+        fetchDepositos();
         clearInputs();
         setVisible(fecharTela);
         toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
@@ -195,13 +318,26 @@ const ServicosPage: React.FC = () => {
           progressStyle: { background: "green" },
           icon: <span>♻️</span>,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
-      // Se o nome não existir, cadastra o serviço normalmente
+      if (!selectedEstablishments || selectedEstablishments.length === 0) {
+        toast.info("Você deve selecionar um estabelecimento!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      const cod_estabel = selectedEstablishments[0]?.cod_estabelecimento;
+
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/servicos/register",
-        formValues,
+        process.env.NEXT_PUBLIC_API_URL + "/api/depositos/register",
+        { ...formValues, cod_estabel },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -210,86 +346,59 @@ const ServicosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
         clearInputs();
-        fetchServicos();
-        toast.success("Serviço salvo com sucesso!", {
+        fetchDepositos();
+        toast.success("Depósito salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(fecharTela);
       } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar serviços.", {
+        toast.error("Erro ao salvar depósitos.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
+      console.error("Erro ao salvar depósitos:", error);
+    } finally {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar serviços:", error);
     }
   };
 
-
-
   const [visualizando, setVisualizar] = useState<boolean>(false);
+  const [cod_deposito_old, SETcod_deposito_old] = useState<string>("");
 
-  const handleEdit = (servico: Servico, visualizar: boolean) => {
+  const handleEdit = (depositos: Deposito, visualizar: boolean) => {
     setVisualizar(visualizar);
-
-    setFormValues(servico);
-    setSelectedServico(servico);
+    SETcod_deposito_old(depositos.cod_deposito);
+    setFormValues(depositos);
+    const estabelecimento = establishments.find((e) => e.cod_estabelecimento === depositos.cod_estabel);
+    setSelectedEstablishments(estabelecimento ? [estabelecimento] : []);
+    setSelectedDeposito(depositos);
     setIsEditing(true);
     setVisible(true);
   };
 
-  useEffect(() => {
-    fetchServicos();
-  }, []);
-
-  const fetchServicos = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/servicos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.servicos);
-      setIsDataLoaded(true);
-      setServicos(response.data.servicos);
-
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar serviços:", error);
-    }
-  };
 
   const openDialog = (id: number) => {
-    setServicoIdToDelete(id);
+    setDepositoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setServicoIdToDelete(null);
+    setDepositoIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (servicoIdToDelete === null) return;
+    if (depositosIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/cancel/${servicoIdToDelete}`,
-        {}, // Enviar um corpo vazio, caso necessário para o endpoint
+        `${process.env.NEXT_PUBLIC_API_URL}/api/depositos/cancel/${depositosIdToDelete}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -298,49 +407,21 @@ const ServicosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchServicos(); // Atualizar a lista de serviços
+        fetchDepositos(); // Aqui é necessário chamar a função que irá atualizar a lista de depositos
         setModalDeleteVisible(false);
-        toast.success("Serviço cancelado com sucesso!", {
+        toast.success("Depósito cancelado com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar serviço.", {
+        toast.error("Erro ao cancelar deposito.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao cancelar serviço:", error);
-      toast.error("Erro ao cancelar serviço. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-
-  const handleDelete = async () => {
-    if (servicoIdToDelete === null) return;
-
-    try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/${servicoIdToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Serviço removido com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchServicos();
-      setModalDeleteVisible(false);
-    } catch (error) {
-      console.log("Erro ao excluir serviço:", error);
-      toast.error("Erro ao excluir serviço. Tente novamente.", {
+      console.log("Erro ao excluir deposito:", error);
+      toast.error("Erro ao excluir deposito. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -411,7 +492,7 @@ const ServicosPage: React.FC = () => {
           )}
 
           <Dialog
-            header="Confirmar Exclusão"
+            header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
             style={{ width: "auto" }}
             onHide={closeDialog}
@@ -432,11 +513,11 @@ const ServicosPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este serviço?</p>
+            <p>Tem certeza que deseja cancelar este deposito?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Serviço" : "Editar Serviço") : "Novo Serviço"}
+            header={isEditing ? (visualizando ? "Visualizando Depósito" : "Editar Depósito") : "Novo Depósito"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -445,109 +526,79 @@ const ServicosPage: React.FC = () => {
               padding: "0.8rem",
               height: "3rem",
             }}
+            style={{ width: "900px", maxWidth: "900px" }}
             onHide={() => closeModal()}
           >
             <div
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome
-                  </label>
-                  <input
-                    type="text"
-                    id="nome"
-                    name="nome"
-                    disabled={visualizando}
-                    value={formValues.nome}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label htmlFor="valor_custo" className="block text-blue font-medium">
-                    Valor de Custo
-                  </label>
-                  <input
-                    id="valor_custo"
-                    name="valor_custo"
-                    type="text"
-                    disabled={visualizando}
-                    value={`R$ ${Number(formValues.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValues({ ...formValues, valor_custo: numericValue.toString() });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-
-                </div>
-                <div>
-                  <label htmlFor="valor_venda" className="block text-blue font-medium">
-                    Valor de Venda
-                  </label>
-                  <input
-                    type="text"
-                    id="valor_venda"
-                    name="valor_venda"
-                    disabled={visualizando}
-                    value={`R$ ${Number(formValues.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValues({ ...formValues, valor_venda: numericValue.toString() });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="comissao" className="block text-blue font-medium">
-                    Comissão
-                  </label>
-                  <input
-                    type="text"
-                    id="comissao"
-                    name="comissao"
-                    disabled={visualizando}
-                    value={`${Number(formValues.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
-                      setFormValues({ ...formValues, comissao: numericValue.toString() });
-                    }}
-                    placeholder="0,00 %"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid gap-2">
                 <div>
                   <label htmlFor="descricao" className="block text-blue font-medium">
                     Descrição
                   </label>
-                  <textarea
+                  <input
+                    type="text"
                     id="descricao"
                     name="descricao"
                     disabled={visualizando}
-                    value={formValues.descricao || ""}
-                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
-                    maxLength={255}
-                    onChange={(e) => {
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        descricao: e.target.value, // Atualiza o campo descricao
-                      }));
-                    }}
+                    value={formValues.descricao}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="cod_deposito" className="block text-blue font-medium">
+                    Código
+                  </label>
+                  <input
+                    type="text"
+                    id="cod_deposito"
+                    name="cod_deposito"
+                    disabled={visualizando}
+                    value={formValues.cod_deposito}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento
+                  </label>
+                  <MultiSelect
+                    disabled={visualizando}
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione o estabelecimento"
+                    maxSelectedLabels={2}
+                    selectionLimit={1}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tipo" className="block text-blue font-medium">
+                    Tipo
+                  </label>
+                  <select
+                    id="tipo"
+                    name="tipo"
+                    disabled={visualizando}
+                    value={formValues.tipo || "default"}
+                    defaultValue={"default"}
+                    onChange={(e) =>
+                      setFormValues({ ...formValues, tipo: e.target.value })
+                    }
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  >
+                    <option value="default" disabled>Selecione</option>
+                    <option value="Manutenção">Manutenção</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -560,16 +611,15 @@ const ServicosPage: React.FC = () => {
                   className="text-white"
                   icon="pi pi-times"
                   style={{
-                    height: "50px",
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.5rem 1.5rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
+                    backgroundColor: '#dc3545',
+                    border: '1px solid #dc3545',
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
                   }}
                   onClick={() => closeModal()}
                 />
@@ -580,38 +630,36 @@ const ServicosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={() => { handleSaveReturn(false) }}
+                      onClick={() => handleSaveReturn(false)}
                       disabled={itemCreateReturnDisabled}
                       style={{
-                        height: "50px",
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
+                        backgroundColor: '#007bff',
+                        border: '1px solid #007bff',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                     <Button
                       label="Salvar e Adicionar Outro"
                       className="text-white"
-                      icon="pi pi-check"
-                      onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
+                      icon="pi pi-check"
+                      onClick={() => handleSaveReturn(true)}
                       style={{
-                        height: "50px",
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
+                        backgroundColor: '#28a745',
+                        border: '1px solid #28a745',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                   </>
@@ -620,19 +668,22 @@ const ServicosPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => { handleSaveEdit(formValues.cod_servico) }}
+                    onClick={() => {
+                      if (selectedDeposito) {
+                        handleSaveEdit(selectedDeposito.id);
+                      }
+                    }}
                     disabled={itemEditDisabled}
                     style={{
-                      height: "50px",
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "100%",
+                      backgroundColor: '#28a745',
+                      border: '1px solid #28a745',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
                     }}
                   />
                 )}
@@ -646,7 +697,7 @@ const ServicosPage: React.FC = () => {
               <div>
                 <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">
-                  Serviços
+                  Depósitos
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -672,12 +723,11 @@ const ServicosPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredServicos.slice(first, first + rows)}
+                value={filteredDepositos.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
                 rowClassName={(data) => 'hover:bg-gray-200'}
-
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -690,7 +740,7 @@ const ServicosPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_servico"
+                  field="cod_deposito"
                   header="Código"
                   style={{
                     width: "0%",
@@ -709,29 +759,10 @@ const ServicosPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="nome"
-                  header="Nome"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
                   field="descricao"
                   header="Descrição"
                   style={{
-                    width: "1%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -747,14 +778,34 @@ const ServicosPage: React.FC = () => {
                   }}
                 />
                 <Column
-                  field="valor_custo"
-                  header="Valor Custo"
-                  body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.valor_custo)}`;
+                  field="cod_estabel"
+                  header="Estabelecimento"
+                  style={{
+                    width: "3%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
                   }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    const estabel = establishments.find(
+                      (e) => e.cod_estabelecimento === rowData.cod_estabel
+                    );
+                    return estabel?.nome || "-";
+                  }}
+                />
+
+                <Column
+                  field="tipo"
+                  header="Tipo"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -771,16 +822,9 @@ const ServicosPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-
                 <Column
-                  field="valor_venda"
-                  header="Valor Venda"
-                  body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.valor_venda)}`;
-                  }}
+                  field="cod_usuario"
+                  header="Criador"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -796,36 +840,14 @@ const ServicosPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />
-
-                <Column
-                  field="comissao"
-                  header="Comissão"
                   body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.comissao)}`;
-                  }}
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
+                    const usuario = users.find((u) => u.cod_usuario === rowData.cod_usuario);
+                    return usuario?.nome || "-";
                   }}
                 />
 
                 <Column
-                  field="dtCadastro"
+                  field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
                     width: "2%",
@@ -843,19 +865,16 @@ const ServicosPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const date = new Date(rowData.dtCadastro);
+                    const date = new Date(rowData.dt_hr_criacao);
                     const formattedDate = new Intl.DateTimeFormat("pt-BR", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
                     }).format(date);
 
                     return <span>{formattedDate}</span>;
                   }}
                 />
-
                 <Column
                   header=""
                   body={(rowData) => (
@@ -911,7 +930,7 @@ const ServicosPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_servico)} />
+                        <CancelButton onClick={() => openDialog(rowData.id)} />
                       </div>
                     )}
                     className="text-black"
@@ -942,4 +961,4 @@ const ServicosPage: React.FC = () => {
   );
 };
 
-export default ServicosPage;
+export default DepositosPage;

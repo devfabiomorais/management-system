@@ -11,6 +11,9 @@ export interface NfsServico {
   cnpj_cpf_ent?: string;
   razao_social_ent?: string;
   tipo_contribuinte_ent?: string;
+  email_ent?: string;
+  celular_ent?: string;
+  telefone_ent?: string;
   insc_estadual_ent?: string;
   insc_municipal_ent?: string;
   cep_ent?: string;
@@ -46,6 +49,7 @@ export interface NfsServico {
   iss_retido?: "Sim" | "Não";
   situacao?: string;
   item_lista_servico?: string;
+  venc_fatura?: Date;
 }
 
 // Função para buscar Notas Fiscais de Serviços

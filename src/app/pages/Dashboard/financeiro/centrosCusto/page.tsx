@@ -81,7 +81,7 @@ const CentrosCustoPage: React.FC = () => {
   const handleSaveEdit = async (cod_centro_custo: any) => {
     setItemEditDisabled(true);
     setLoading(true);
-    setIsEditing(false);
+
     try {
       const requiredFields = [
         "nome",
@@ -122,6 +122,7 @@ const CentrosCustoPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);

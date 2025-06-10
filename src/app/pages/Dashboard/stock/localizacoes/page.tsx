@@ -19,26 +19,51 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
-import CancelButton from "@/app/components/Buttons/CancelButton";
 import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import { MultiSelect } from "primereact/multiselect";
+import { User } from "../../controls/users/page";
+import { Deposito } from "../depositos/page";
 
-interface Servico {
-  cod_servico: number;
-  nome: string;
-  descricao?: string;
-  valor_venda?: string;
-  valor_custo?: string;
-  comissao?: string;
-  dtCadastro?: string;
+interface UnidadeDeMedida {
+  cod_un: number;
+  descricao: string;
+  un: string;
   situacao?: string;
 }
 
-const ServicosPage: React.FC = () => {
+interface Establishment {
+  cod_deposito: number;
+  nome: string;
+  cep: string;
+  logradouro: string;
+  numero: number;
+  bairro: string;
+  cidade: string;
+  complemento: string;
+  estado: string;
+}
+
+export interface Localizacao {
+  cod_localizacao?: number;
+  cod_deposito?: string;
+  capacidade?: number;
+  cod_un?: number;
+  cod_rua?: string;
+  cod_coluna?: string;
+  cod_nivel?: string;
+  cod_usuario?: number;
+  dt_hr_criacao?: Date;
+  situacao?: string;
+}
+
+
+const LocalizacoesPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
-  const { permissions } = useUserPermissions(groupCode ?? 0, "Comercial");
+  const { permissions } = useUserPermissions(groupCode ?? 0, "Estoque");
   let [loading, setLoading] = useState(false);
   let [color, setColor] = useState("#B8D047");
   const [itemCreateDisabled, setItemCreateDisabled] = useState(false);
@@ -46,77 +71,229 @@ const ServicosPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredServicos = servicos.filter((servico) => {
+  const filteredLocalizacoes = localizacoes.filter((localizacao) => {
     // Apenas ATIVO aparecem
-    if (servico.situacao !== 'Ativo') {
+    if (localizacao.situacao !== 'Ativo') {
       return false;
     }
 
-    // Função de busca
-    return Object.values(servico).some((value) =>
+    // Lógica de busca
+    return Object.values(localizacao).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
   });
 
+
+  const [users, setUsers] = useState<User[]>([]);
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const responseUsers = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/users/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setRowData(responseUsers.data.users);
+      setIsDataLoaded(true);
+
+      const responseGroup = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
+        const matchingGroup = responseGroup.data.groups.find(
+          (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
+        );
+
+        return {
+          ...user,
+          nomeGrupo: matchingGroup ? matchingGroup.nome : "",
+        };
+      });
+
+      //console.log("useerr", usersWithGroupName);             
+      setUsers(usersWithGroupName);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar usuários:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [token]);
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [servicoIdToDelete, setServicoIdToDelete] = useState<number | null>(null);
+  const [localizacoesIdToDelete, setLocalizacaoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedServico, setSelectedServico] = useState<Servico | null>(null);
-  const [formValues, setFormValues] = useState<Servico>({
-    cod_servico: 0,
-    nome: "",
-    descricao: "",
-    valor_custo: "",
-    valor_venda: "",
-    comissao: "",
+  const [selectedLocalizacao, setSelectedLocalizacao] = useState<Localizacao | null>(null);
+  const [formValues, setFormValues] = useState<Localizacao>({
+    cod_localizacao: undefined,
+    cod_deposito: '',
+    capacidade: undefined,
+    cod_un: undefined,
+    cod_rua: '',
+    cod_coluna: '',
+    cod_nivel: '',
+    cod_usuario: undefined,
+    dt_hr_criacao: undefined,
+    situacao: '',
   });
 
   const clearInputs = () => {
-    setVisualizar(false)
+    setVisualizar(false);
+    setSelectedDepositos([]);
+    setSelectedUnidadesDeMedida([]);
     setFormValues({
-      cod_servico: 0,
-      nome: "",
-      descricao: "",
-      valor_custo: "",
-      valor_venda: "",
-      comissao: "",
+      cod_localizacao: undefined,
+      cod_deposito: '',
+      capacidade: undefined,
+      cod_un: undefined,
+      cod_rua: '',
+      cod_coluna: '',
+      cod_nivel: '',
+      cod_usuario: undefined,
+      dt_hr_criacao: undefined,
+      situacao: '',
     });
   };
 
-  const handleSaveEdit = async (cod_servico: any) => {
-    if (!cod_servico) {
-      toast.error("Serviço não selecionado ou inválido. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return;
-    }
+  const [depositos, setDepositos] = useState<Deposito[]>([]);
+  const [selectedDepositos, setSelectedDepositos] = useState<Deposito[]>([]);
 
-    setItemEditDisabled(true);
+  const fetchDepositos = async () => {
     setLoading(true);
-
-
     try {
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/edit/${cod_servico}`,
-        { ...formValues, situacao: "Ativo" },
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/depositos", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const ativos = response.data.depositos.filter(
+        (deposito: any) => deposito.situacao === "Ativo"
+      );
+
+      setDepositos(ativos);
+    } catch (error) {
+      console.error("Erro ao carregar depositos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDepositos();
+  }, [token]);
+
+  const [unidadesDeMedida, setUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]);
+  const [selectedUnidadesDeMedida, setSelectedUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]);
+
+  const fetchUnidadesDeMedida = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const ativos = response.data.units.filter(
+        (un: any) => un.situacao === "Ativo"
+      );
+
+      setUnidadesDeMedida(ativos);
+    } catch (error) {
+      console.error("Erro ao carregar unidades de medida:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnidadesDeMedida();
+  }, [token]);
+
+  const fetchLocalizacoes = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+      setRowData(response.data.localizacoes);
+      setIsDataLoaded(true);
+      setLocalizacoes(response.data.localizacoes);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar localizacoes:", error);
+    }
+  };
+  useEffect(() => {
+    fetchLocalizacoes();
+  }, []);
 
+
+  const [rowData, setRowData] = useState<Localizacao[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const handleSaveEdit = async (cod_localizacao: any) => {
+    setItemEditDisabled(true);
+    setLoading(true);
+
+    try {
+      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
+        { key: "capacidade", label: "Capacidade" },
+        { key: "cod_rua", label: "Rua" },
+        { key: "cod_coluna", label: "Coluna" },
+        { key: "cod_nivel", label: "Nível" },
+      ];
+
+      const missingField = requiredFields.find(({ key }) => {
+        const value = formValues[key];
+        return value === "" || value === null || value === undefined;
+      });
+
+      if (missingField) {
+        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      const cod_deposito = selectedDepositos[0]?.cod_deposito;
+      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/edit/${cod_localizacao}`,
+        { ...formValues, cod_deposito, cod_un },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (response.status >= 200 && response.status < 300) {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchServicos();
-        toast.success("Serviço salvo com sucesso!", {
+        fetchLocalizacoes();
+        toast.success("Localização salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -125,7 +302,7 @@ const ServicosPage: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar serviço.", {
+        toast.error("Erro ao salvar localizacao.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -133,60 +310,57 @@ const ServicosPage: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar serviço:", error);
+      console.error("Erro ao salvar localizacao:", error);
     }
   };
-
-
-  const [rowData, setRowData] = useState<Servico[]>([]);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-
 
   const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
 
     try {
-      const requiredFields = ["nome", "descricao", "valor_custo", "valor_venda"];
+      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
+        { key: "capacidade", label: "Capacidade" },
+        { key: "cod_rua", label: "Rua" },
+        { key: "cod_coluna", label: "Coluna" },
+        { key: "cod_nivel", label: "Nível" },
+      ];
 
-      const isEmptyField = requiredFields.some((field) => {
-        const value = formValues[field as keyof typeof formValues];
+      const missingField = requiredFields.find(({ key }) => {
+        const value = formValues[key];
         return value === "" || value === null || value === undefined;
       });
 
-      if (isEmptyField) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Todos os campos devem ser preenchidos!", {
+      if (missingField) {
+        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
           position: "top-right",
           autoClose: 3000,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
-      const servicoEncontrado = rowData.find((item) => item.nome === formValues.nome);
-      const situacaoInativo = servicoEncontrado?.situacao === "Inativo";
+      const centroEncontrado = rowData.find(
+        (item) => item.cod_localizacao === formValues.cod_localizacao
+      );
+      const situacaoInativo = centroEncontrado?.situacao === "Inativo";
 
-      console.log("Servico encontrado:", servicoEncontrado);
-
-      if (servicoEncontrado && !situacaoInativo) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+      if (centroEncontrado && !situacaoInativo) {
+        toast.info("Esse código de localização já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
           icon: <span>⚠️</span>,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
-      if (servicoEncontrado && situacaoInativo) {
-        await handleSaveEdit(servicoEncontrado.cod_servico); // Passa o serviço diretamente
-        fetchServicos();
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
+      if (centroEncontrado && situacaoInativo) {
+        await handleSaveEdit(centroEncontrado.cod_localizacao);
+        fetchLocalizacoes();
         clearInputs();
         setVisible(fecharTela);
         toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
@@ -195,13 +369,27 @@ const ServicosPage: React.FC = () => {
           progressStyle: { background: "green" },
           icon: <span>♻️</span>,
         });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
         return;
       }
 
-      // Se o nome não existir, cadastra o serviço normalmente
+      if (!selectedDepositos || selectedDepositos.length === 0) {
+        toast.info("Você deve selecionar um deposito!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
+
+      const cod_deposito = selectedDepositos[0]?.cod_deposito;
+      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/servicos/register",
-        formValues,
+        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes/register",
+        { ...formValues, cod_deposito, cod_un },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -210,86 +398,57 @@ const ServicosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
         clearInputs();
-        fetchServicos();
-        toast.success("Serviço salvo com sucesso!", {
+        fetchLocalizacoes();
+        toast.success("Localização salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(fecharTela);
       } else {
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar serviços.", {
+        toast.error("Erro ao salvar localizações.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
+      console.error("Erro ao salvar localizações:", error);
+    } finally {
       setItemCreateReturnDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar serviços:", error);
     }
   };
 
-
-
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (servico: Servico, visualizar: boolean) => {
+  const handleEdit = (localizacoes: Localizacao, visualizar: boolean) => {
     setVisualizar(visualizar);
-
-    setFormValues(servico);
-    setSelectedServico(servico);
+    setFormValues(localizacoes);
+    const deposito = depositos.find((e) => e.cod_deposito === localizacoes.cod_deposito);
+    setSelectedDepositos(deposito ? [deposito] : []);
+    setSelectedLocalizacao(localizacoes);
     setIsEditing(true);
     setVisible(true);
   };
 
-  useEffect(() => {
-    fetchServicos();
-  }, []);
-
-  const fetchServicos = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/servicos",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setRowData(response.data.servicos);
-      setIsDataLoaded(true);
-      setServicos(response.data.servicos);
-
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Erro ao carregar serviços:", error);
-    }
-  };
 
   const openDialog = (id: number) => {
-    setServicoIdToDelete(id);
+    setLocalizacaoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setServicoIdToDelete(null);
+    setLocalizacaoIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (servicoIdToDelete === null) return;
+    if (localizacoesIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/cancel/${servicoIdToDelete}`,
-        {}, // Enviar um corpo vazio, caso necessário para o endpoint
+        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/cancel/${localizacoesIdToDelete}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -298,49 +457,21 @@ const ServicosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchServicos(); // Atualizar a lista de serviços
+        fetchLocalizacoes(); // Aqui é necessário chamar a função que irá atualizar a lista de localizacoes
         setModalDeleteVisible(false);
-        toast.success("Serviço cancelado com sucesso!", {
+        toast.success("Localização cancelado com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar serviço.", {
+        toast.error("Erro ao cancelar localizacao.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao cancelar serviço:", error);
-      toast.error("Erro ao cancelar serviço. Tente novamente.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  };
-
-
-  const handleDelete = async () => {
-    if (servicoIdToDelete === null) return;
-
-    try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/servicos/${servicoIdToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Serviço removido com sucesso!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchServicos();
-      setModalDeleteVisible(false);
-    } catch (error) {
-      console.log("Erro ao excluir serviço:", error);
-      toast.error("Erro ao excluir serviço. Tente novamente.", {
+      console.log("Erro ao excluir localizacao:", error);
+      toast.error("Erro ao excluir localizacao. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -411,7 +542,7 @@ const ServicosPage: React.FC = () => {
           )}
 
           <Dialog
-            header="Confirmar Exclusão"
+            header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
             style={{ width: "auto" }}
             onHide={closeDialog}
@@ -432,11 +563,11 @@ const ServicosPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este serviço?</p>
+            <p>Tem certeza que deseja cancelar este localizacao?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Serviço" : "Editar Serviço") : "Novo Serviço"}
+            header={isEditing ? (visualizando ? "Visualizando Localização" : "Editar Localização") : "Novo Localização"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -445,111 +576,109 @@ const ServicosPage: React.FC = () => {
               padding: "0.8rem",
               height: "3rem",
             }}
+            style={{ width: "900px", maxWidth: "900px" }}
             onHide={() => closeModal()}
           >
             <div
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
-              <div className="grid grid-cols-1 gap-2">
+
+              <div className="grid gap-2 grid-cols-3">
                 <div>
-                  <label htmlFor="nome" className="block text-blue font-medium">
-                    Nome
+                  <label htmlFor="deposito" className="block text-blue font-medium">
+                    Localização
+                  </label>
+                  <MultiSelect
+                    disabled={visualizando}
+                    value={selectedDepositos}
+                    onChange={(e) => setSelectedDepositos(e.value)}
+                    options={depositos}
+                    optionLabel="descricao"
+                    filter
+                    placeholder="Selecione o Localização"
+                    maxSelectedLabels={2}
+                    selectionLimit={1}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="capacidade" className="block text-blue font-medium">
+                    Capacidade
                   </label>
                   <input
-                    type="text"
-                    id="nome"
-                    name="nome"
+                    type="number"
+                    id="capacidade"
+                    name="capacidade"
                     disabled={visualizando}
-                    value={formValues.nome}
+                    value={formValues.capacidade}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label htmlFor="valor_custo" className="block text-blue font-medium">
-                    Valor de Custo
+                  <label htmlFor="un" className="block text-blue font-medium">
+                    Unidade de Medida
                   </label>
-                  <input
-                    id="valor_custo"
-                    name="valor_custo"
-                    type="text"
+                  <MultiSelect
                     disabled={visualizando}
-                    value={`R$ ${Number(formValues.valor_custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValues({ ...formValues, valor_custo: numericValue.toString() });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-
-                </div>
-                <div>
-                  <label htmlFor="valor_venda" className="block text-blue font-medium">
-                    Valor de Venda
-                  </label>
-                  <input
-                    type="text"
-                    id="valor_venda"
-                    name="valor_venda"
-                    disabled={visualizando}
-                    value={`R$ ${Number(formValues.valor_venda || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para centavos
-                      setFormValues({ ...formValues, valor_venda: numericValue.toString() });
-                    }}
-                    placeholder="R$ 0,00"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="comissao" className="block text-blue font-medium">
-                    Comissão
-                  </label>
-                  <input
-                    type="text"
-                    id="comissao"
-                    name="comissao"
-                    disabled={visualizando}
-                    value={`${Number(formValues.comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                      const numericValue = rawValue ? parseFloat(rawValue) / 100 : 0; // Divide por 100 para representar decimais
-                      setFormValues({ ...formValues, comissao: numericValue.toString() });
-                    }}
-                    placeholder="0,00 %"
-                    className="w-full border text-black border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    value={selectedUnidadesDeMedida}
+                    onChange={(e) => setSelectedUnidadesDeMedida(e.value)}
+                    options={unidadesDeMedida}
+                    optionLabel="descricao"
+                    filter
+                    placeholder="Selecione a un de medida"
+                    maxSelectedLabels={2}
+                    selectionLimit={1}
+                    className="w-full border text-black h-[35px] flex items-center"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid gap-2 grid-cols-3">
                 <div>
-                  <label htmlFor="descricao" className="block text-blue font-medium">
-                    Descrição
+                  <label htmlFor="cod_rua" className="block text-blue font-medium">
+                    Rua
                   </label>
-                  <textarea
-                    id="descricao"
-                    name="descricao"
+                  <input
+                    type="text"
+                    id="cod_rua"
+                    name="cod_rua"
                     disabled={visualizando}
-                    value={formValues.descricao || ""}
-                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
-                    maxLength={255}
-                    onChange={(e) => {
-                      setFormValues((prevValues) => ({
-                        ...prevValues,
-                        descricao: e.target.value, // Atualiza o campo descricao
-                      }));
-                    }}
+                    value={formValues.cod_rua}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cod_coluna" className="block text-blue font-medium">
+                    Coluna
+                  </label>
+                  <input
+                    type="text"
+                    id="cod_coluna"
+                    name="cod_coluna"
+                    disabled={visualizando}
+                    value={formValues.cod_coluna}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cod_nivel" className="block text-blue font-medium">
+                    Nível
+                  </label>
+                  <input
+                    type="text"
+                    id="cod_nivel"
+                    name="cod_nivel"
+                    disabled={visualizando}
+                    value={formValues.cod_nivel}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
               </div>
+
             </div>
 
 
@@ -560,16 +689,15 @@ const ServicosPage: React.FC = () => {
                   className="text-white"
                   icon="pi pi-times"
                   style={{
-                    height: "50px",
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.5rem 1.5rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
+                    backgroundColor: '#dc3545',
+                    border: '1px solid #dc3545',
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
                   }}
                   onClick={() => closeModal()}
                 />
@@ -580,38 +708,36 @@ const ServicosPage: React.FC = () => {
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={() => { handleSaveReturn(false) }}
+                      onClick={() => handleSaveReturn(false)}
                       disabled={itemCreateReturnDisabled}
                       style={{
-                        height: "50px",
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
+                        backgroundColor: '#007bff',
+                        border: '1px solid #007bff',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                     <Button
                       label="Salvar e Adicionar Outro"
                       className="text-white"
-                      icon="pi pi-check"
-                      onClick={() => { handleSaveReturn(true) }}
                       disabled={itemCreateDisabled}
+                      icon="pi pi-check"
+                      onClick={() => handleSaveReturn(true)}
                       style={{
-                        height: "50px",
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
+                        backgroundColor: '#28a745',
+                        border: '1px solid #28a745',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                   </>
@@ -620,19 +746,24 @@ const ServicosPage: React.FC = () => {
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={() => { handleSaveEdit(formValues.cod_servico) }}
+                    onClick={() => {
+                      if (selectedLocalizacao) {
+                        handleSaveEdit(selectedLocalizacao.cod_localizacao);
+                      } else {
+                        handleSaveEdit(formValues.cod_localizacao);
+                      }
+                    }}
                     disabled={itemEditDisabled}
                     style={{
-                      height: "50px",
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "100%",
+                      backgroundColor: '#28a745',
+                      border: '1px solid #28a745',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
                     }}
                   />
                 )}
@@ -646,7 +777,7 @@ const ServicosPage: React.FC = () => {
               <div>
                 <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">
-                  Serviços
+                  Localizações
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -672,12 +803,11 @@ const ServicosPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredServicos.slice(first, first + rows)}
+                value={filteredLocalizacoes.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
                 rowClassName={(data) => 'hover:bg-gray-200'}
-
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -690,10 +820,10 @@ const ServicosPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_servico"
-                  header="Código"
+                  field="cod_deposito"
+                  header="Localização"
                   style={{
-                    width: "0%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -707,54 +837,16 @@ const ServicosPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />
-                <Column
-                  field="nome"
-                  header="Nome"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="descricao"
-                  header="Descrição"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
-                />
-                <Column
-                  field="valor_custo"
-                  header="Valor Custo"
                   body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.valor_custo)}`;
+                    const deposito = depositos.find(
+                      (e) => e.cod_deposito === rowData.cod_deposito
+                    );
+                    return deposito?.descricao || "-";
                   }}
+                />
+                <Column
+                  field="cod_rua"
+                  header="Rua"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -771,16 +863,91 @@ const ServicosPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-
                 <Column
-                  field="valor_venda"
-                  header="Valor Venda"
+                  field="cod_coluna"
+                  header="Coluna"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="cod_nivel"
+                  header="Nível"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="capacidade"
+                  header="Capacidade"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="cod_un"
+                  header="UN"
+                  style={{
+                    width: "3%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
                   body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.valor_venda)}`;
+                    const un = unidadesDeMedida.find(
+                      (e) => e.cod_un === rowData.cod_un
+                    );
+                    return un?.descricao || "-";
                   }}
+                />
+                <Column
+                  field="cod_usuario"
+                  header="Criador"
                   style={{
                     width: "1%",
                     textAlign: "center",
@@ -796,36 +963,13 @@ const ServicosPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />
-
-                <Column
-                  field="comissao"
-                  header="Comissão"
                   body={(rowData) => {
-                    return `R$ ${new Intl.NumberFormat('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(rowData.comissao)}`;
-                  }}
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
+                    const usuario = users.find((u) => u.cod_usuario === rowData.cod_usuario);
+                    return usuario?.nome || "-";
                   }}
                 />
-
                 <Column
-                  field="dtCadastro"
+                  field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
                     width: "2%",
@@ -843,19 +987,16 @@ const ServicosPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const date = new Date(rowData.dtCadastro);
+                    const date = new Date(rowData.dt_hr_criacao);
                     const formattedDate = new Intl.DateTimeFormat("pt-BR", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
                     }).format(date);
 
                     return <span>{formattedDate}</span>;
                   }}
                 />
-
                 <Column
                   header=""
                   body={(rowData) => (
@@ -911,7 +1052,7 @@ const ServicosPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_servico)} />
+                        <CancelButton onClick={() => { openDialog(rowData.cod_localizacao); console.log(rowData.cod_localizacao) }} />
                       </div>
                     )}
                     className="text-black"
@@ -942,4 +1083,4 @@ const ServicosPage: React.FC = () => {
   );
 };
 
-export default ServicosPage;
+export default LocalizacoesPage;

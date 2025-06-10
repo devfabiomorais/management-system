@@ -138,7 +138,7 @@ const ClientsPage: React.FC = () => {
   const handleSaveEdit = async () => {
     setItemEditDisabled(true);
     setLoading(true);
-    setIsEditing(false);
+
     try {
       const requiredFields = [
         "nome",
@@ -191,6 +191,7 @@ const ClientsPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);

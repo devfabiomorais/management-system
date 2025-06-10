@@ -136,7 +136,7 @@ const EstablishmentsPage: React.FC = () => {
             return
         }
         setLoading(true)
-        setIsEditing(false);
+
         try {
             const requiredFields = [
                 "nome",
@@ -180,6 +180,7 @@ const EstablishmentsPage: React.FC = () => {
                     autoClose: 3000,
                 });
                 setVisible(false);
+                setIsEditing(false);
             } else {
                 setEstabilishmentEditDisabled(false)
                 setLoading(false)

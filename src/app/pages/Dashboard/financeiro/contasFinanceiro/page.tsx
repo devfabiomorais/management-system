@@ -485,7 +485,7 @@ const ContasFinanceiroPage: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         setItemEditDisabled(true);
         setLoading(true);
-        setIsEditing(false);
+
         clearInputs();
         fetchContasFinanceiro();
         toast.success("Conta financeira salvo com sucesso!", {
@@ -493,6 +493,7 @@ const ContasFinanceiroPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);

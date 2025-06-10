@@ -497,7 +497,6 @@ const OrcamentosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        setIsEditing(false);
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
@@ -507,6 +506,7 @@ const OrcamentosPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);
@@ -3087,7 +3087,6 @@ const OrcamentosPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        setIsEditing(false);
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
@@ -3097,6 +3096,7 @@ const OrcamentosPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);
@@ -5426,7 +5426,7 @@ const OrcamentosPage: React.FC = () => {
               }
               <button
                 onClick={() => setModalUsarEstruturaVisible(true)}
-                className={`mr-4 flex items-center bg-blue p-2 rounded-md transition-all duration-300 w-10 hover:w-[315px] overflow-hidden ${visualizando ? 'hidden' : ''
+                className={`mr-4 flex items-center bg-blue p-2 rounded-md transition-all duration-300 w-10 hover:w-[315px] overflow-hidden ${(visualizando || isEstrutura) ? 'hidden' : ''
                   }`}
                 title="Visualizar estruturas"
               >

@@ -196,7 +196,7 @@ const TransportadorasPage: React.FC = () => {
 
     setItemEditDisabled(true);
     setLoading(true);
-    setIsEditing(false);
+
 
     try {
       const response = await axios.put(
@@ -219,6 +219,7 @@ const TransportadorasPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);

@@ -50,7 +50,7 @@ interface Item {
     cod_familia: { cod_familia: number; nome: string; descricao: string } | null
     cod_estabelecimento: string[];
     dt_hr_criacao?: string;
-    anexo?: File;
+    anexo?: File | string | null;
     situacao: string;
     valor_custo: number;
     valor_venda: number;
@@ -122,6 +122,7 @@ const ItensPage: React.FC = () => {
         valor_custo: 0,
         valor_venda: 0,
         codigo: "",
+        anexo: undefined,
     });
 
 
@@ -142,7 +143,7 @@ const ItensPage: React.FC = () => {
 
     const clearInputs = () => {
         setVisualizar(false)
-        setFileName("");
+        setSelectedFile(null);
         setFormValues({
             cod_item: "",
             descricao: "",
@@ -225,7 +226,7 @@ const ItensPage: React.FC = () => {
 
         try {
             const response = await axios.put(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/itens/edit/${itensIdToDelete}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/itens/cancel/${itensIdToDelete}`,
                 { situacao: "DESATIVADO" }, // Enviar o corpo com a atualização
                 {
                     headers: {
@@ -273,7 +274,7 @@ const ItensPage: React.FC = () => {
 
         setIsItemEdit(true);
         setLoading(true);
-        setIsEditing(false);
+
 
         try {
             const requiredFields = [
@@ -346,6 +347,7 @@ const ItensPage: React.FC = () => {
                 fetchItens();
                 toast.success("Item atualizado com sucesso!", { position: "top-right", autoClose: 3000 });
                 setVisible(false);
+                setIsEditing(false);
             } else {
                 setIsItemEdit(true);
                 setLoading(false);
@@ -403,31 +405,45 @@ const ItensPage: React.FC = () => {
             formData.append("descricao", formValues.descricao);
             formData.append("narrativa", formValues.narrativa);
             formData.append("codigo", formValues.codigo);
+
             if (formValues.cod_un !== null) {
                 formData.append("cod_un", formValues.cod_un.toString());
             }
+
             formData.append("situacao", formValues.situacao);
             formData.append("valor_custo", formValues.valor_custo.toString());
             formData.append("valor_venda", formValues.valor_venda.toString());
+
             if (formValues.cod_familia !== null) {
                 formData.append("cod_familia", formValues.cod_familia.toString());
             }
 
             selectedEstablishments.forEach((establishment) => {
                 if (establishment.cod_estabelecimento) {
-                    console.log(establishment.cod_estabelecimento);
                     formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
                 } else {
                     console.error("Valor inválido para cod_estabelecimento:", establishment);
                 }
             });
 
-            if (formValues.anexo) {
-                const file = formValues.anexo;
-                formData.append("anexo", file);
+            let anexoValido: File | null = null;
+
+            if (formValues.anexo instanceof File) {
+                anexoValido = formValues.anexo;
+            } else if (selectedFile instanceof File) {
+                anexoValido = selectedFile;
             }
 
-            // Verificar se o "nome" já existe no banco de dados no storedRowData
+            if (!anexoValido) {
+                toast.error("Você deve enviar um anexo!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+                return;
+            }
+
+            formData.append("anexo", anexoValido);
+
             const nomeExists = itens.some((item) => item.descricao === formValues.descricao);
 
             if (nomeExists) {
@@ -435,47 +451,47 @@ const ItensPage: React.FC = () => {
                 const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
 
                 if (situacaoAtivo) {
-                    // Caso o nome exista e a situação seja ATIVO, não permite a ação
                     toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
                         position: "top-right",
                         autoClose: 3000,
                         progressStyle: { background: "yellow" },
-                        icon: <span>⚠️</span>, // Usa o emoji de alerta
+                        icon: <span>⚠️</span>,
                     });
                     return;
                 } else {
-                    // Caso a situação seja DESATIVADO, atualiza os dados
                     if (itemEncontrado) {
                         setSelectedItem(itemEncontrado);
                     } else {
                         setSelectedItem(null);
                     }
-                    await handleSaveEdit(itemEncontrado ? itemEncontrado.cod_item : formValues.cod_item); // Passa o serviço diretamente para atualização
-                    fetchItens();  // Recarrega os produtos
+
+                    await handleSaveEdit(itemEncontrado ? itemEncontrado.cod_item : formValues.cod_item);
+                    fetchItens();
                     clearInputs();
                     setVisible(fecharTela);
                     toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
                         position: "top-right",
                         autoClose: 10000,
                         progressStyle: { background: "green" },
-                        icon: <span>♻️</span>, // Ícone de recarga
+                        icon: <span>♻️</span>,
                     });
                     return;
                 }
             }
 
-            // Se o nome não existir, cadastra o item normalmente
-            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/itens/register",
+            // Cadastro normal
+            const response = await axios.post(
+                process.env.NEXT_PUBLIC_API_URL + "/api/itens/register",
                 formData,
                 {
                     headers: {
-                        "Content-Type": "multipart/form-data",
                         Authorization: `Bearer ${token}`,
+                        // Não definir manualmente Content-Type quando usar FormData
                     },
-                });
+                }
+            );
 
             if (response.status >= 200 && response.status < 300) {
-                clearInputs();
                 fetchItens();
                 toast.success("Item salvo com sucesso!", {
                     position: "top-right",
@@ -491,148 +507,19 @@ const ItensPage: React.FC = () => {
             }
         } catch (error) {
             console.error("Erro ao salvar item:", error);
+            toast.error("Erro ao salvar item.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
         }
     };
 
-    const handleSaveReturn = async (fecharTela: boolean) => {
-        setItemCreateDisabledReturn(true);
-        setLoading(true);
-        try {
-            const requiredFields = [
-                "descricao",
-                "narrativa",
-                "cod_un",
-                "situacao",
-                "cod_familia",
-                "valor_custo"
-            ];
 
-            const isEmptyField = requiredFields.some((field) => {
-                const value = formValues[field as keyof typeof formValues];
-                return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
-            });
 
-            if (selectedEstablishments.length === 0) {
-                setItemCreateDisabledReturn(false);
-                setLoading(false);
-                toast.info("Você deve selecionar pelo menos um estabelecimento!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            if (isEmptyField) {
-                setItemCreateDisabledReturn(false);
-                setLoading(false);
-                toast.info("Todos os campos devem ser preenchidos!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("descricao", formValues.descricao);
-            formData.append("narrativa", formValues.narrativa);
-            formData.append("cod_item", formValues.cod_item);
-            if (formValues.cod_un && formValues.cod_un.cod_un !== undefined) {
-                formData.append("cod_un", formValues.cod_un.cod_un.toString());
-            }
-
-            formData.append("situacao", formValues.situacao);
-            formData.append("valor_custo", formValues.valor_custo.toString());
-
-            if (formValues.cod_familia && formValues.cod_familia.cod_familia !== undefined) {
-                formData.append("cod_familia", formValues.cod_familia.cod_familia.toString());
-            }
-
-            selectedEstablishments.forEach((establishment) => {
-                if (establishment.cod_estabelecimento) {
-                    console.log(establishment.cod_estabelecimento);
-                    formData.append("cod_estabelecimento[]", establishment.cod_estabelecimento.toString());
-                } else {
-                    console.error("Valor inválido para cod_estabelecimento:", establishment);
-                }
-            });
-
-            if (formValues.anexo) {
-                const file = formValues.anexo;
-                formData.append("anexo", file);
-            }
-
-            // Verificar se o "nome" já existe no banco de dados no storedRowData
-            const nomeExists = rowData.some((item) => item.descricao === formValues.descricao);
-
-            if (nomeExists) {
-                const itemEncontrado = rowData.find((item) => item.descricao === formValues.descricao);
-                const situacaoAtivo = itemEncontrado?.situacao === "ATIVO";
-
-                if (situacaoAtivo) {
-                    // Caso o nome exista e a situação seja ATIVO, não permite a ação
-                    setItemCreateDisabledReturn(false);
-                    setLoading(false);
-                    toast.info("Essa descrição já existe no banco de dados, escolha outra!", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        progressStyle: { background: "yellow" },
-                        icon: <span>⚠️</span>, // Usa o emoji de alerta
-                    });
-                    return;
-                } else {
-                    // Caso a situação seja DESATIVADO, atualiza os dados
-                    await handleSaveEdit(itemEncontrado); // Passa o serviço diretamente para atualização
-                    fetchItens();  // Recarrega os itens
-                    setItemCreateDisabledReturn(false);
-                    setLoading(false);
-                    clearInputs();
-                    setVisible(fecharTela);
-                    toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
-                        position: "top-right",
-                        autoClose: 10000,
-                        progressStyle: { background: "green" },
-                        icon: <span>♻️</span>, // Ícone de recarga
-                    });
-                    return;
-                }
-            }
-
-            // Se o nome não existir, cadastra o item normalmente
-            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/itens/register", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.status >= 200 && response.status < 300) {
-                setItemCreateDisabledReturn(false);
-                setLoading(false);
-                clearInputs();
-                fetchItens();
-                toast.success("Item salvo com sucesso!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                clearInputs();
-                setVisible(fecharTela);
-            } else {
-                setItemCreateDisabledReturn(false);
-                setLoading(false);
-                toast.error("Erro ao salvar item.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            }
-        } catch (error) {
-            setItemCreateDisabledReturn(false);
-            setLoading(false);
-            console.error("Erro ao salvar item:", error);
-        }
-    };
 
 
     const [visualizando, setVisualizar] = useState<boolean>(false);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
     const handleEdit = async (itens: Item, visualizar: boolean) => {
         console.log("Item selecionado para edição:", itens);
@@ -640,7 +527,6 @@ const ItensPage: React.FC = () => {
         setVisualizar(visualizar);
 
         try {
-            // Fazer todas as requisições simultaneamente para melhorar o desempenho
             const [unitResponse, familyResponse, establishmentResponse] = await Promise.all([
                 axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
                     headers: { Authorization: `Bearer ${token}` },
@@ -657,7 +543,6 @@ const ItensPage: React.FC = () => {
             setFamilies(familyResponse.data.families);
             setEstablishments(establishmentResponse.data.estabelecimentos);
 
-            // Encontrar a unidade e a família correspondentes
             const selectedUnit = unitResponse.data.units.find(
                 (unit: ItemMedida) => unit.cod_un === itens.dbs_unidades_medida?.cod_un
             );
@@ -665,14 +550,12 @@ const ItensPage: React.FC = () => {
                 (family: ItemFamilia) => family.cod_familia === itens.dbs_familias?.cod_familia
             );
 
-            // Filtrar todos os estabelecimentos vinculados ao item
             const selectedEstablishments = establishmentResponse.data.estabelecimentos.filter(
                 (es: Establishment) =>
                     Array.isArray(itens.dbs_estabelecimentos_item) &&
                     itens.dbs_estabelecimentos_item.some((dbEs) => dbEs.cod_estabel === es.cod_estabelecimento)
             );
 
-            // Atualizar os valores do formulário
             setFormValues({
                 cod_item: itens.cod_item ?? "",
                 descricao: itens.descricao ?? "",
@@ -687,13 +570,22 @@ const ItensPage: React.FC = () => {
                 codigo: itens.codigo ?? "",
             });
 
-            // Atualizar estados de seleção
             setSelectedEstablishments(selectedEstablishments ?? []);
             setSelectedFamily(selectedFamily ?? null);
             setSelectedUnit(selectedUnit ?? null);
             setSelectedItem(itens);
 
-            // Exibir modal de edição
+            if (typeof itens.anexo === "string") {
+                setExistingFileName(itens.anexo);
+                setSelectedFile(null);
+            } else if (itens.anexo instanceof File) {
+                setSelectedFile(itens.anexo);
+                setExistingFileName(null);
+            } else {
+                setSelectedFile(null);
+                setExistingFileName(null);
+            }
+
             setIsEditing(true);
             setVisible(true);
         } catch (error) {
@@ -703,16 +595,37 @@ const ItensPage: React.FC = () => {
     };
 
 
-
-    const [fileName, setFileName] = useState("");
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [existingFileName, setExistingFileName] = useState<string | null>(null);
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0) {
-            const file = files[0]; // Pega o primeiro arquivo selecionado
-            setFileName(file.name); // Atualiza o nome do arquivo no estado
+            const file = files[0];
+            setSelectedFile(file);
+
+            // Cria URL para preview
+            const objectUrl = URL.createObjectURL(file);
+            setPreviewUrl(objectUrl);
+
+            setFormValues(prev => ({ ...prev, anexo: file }));
+            setExistingFileName(null);
         }
     };
+
+    useEffect(() => {
+        // Sempre revoga a URL antiga antes de definir a nova
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+
+
+
 
     useEffect(() => {
         fetchEstabilishments();
@@ -786,6 +699,7 @@ const ItensPage: React.FC = () => {
             console.error("Erro ao carregar famílias de itens:", error);
         }
     };
+
 
 
 
@@ -1003,6 +917,7 @@ const ItensPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
+
                             <div className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2">
                                 <label htmlFor="photo" className="block text-blue font-medium">
                                     Foto
@@ -1015,7 +930,7 @@ const ItensPage: React.FC = () => {
                                     disabled={visualizando}
                                     onChange={handleFileChange}
                                     className="file-input"
-                                    style={{ display: "none" }}  // Esconde o input real
+                                    style={{ display: "none" }}
                                 />
 
                                 <label
@@ -1024,13 +939,13 @@ const ItensPage: React.FC = () => {
                                     style={{
                                         display: "inline-block",
                                         padding: "10px 20px",
-                                        backgroundColor: "#f0f0f0",  // Cor de fundo cinza claro
-                                        color: "#1D4ED8",  // Cor do texto blue (Tailwind)
+                                        backgroundColor: "#f0f0f0",
+                                        color: "#1D4ED8",
                                         fontSize: "16px",
                                         fontWeight: "bold",
                                         borderRadius: "5px",
-                                        cursor: "pointer",
-                                        border: "2px solid #D1D5DB",  // Borda cinza escuro
+                                        cursor: visualizando ? "not-allowed" : "pointer",
+                                        border: "2px solid #D1D5DB",
                                         transition: "background-color 0.3s ease",
                                         lineHeight: "12.5px",
                                     }}
@@ -1038,13 +953,31 @@ const ItensPage: React.FC = () => {
                                     <span>Escolher arquivo</span>
                                 </label>
 
-                                {/* Exibe o nome do arquivo selecionado, se houver */}
-                                {fileName && (
-                                    <div className="mt-2 text-blue-500 ">
-                                        <strong>Arquivo selecionado: </strong> {fileName}
+                                {(selectedFile || existingFileName) && (
+                                    <div className="mt-2 text-blue-500">
+                                        <strong>Arquivo selecionado:</strong>{" "}
+                                        {selectedFile ? selectedFile.name : existingFileName}
+                                        <div className="mt-2">
+                                            <a
+                                                href={
+                                                    selectedFile
+                                                        ? previewUrl || "#"
+                                                        : `${process.env.NEXT_PUBLIC_API_URL}/uploads/${existingFileName}`
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-700 underline"
+                                            >
+                                                Visualizar arquivo
+                                            </a>
+                                        </div>
                                     </div>
                                 )}
+
+
                             </div>
+
+
 
                             <div className="">
                                 <label htmlFor="estabilishments" className="block text-blue  font-medium">
