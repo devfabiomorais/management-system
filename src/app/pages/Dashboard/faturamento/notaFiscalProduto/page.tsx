@@ -37,6 +37,7 @@ import { Dropdown } from "primereact/dropdown";
 import AddButton from "@/app/components/Buttons/AddButton";
 import { GiCalculator } from "react-icons/gi";
 import { AiFillFilePdf } from "react-icons/ai";
+import { TbInvoice } from "react-icons/tb";
 
 interface Transportadora {
   cod_transportadora: number;
@@ -1642,11 +1643,10 @@ const NfsProduto: React.FC = () => {
   ]);
 
 
-
-  async function gerarXmlNota(nfsProduto: NfsProduto) {
+  async function gerarXmlNotaDownload(nfsProduto: NfsProduto) {
     try {
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/nfe/gerar-xml",
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfsProdutos/gerar-xml",
         nfsProduto,
         {
           headers: {
@@ -1667,7 +1667,8 @@ const NfsProduto: React.FC = () => {
       // Cria um link de download
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'nota-fiscal.xml';
+      link.download = `${selectedNfsProduto ? selectedNfsProduto.cod_nf_produto : ''}-XML-NF-e.xml`;
+
       document.body.appendChild(link);
       link.click();
 
@@ -1682,6 +1683,137 @@ const NfsProduto: React.FC = () => {
     }
   }
 
+  async function gerarXmlNota(nfsProduto: NfsProduto) {
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfsProdutos/gerar-xml",
+        nfsProduto,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'text', // mantém como texto puro
+        }
+      );
+
+      const xml = response.data;
+
+      // Apenas retorna o XML, sem gerar blob nem link de download
+      return xml;
+    } catch (error) {
+      console.error('Erro ao gerar XML:', error);
+      throw error;
+    }
+  }
+
+  const [xmlEnvio, setXmlEnvio] = useState<string | null>(null);
+  const [xmlSaida, setXmlSaida] = useState<string | null>(null);
+
+  async function emitirNFe(nfsProduto: NfsProduto) {
+    setLoading(true);
+
+    // Presumo que gerarXmlNota gere o XML corretamente
+    const xml = await gerarXmlNota(nfsProduto);
+
+    if (!xml) {
+      toast.error("Erro ao gerar XML para gerar NFSe");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfsProdutos/emitir-nfe",
+        { xml },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          // REMOVA responseType 'text' para que axios trate como JSON
+        }
+      );
+
+      // A resposta já será um JSON convertido automaticamente
+      const data = response.data;
+      console.log("RESPONSE DATA:", data);
+
+      if (data.message) {
+        toast.success(data.message);
+      }
+
+      if (data.xmlNotaFinal) {
+        setXmlSaida(data.xmlNotaFinal);
+      }
+
+      setLoading(false);
+      return data;
+
+    } catch (error: any) {
+      console.error('Erro ao emitir NFS-e:', error);
+      setLoading(false);
+
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Erro ao emitir NFS-e');
+      }
+
+      throw error;
+    }
+  }
+
+
+  const [LoadingPDF, setLoadingPDF] = useState<boolean>(false);
+  async function gerarPdfDanfe(xml: string) {
+    setLoadingPDF(true);
+
+    try {
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/nfsProdutos/gerar-pdf",
+        { xml },
+        {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>DANFSe PDF</title></head>
+            <body style="margin:0">
+              <iframe 
+                src="${pdfUrl}" 
+                frameborder="0" 
+                style="border:none; width:100vw; height:100vh"
+                allowfullscreen>
+              </iframe>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        // Popup bloqueado, faz o download como fallback
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = 'danfe.pdf';
+        link.click();
+      }
+
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Falha ao gerar o PDF. Veja o console para detalhes.');
+    } finally {
+      setLoadingPDF(false);
+    }
+  }
 
 
 
@@ -2023,7 +2155,16 @@ const NfsProduto: React.FC = () => {
 
                 <button
                   className="!bg-red500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-red700 hover:scale-125"
-                // onClick={gerarPDF}
+                  onClick={() => {
+                    if (!LoadingPDF) {
+                      if (xmlSaida) {
+                        gerarPdfDanfe(xmlSaida);
+                      } else {
+                        toast.error("Primeiro emita a NF-e!");
+                      }
+                    }
+                  }}
+                  disabled={LoadingPDF}
                 >
                   <div className="bg-red700 w-10 h-10 flex items-center justify-center rounded">
                     <AiFillFilePdf className="text-white" style={{ fontSize: "24px" }} />
@@ -2037,7 +2178,7 @@ const NfsProduto: React.FC = () => {
                   className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
                   onClick={async () => {
                     if (selectedNfsProduto) {
-                      gerarXmlNota(selectedNfsProduto);
+                      gerarXmlNotaDownload(selectedNfsProduto);
                     }
                   }}
                 >
@@ -2045,6 +2186,21 @@ const NfsProduto: React.FC = () => {
                     <GiCalculator className="text-white" style={{ fontSize: "24px" }} />
                   </div>
                   <span className="whitespace-nowrap px-2">XML da NF-e&nbsp;&nbsp;</span>
+                </button>
+
+                <button
+                  className={`!bg-cyan-500 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
+                  onClick={async () => {
+                    if (!loading && selectedNfsProduto) {
+                      emitirNFe(selectedNfsProduto);
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <div className="bg-cyan-700 w-10 h-10 flex items-center justify-center rounded">
+                    <TbInvoice className="text-white" style={{ fontSize: "24px" }} />
+                  </div>
+                  <span className="whitespace-nowrap px-2">Emitir NF-e&nbsp;&nbsp;</span>
                 </button>
               </div>
             )}
