@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FaHome, FaDolly, FaTags, FaCogs } from "react-icons/fa";
-import { FaHandHoldingDollar, FaSackDollar, FaRightFromBracket } from "react-icons/fa6";
+import { FaHome, FaDolly, FaTags, FaCogs, FaChartLine } from "react-icons/fa";
+import { FaHandHoldingDollar, FaSackDollar, FaRightFromBracket, FaHandshakeSimple } from "react-icons/fa6";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
 import Logo from "../../assets/imgs/logoConviver.png";
 import loadingGif from "../../assets/imgs/loading.gif";
 import useUserPermissions from "../../hook/useUserPermissions";
+import { BsBoxes, BsGraphUpArrow } from "react-icons/bs";
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
@@ -34,10 +35,10 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
 
   const navItems = [
     { href: "/pages/Dashboard/home", icon: <FaHome className="text-4xl mb-1" />, label: "Início", module: "Home" },
-    { href: "/pages/Dashboard/commercial", icon: <FaSackDollar className="text-4xl mb-1" />, label: "Comercial", module: "Comercial" },
-    { href: "/pages/Dashboard/stock", icon: <FaDolly className="text-4xl mb-1" />, label: "Estoque", module: "Estoque" },
-    { href: "/pages/Dashboard/faturamento", icon: <FaTags className="text-4xl mb-1" />, label: "Faturamento", module: "Financeiro" },
-    { href: "/pages/Dashboard/financeiro", icon: <FaHandHoldingDollar className="text-4xl mb-1" />, label: "Financeiro", module: "Financeiro" },
+    { href: "/pages/Dashboard/commercial", icon: <FaHandshakeSimple className="text-4xl mb-1" />, label: "Comercial", module: "Comercial" },
+    { href: "/pages/Dashboard/stock", icon: <BsBoxes className="text-4xl mb-1" />, label: "Estoque", module: "Estoque" },
+    { href: "/pages/Dashboard/faturamento", icon: <FaChartLine className="text-4xl mb-1" />, label: "Faturamento", module: "Financeiro" },
+    { href: "/pages/Dashboard/financeiro", icon: <FaSackDollar className="text-4xl mb-1" />, label: "Financeiro", module: "Financeiro" },
     { href: "/pages/Dashboard/controls", icon: <FaCogs className="text-4xl mb-1" />, label: "Controles", module: "Controles" },
   ];
 

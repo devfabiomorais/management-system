@@ -28,7 +28,7 @@ import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
 
-interface Item {
+export interface Item {
     cod_item: string;
     descricao: string;
     narrativa: string;
