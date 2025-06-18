@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { FaFolderPlus, FaSitemap, FaChartBar, FaWarehouse, FaCubesStacked } from "react-icons/fa6";
 import { GoSync } from "react-icons/go";
@@ -12,7 +12,7 @@ import { redirect } from "next/navigation";
 import loadingGif from "../../../assets/imgs/loading.gif";
 import { IoExit } from "react-icons/io5";
 
-export default function StockPage() {
+const StockPageContent: React.FC = () => {
   const [openedCadastro, setOpenedCadastro] = useState(false);
   const [openedMovimentacoes, setOpenedMovimentacoes] = useState(false);
   const [openedDashboard, setOpenedDashboard] = useState(false);
@@ -32,51 +32,37 @@ export default function StockPage() {
   return (
     <div>
       <SidebarLayout>
-        <div className="flex justify-center h-screen ">
+        <div className="flex justify-center h-screen">
           <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <h2 className="text-blue text-2xl font-bold mb-3 pl-3">Estoque</h2>
 
-            <div
-              className="bg-white rounded-lg p-8 pt-14 shadow-md w-full justify-center flex"
-              style={{ height: "95%" }}
-            >
+            <div className="bg-white rounded-lg p-8 pt-14 shadow-md w-full justify-center flex" style={{ height: "95%" }}>
               <div className="flex flex-col items-center">
+
                 {/* Botões principais */}
                 <div className="justify-between flex">
-                  {/* Botão Cadastros */}
-                  <div
-                    onClick={() => toggleCategory("cadastro")}
-                    className={`flex flex-col justify-center items-center w-40 h-40 ${openedCadastro ? "bg-green100" : "bg-blue"
-                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
-                  >
-                    <FaFolderPlus className="text-5xl " />
-                    <span className="text-lg mt-2 font-bold">Cadastros</span>
-                  </div>
-
-                  {/* Botão Movimentações */}
-                  <div
-                    onClick={() => toggleCategory("movimentacoes")}
-                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 ${openedMovimentacoes ? "bg-green100" : "bg-blue"
-                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
-                  >
-                    <GoSync className="text-5xl " />
-                    <span className="text-lg mt-2 font-bold">Movimentações</span>
-                  </div>
-
-                  {/* Botão Dashboard */}
-                  <div
-                    onClick={() => toggleCategory("dashboard")}
-                    className={`ml-5 flex flex-col justify-center items-center w-40 h-40 ${openedDashboard ? "bg-green100" : "bg-blue"
-                      } cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200`}
-                  >
-                    <FaChartBar className="text-5xl " />
-                    <span className="text-lg mt-2 font-bold">Dashboard</span>
-                  </div>
+                  <CategoryButton
+                    label="Cadastros"
+                    opened={openedCadastro}
+                    toggle={() => toggleCategory("cadastro")}
+                    icon={<FaFolderPlus className="text-5xl" />}
+                  />
+                  <CategoryButton
+                    label="Movimentações"
+                    opened={openedMovimentacoes}
+                    toggle={() => toggleCategory("movimentacoes")}
+                    icon={<GoSync className="text-5xl" />}
+                  />
+                  <CategoryButton
+                    label="Dashboard"
+                    opened={openedDashboard}
+                    toggle={() => toggleCategory("dashboard")}
+                    icon={<FaChartBar className="text-5xl" />}
+                  />
                 </div>
 
                 <hr className="w-full border-t border-gray-300 my-6" />
 
-                {/* Subcategorias de Cadastros */}
                 {openedCadastro && (
                   <div className="flex gap-4 flex-wrap justify-center">
                     <OptionCard path="stock/unMedida" icon={<IoMdAddCircle className="text-5xl" />} text="Unidade de Medida" loadingButton={loadingButton} handleRedirect={handleRedirect} />
@@ -88,33 +74,19 @@ export default function StockPage() {
                   </div>
                 )}
 
-                {/* Subcategorias de Movimentações */}
                 {openedMovimentacoes && (
                   <div className="flex gap-4 flex-wrap justify-center">
-                    <OptionCard
-                      path="stock/movimentacoes?tipo=Entrada"
-                      icon={<IoIosDownload className="text-5xl" />}
-                      text="Entradas"
-                      loadingButton={loadingButton}
-                      handleRedirect={handleRedirect}
-                    />
-                    <OptionCard
-                      path="stock/movimentacoes?tipo=Saida"
-                      icon={<IoExit className="text-5xl" />}
-                      text="Saídas"
-                      loadingButton={loadingButton}
-                      handleRedirect={handleRedirect}
-                    />
+                    <OptionCard path="stock/movimentacoes?tipo=Entrada" icon={<IoIosDownload className="text-5xl" />} text="Entradas" loadingButton={loadingButton} handleRedirect={handleRedirect} />
+                    <OptionCard path="stock/movimentacoes?tipo=Saida" icon={<IoExit className="text-5xl" />} text="Saídas" loadingButton={loadingButton} handleRedirect={handleRedirect} />
                   </div>
                 )}
 
-
-                {/* Subcategoria de Dashboard */}
                 {openedDashboard && (
                   <div className="flex gap-4 flex-wrap justify-center">
                     <OptionCard path="stock/saldoEstoque" icon={<FaCubesStacked className="text-5xl" />} text="Saldo do Estoque" loadingButton={loadingButton} handleRedirect={handleRedirect} />
                   </div>
                 )}
+
               </div>
             </div>
           </div>
@@ -123,7 +95,7 @@ export default function StockPage() {
       <Footer />
     </div>
   );
-}
+};
 
 type OptionCardProps = {
   path: string;
@@ -147,5 +119,38 @@ function OptionCard({ path, icon, text, loadingButton, handleRedirect }: OptionC
         </div>
       )}
     </div>
+  );
+}
+
+type CategoryButtonProps = {
+  label: string;
+  opened: boolean;
+  toggle: () => void;
+  icon: React.ReactNode;
+};
+
+function CategoryButton({ label, opened, toggle, icon }: CategoryButtonProps) {
+  return (
+    <div
+      onClick={toggle}
+      className={`flex flex-col justify-center items-center w-40 h-40 ${opened ? "bg-green100" : "bg-blue"} cursor-pointer text-white rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-200 ml-5 first:ml-0`}
+    >
+      {icon}
+      <span className="text-lg mt-2 font-bold">{label}</span>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
+      <StockPageContent />
+    </Suspense>
   );
 }
