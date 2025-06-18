@@ -8,9 +8,6 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
-import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -23,9 +20,13 @@ import EditButton from "@/app/components/Buttons/EditButton";
 import ViewButton from "@/app/components/Buttons/ViewButton";
 import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
-import { MultiSelect } from "primereact/multiselect";
 import { User } from "../../controls/users/page";
 import { Deposito } from "../depositos/page";
+import { Item } from "../itens/page";
+import { Dropdown } from "primereact/dropdown";
+import { Localizacao } from "../localizacoes/page";
+import { useParams, useSearchParams } from 'next/navigation';
+import { LocalItem } from "../locaisItens/page";
 
 interface UnidadeDeMedida {
   cod_un: number;
@@ -46,21 +47,22 @@ interface Establishment {
   estado: string;
 }
 
-export interface Localizacao {
-  cod_localizacao?: number;
-  cod_deposito?: string;
-  capacidade?: number;
-  cod_un?: number;
-  cod_rua?: string;
-  cod_coluna?: string;
-  cod_nivel?: string;
-  cod_usuario?: number;
-  dt_hr_criacao?: Date;
-  situacao?: string;
+export interface Movimentacao {
+  cod_movimentacao: number;
+  cod_item: number;
+  cod_un: number;
+  cod_local_item: number;
+  lote: string;
+  quantidade: string;
+  observacoes: string;
+  tipo: string;
+  cod_usuario: number;
+  dt_hr_criacao: Date;
+  situacao: string;
 }
 
 
-const LocalizacoesPage: React.FC = () => {
+const MovimentacoesPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
   const { permissions } = useUserPermissions(groupCode ?? 0, "Estoque");
@@ -71,22 +73,116 @@ const LocalizacoesPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredLocalizacoes = localizacoes.filter((localizacao) => {
-    // Apenas ATIVO aparecem
-    if (localizacao.situacao !== 'Ativo') {
+
+  const searchParams = useSearchParams();
+  const tipoDaURL = searchParams.get("tipo");
+  const [tipo, setTipo] = useState<"Entrada" | "Saida" | null>(null);
+  useEffect(() => {
+    if (tipoDaURL === "Entrada" || tipoDaURL === "Saida") {
+      setTipo(tipoDaURL);
+    }
+  }, [tipoDaURL]);
+
+  const filteredMovimentacoes = movimentacoes.filter((movimentacao) => {
+    // Apenas ativos
+    if (movimentacao.situacao !== 'Ativo') {
       return false;
     }
 
-    // Lógica de busca
-    return Object.values(localizacao).some((value) =>
+    // Apenas do tipo que veio na URL
+    if (!tipoDaURL || movimentacao.tipo?.toLowerCase() !== tipoDaURL.toLowerCase()) {
+      return false;
+    }
+
+    // Lógica de busca (search)
+    return Object.values(movimentacao).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
   });
 
+
+  const [selectedLocalizacao, setSelectedLocalizacao] = useState<Localizacao | null>(null);
+  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+
+  const fetchLocalizacoes = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setRowData(response.data.localizacoes);
+      setIsDataLoaded(true);
+      setLocalizacoes(response.data.localizacoes);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar localizacoes:", error);
+    }
+  };
+  useEffect(() => {
+    fetchLocalizacoes();
+  }, []);
+
+  const [locaisItens, setLocaisItens] = useState<LocalItem[]>([]);
+  const [selectedLocalItem, setSelectedLocalItem] = useState<LocalItem | null>(null);
+
+  const fetchLocaisItens = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/locaisItens",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setRowData(response.data.locaisItens);
+      setIsDataLoaded(true);
+      setLocaisItens(response.data.locaisItens);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro ao carregar locaisItens:", error);
+    }
+  };
+  useEffect(() => {
+    fetchLocaisItens();
+  }, []);
+
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [itens, setItens] = useState<Item[]>([]);
+
+  const fetchItens = async () => {
+    setLoading(true)
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/itens", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setRowData(response.data.items);
+      setIsDataLoaded(true);
+      setItens(response.data.items);
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+      console.error("Erro ao carregar itens:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchItens();
+  }, []);
 
   const [users, setUsers] = useState<User[]>([]);
   const fetchUsers = async () => {
@@ -131,20 +227,21 @@ const LocalizacoesPage: React.FC = () => {
   }, [token]);
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [localizacoesIdToDelete, setLocalizacaoIdToDelete] = useState<number | null>(null);
+  const [movimentacaoIdToDelete, setMovimentacaoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedLocalizacao, setSelectedLocalizacao] = useState<Localizacao | null>(null);
-  const [formValues, setFormValues] = useState<Localizacao>({
-    cod_localizacao: undefined,
-    cod_deposito: '',
-    capacidade: undefined,
-    cod_un: undefined,
-    cod_rua: '',
-    cod_coluna: '',
-    cod_nivel: '',
-    cod_usuario: undefined,
-    dt_hr_criacao: undefined,
-    situacao: '',
+  const [selectedMovimentacao, setSelectedMovimentacao] = useState<Movimentacao | null>(null);
+  const [formValues, setFormValues] = useState<Movimentacao>({
+    cod_movimentacao: 0,
+    cod_item: 0,
+    cod_un: 0,
+    cod_local_item: 0,
+    lote: "",
+    quantidade: "",
+    observacoes: "",
+    tipo: "",
+    cod_usuario: 0,
+    dt_hr_criacao: new Date(),
+    situacao: "",
   });
 
   const clearInputs = () => {
@@ -152,17 +249,24 @@ const LocalizacoesPage: React.FC = () => {
     setSelectedDepositos([]);
     setSelectedUnidadesDeMedida([]);
     setFormValues({
-      cod_localizacao: undefined,
-      cod_deposito: '',
-      capacidade: undefined,
-      cod_un: undefined,
-      cod_rua: '',
-      cod_coluna: '',
-      cod_nivel: '',
-      cod_usuario: undefined,
-      dt_hr_criacao: undefined,
-      situacao: '',
+      cod_movimentacao: 0,
+      cod_item: 0,
+      cod_un: 0,
+      cod_local_item: 0,
+      lote: "",
+      quantidade: "",
+      observacoes: "",
+      tipo: "",
+      cod_usuario: 0,
+      dt_hr_criacao: new Date(),
+      situacao: "",
     });
+    setCodColuna(null);
+    setCodRua(null);
+    setCodNivel(null);
+    setSelectedLocalizacao(null);
+    setSelectedLocalItem(null);
+    setSelectedItem(null);
   };
 
   const [depositos, setDepositos] = useState<Deposito[]>([]);
@@ -221,96 +325,115 @@ const LocalizacoesPage: React.FC = () => {
     fetchUnidadesDeMedida();
   }, [token]);
 
-  const fetchLocalizacoes = async () => {
+  useEffect(() => {
+    if (selectedItem) {
+      const unidade = unidadesDeMedida.find(
+        (un) => typeof selectedItem.cod_un === "number" && un.cod_un === selectedItem.cod_un
+      );
+      setSelectedUnidadesDeMedida(unidade ? [unidade] : []);
+    } else {
+      setSelectedUnidadesDeMedida([]);
+    }
+  }, [selectedItem, unidadesDeMedida]);
+
+  const fetchMovimentacoes = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes",
+        process.env.NEXT_PUBLIC_API_URL + "/api/movimentacoes",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setRowData(response.data.localizacoes);
+      setRowData(response.data.movimentacoes);
       setIsDataLoaded(true);
-      setLocalizacoes(response.data.localizacoes);
+      setMovimentacoes(response.data.movimentacoes);
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar localizacoes:", error);
+      console.error("Erro ao carregar movimentacoes:", error);
     }
   };
   useEffect(() => {
-    fetchLocalizacoes();
+    fetchMovimentacoes();
   }, []);
 
 
-  const [rowData, setRowData] = useState<Localizacao[]>([]);
+  const [rowData, setRowData] = useState<Movimentacao[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const handleSaveEdit = async (cod_localizacao: any) => {
+  const handleSaveEdit = async (cod_movimentacao: any, fecharTela: boolean = true) => {
     setItemEditDisabled(true);
     setLoading(true);
 
     try {
-      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
-        { key: "capacidade", label: "Capacidade" },
-        { key: "cod_rua", label: "Rua" },
-        { key: "cod_coluna", label: "Coluna" },
-        { key: "cod_nivel", label: "Nível" },
-      ];
-
-      const missingField = requiredFields.find(({ key }) => {
-        const value = formValues[key];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (missingField) {
-        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
+      // Validações iguais ao cadastro
+      if (!selectedItem) {
+        toast.info("Você deve selecionar um item!", {
           position: "top-right",
           autoClose: 3000,
         });
-        setItemCreateReturnDisabled(false);
+        setItemEditDisabled(false);
         setLoading(false);
         return;
       }
 
-      const cod_deposito = selectedDepositos[0]?.cod_deposito;
-      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+      if (!selectedUnidadesDeMedida) {
+        toast.info("Você deve selecionar uma unidade de medida!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemEditDisabled(false);
+        setLoading(false);
+        return;
+      }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/edit/${cod_localizacao}`,
-        { ...formValues, cod_deposito, cod_un },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/movimentacoes/edit/${cod_movimentacao}`,
+        {
+          cod_item: selectedItem?.cod_item,
+          cod_un: selectedUnidadesDeMedida[0]?.cod_un,
+          cod_local_item: selectedLocalItem?.cod_local_item,
+          lote: formValues.lote,
+          quantidade: formValues.quantidade,
+          observacoes: formValues.observacoes,
+          tipo: tipoDaURL === "Entrada" ? "Entrada" : "Saida",
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       if (response.status >= 200 && response.status < 300) {
-        setItemEditDisabled(false);
-        setLoading(false);
         clearInputs();
-        fetchLocalizacoes();
-        toast.success("Localização salva com sucesso!", {
+        fetchMovimentacoes();
+        toast.success("Movimentação atualizada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(false);
-        setIsEditing(false);
+        setTimeout(() => {
+          setIsEditing(false);
+        }, 100);
       } else {
-        setItemEditDisabled(false);
-        setLoading(false);
-        toast.error("Erro ao salvar localizacao.", {
+        toast.error("Erro ao atualizar movimentação.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
+      console.error("Erro ao atualizar movimentação:", error);
+      toast.error("Erro ao atualizar movimentação.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar localizacao:", error);
     }
   };
 
@@ -319,20 +442,8 @@ const LocalizacoesPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
-        { key: "capacidade", label: "Capacidade" },
-        { key: "cod_rua", label: "Rua" },
-        { key: "cod_coluna", label: "Coluna" },
-        { key: "cod_nivel", label: "Nível" },
-      ];
-
-      const missingField = requiredFields.find(({ key }) => {
-        const value = formValues[key];
-        return value === "" || value === null || value === undefined;
-      });
-
-      if (missingField) {
-        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
+      if (tipoDaURL === 'Saida' && !formValues.observacoes) {
+        toast.info("Você deve preencher o campo de observações!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -340,42 +451,8 @@ const LocalizacoesPage: React.FC = () => {
         setLoading(false);
         return;
       }
-
-      const centroEncontrado = rowData.find(
-        (item) => item.cod_localizacao === formValues.cod_localizacao
-      );
-      const situacaoInativo = centroEncontrado?.situacao === "Inativo";
-
-      if (centroEncontrado && !situacaoInativo) {
-        toast.info("Esse código de localização já existe no banco de dados, escolha outro!", {
-          position: "top-right",
-          autoClose: 3000,
-          progressStyle: { background: "yellow" },
-          icon: <span>⚠️</span>,
-        });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      }
-
-      if (centroEncontrado && situacaoInativo) {
-        await handleSaveEdit(centroEncontrado.cod_localizacao);
-        fetchLocalizacoes();
-        clearInputs();
-        setVisible(fecharTela);
-        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
-          position: "top-right",
-          autoClose: 10000,
-          progressStyle: { background: "green" },
-          icon: <span>♻️</span>,
-        });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
-        return;
-      }
-
-      if (!selectedDepositos || selectedDepositos.length === 0) {
-        toast.info("Você deve selecionar um deposito!", {
+      if (!selectedItem) {
+        toast.info("Você deve selecionar um item!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -383,13 +460,27 @@ const LocalizacoesPage: React.FC = () => {
         setLoading(false);
         return;
       }
-
-      const cod_deposito = selectedDepositos[0]?.cod_deposito;
-      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+      if (!selectedUnidadesDeMedida) {
+        toast.info("Você deve selecionar uma unidade de medida!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        return;
+      }
 
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes/register",
-        { ...formValues, cod_deposito, cod_un },
+        process.env.NEXT_PUBLIC_API_URL + "/api/movimentacoes/register",
+        {
+          cod_item: selectedItem?.cod_item,
+          cod_un: selectedUnidadesDeMedida[0]?.cod_un,
+          cod_local_item: selectedLocalItem?.cod_local_item,
+          lote: formValues.lote,
+          quantidade: formValues.quantidade,
+          observacoes: formValues.observacoes,
+          tipo: tipoDaURL === "Entrada" ? "Entrada" : "Saida",
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -399,55 +490,89 @@ const LocalizacoesPage: React.FC = () => {
 
       if (response.status >= 200 && response.status < 300) {
         clearInputs();
-        fetchLocalizacoes();
-        toast.success("Localização salva com sucesso!", {
+        fetchMovimentacoes();
+        toast.success("Movimentação salva com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(fecharTela);
       } else {
-        toast.error("Erro ao salvar localizações.", {
+        toast.error("Erro ao salvar movimentação.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.error("Erro ao salvar localizações:", error);
+      console.error("Erro ao salvar movimentação:", error);
+      toast.error("Erro ao salvar movimentação.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setItemCreateReturnDisabled(false);
       setLoading(false);
     }
   };
 
+  const [codRua, setCodRua] = useState<string | null>(null);
+  const [codColuna, setCodColuna] = useState<string | null>(null);
+  const [codNivel, setCodNivel] = useState<string | null>(null);
+  useEffect(() => {
+    if (selectedLocalItem && localizacoes && localizacoes.length > 0) {
+      // Acha a localização que bate com o cod_localizacao do selectedLocalItem
+      const localizacaoEncontrada = localizacoes.find(
+        (loc) => loc.cod_localizacao === selectedLocalItem.cod_localizacao
+      );
+
+      if (localizacaoEncontrada) {
+        setCodRua(localizacaoEncontrada.cod_rua || '');
+        setCodColuna(localizacaoEncontrada.cod_coluna || '');
+        setCodNivel(localizacaoEncontrada.cod_nivel || '');
+      } else {
+        // Se não encontrou, zera
+        setCodRua('');
+        setCodColuna('');
+        setCodNivel('');
+      }
+    } else {
+      // Se não tem selectedLocalItem ou localizacoes, zera
+      setCodRua('');
+      setCodColuna('');
+      setCodNivel('');
+    }
+  }, [selectedLocalItem, localizacoes]);
+
   const [visualizando, setVisualizar] = useState<boolean>(false);
 
-  const handleEdit = (localizacoes: Localizacao, visualizar: boolean) => {
+  const handleEdit = (movimentacoes: Movimentacao, visualizar: boolean) => {
     setVisualizar(visualizar);
-    setFormValues(localizacoes);
-    const deposito = depositos.find((e) => e.cod_deposito === localizacoes.cod_deposito);
-    setSelectedDepositos(deposito ? [deposito] : []);
-    setSelectedLocalizacao(localizacoes);
+
+    setFormValues(movimentacoes);
+    setSelectedMovimentacao(movimentacoes);
+    setSelectedItem(itens.find(item => Number(item.cod_item) === Number(movimentacoes.cod_item)) || null);
+    // setSelectedLocalizacao(localizacoes.find(localizacao => Number(localizacao.cod_localizacao) === Number(movimentacoes.cod_localizacao)) || null);
+    setSelectedLocalItem(locaisItens.find(localItem => Number(localItem.cod_local_item) === Number(movimentacoes.cod_local_item)) || null);
     setIsEditing(true);
     setVisible(true);
   };
 
 
   const openDialog = (id: number) => {
-    setLocalizacaoIdToDelete(id);
+    setMovimentacaoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setLocalizacaoIdToDelete(null);
+    setMovimentacaoIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (localizacoesIdToDelete === null) return;
+    if (movimentacaoIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/cancel/${localizacoesIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/movimentacoes/cancel/${movimentacaoIdToDelete}`,
         {},
         {
           headers: {
@@ -457,21 +582,21 @@ const LocalizacoesPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchLocalizacoes(); // Aqui é necessário chamar a função que irá atualizar a lista de localizacoes
+        fetchMovimentacoes();
         setModalDeleteVisible(false);
-        toast.success("Localização cancelado com sucesso!", {
+        toast.success("Movimentação cancelada com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar localizacao.", {
+        toast.error("Erro ao cancelar movimentação.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao excluir localizacao:", error);
-      toast.error("Erro ao excluir localizacao. Tente novamente.", {
+      console.log("Erro ao excluir movimentação:", error);
+      toast.error("Erro ao excluir movimentação. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -487,40 +612,6 @@ const LocalizacoesPage: React.FC = () => {
     clearInputs();
     setIsEditing(false);
     setVisible(false);
-  };
-
-  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const numericValue = value.replace(/[^0-9]/g, ''); // Permite apenas números
-    setFormValues({
-      ...formValues,
-      [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
-
-
-  const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault();
-    }
-  };
-
-  const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target; // Obtém o "name" e o valor do input
-    const alphabeticValue = value.replace(/[\d]/g, ''); // Remove apenas números
-    setFormValues({
-      ...formValues,
-      [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
-    });
-  };
-
-  const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const char = e.key;
-    // Permite qualquer caractere que não seja número
-    if (/[\d]/.test(char)) {
-      e.preventDefault(); // Bloqueia a inserção de números
-    }
   };
 
 
@@ -563,11 +654,17 @@ const LocalizacoesPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este localizacao?</p>
+            <p>Tem certeza que deseja cancelar esta movimentação?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Localização" : "Editar Localização") : "Nova Localização"}
+            header={
+              isEditing
+                ? visualizando
+                  ? `Visualizando Movimentação de ${tipoDaURL === "Entrada" ? "Entrada" : "Saída"}`
+                  : `Editar Movimentação de ${tipoDaURL === "Entrada" ? "Entrada" : "Saída"}`
+                : `Nova Movimentação de ${tipoDaURL === "Entrada" ? "Entrada" : "Saída"}`
+            }
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -585,50 +682,43 @@ const LocalizacoesPage: React.FC = () => {
 
               <div className="grid gap-2 grid-cols-3">
                 <div>
-                  <label htmlFor="deposito" className="block text-blue font-medium">
-                    Localização
+                  <label htmlFor="item" className="block text-blue font-medium">
+                    Item
                   </label>
-                  <MultiSelect
+                  <Dropdown
                     disabled={visualizando}
-                    value={selectedDepositos}
-                    onChange={(e) => setSelectedDepositos(e.value)}
-                    options={depositos}
-                    optionLabel="descricao"
+                    value={selectedItem}
+                    onChange={(e) => { setSelectedItem(e.value); }}
+                    options={itens}
                     filter
-                    placeholder="Selecione o Localização"
-                    maxSelectedLabels={2}
-                    selectionLimit={1}
+                    optionLabel="descricao"
                     className="w-full border text-black h-[35px] flex items-center"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="capacidade" className="block text-blue font-medium">
-                    Capacidade
-                  </label>
-                  <input
-                    type="number"
-                    id="capacidade"
-                    name="capacidade"
-                    disabled={visualizando}
-                    value={formValues.capacidade}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
                 <div>
                   <label htmlFor="un" className="block text-blue font-medium">
                     Unidade de Medida
                   </label>
-                  <MultiSelect
+                  <input
+                    type="text"
+                    disabled
+                    readOnly
+                    value={selectedUnidadesDeMedida && selectedUnidadesDeMedida[0]?.descricao ? selectedUnidadesDeMedida[0].descricao : ''}
+                    className="w-full border text-black h-[35px] flex items-center px-2 cursor-not-allowed !bg-gray-200"
+                  />
+
+                </div>
+                <div>
+                  <label htmlFor="localItem" className="block text-blue font-medium">
+                    Local do Item
+                  </label>
+                  <Dropdown
                     disabled={visualizando}
-                    value={selectedUnidadesDeMedida}
-                    onChange={(e) => setSelectedUnidadesDeMedida(e.value)}
-                    options={unidadesDeMedida}
-                    optionLabel="descricao"
+                    value={selectedLocalItem}
+                    onChange={(e) => setSelectedLocalItem(e.value)}
+                    options={locaisItens}
+                    optionLabel="cod_local_item"
                     filter
-                    placeholder="Selecione a un de medida"
-                    maxSelectedLabels={2}
-                    selectionLimit={1}
                     className="w-full border text-black h-[35px] flex items-center"
                   />
                 </div>
@@ -643,10 +733,11 @@ const LocalizacoesPage: React.FC = () => {
                     type="text"
                     id="cod_rua"
                     name="cod_rua"
-                    disabled={visualizando}
-                    value={formValues.cod_rua}
+                    disabled
+                    readOnly
+                    value={codRua ?? undefined}
                     onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -657,10 +748,11 @@ const LocalizacoesPage: React.FC = () => {
                     type="text"
                     id="cod_coluna"
                     name="cod_coluna"
-                    disabled={visualizando}
-                    value={formValues.cod_coluna}
+                    disabled
+                    readOnly
+                    value={codColuna ?? undefined}
                     onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -671,12 +763,59 @@ const LocalizacoesPage: React.FC = () => {
                     type="text"
                     id="cod_nivel"
                     name="cod_nivel"
+                    disabled
+                    readOnly
+                    value={codNivel ?? undefined}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2 grid-cols-3">
+                <div>
+                  <label htmlFor="lote" className="block text-blue font-medium">
+                    Lote
+                  </label>
+                  <input
+                    type="text"
+                    id="lote"
+                    name="lote"
                     disabled={visualizando}
-                    value={formValues.cod_nivel}
+                    value={formValues.lote ?? ''}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
+                <div>
+                  <label htmlFor="quantidade" className="block text-blue font-medium">
+                    Quantidade
+                  </label>
+                  <input
+                    type="text"
+                    id="quantidade"
+                    name="quantidade"
+                    disabled={visualizando}
+                    value={formValues.quantidade ?? ''}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+              </div>
+
+              <div >
+                <label htmlFor="obervacoes" className="block text-blue font-medium">
+                  Observações
+                </label>
+                <textarea
+                  id="observacoes"
+                  name="observacoes"
+                  disabled={visualizando}
+                  value={formValues.observacoes}
+                  onChange={(e) => setFormValues(prev => ({ ...prev, observacoes: e.target.value }))} // atualiza enquanto digita
+                  onBlur={() => setFormValues(prev => ({ ...prev, observacoes: formValues.observacoes }))} // pode até remover se não faz nada extra
+                  className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-24"
+                />
               </div>
 
             </div>
@@ -747,10 +886,10 @@ const LocalizacoesPage: React.FC = () => {
                     className="text-white"
                     icon="pi pi-check"
                     onClick={() => {
-                      if (selectedLocalizacao) {
-                        handleSaveEdit(selectedLocalizacao.cod_localizacao);
+                      if (selectedMovimentacao) {
+                        handleSaveEdit(selectedMovimentacao.cod_local_item);
                       } else {
-                        handleSaveEdit(formValues.cod_localizacao);
+                        handleSaveEdit(formValues.cod_local_item);
                       }
                     }}
                     disabled={itemEditDisabled}
@@ -775,10 +914,10 @@ const LocalizacoesPage: React.FC = () => {
           <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
-                <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
-">
-                  Localizações
+                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3 mt-1">
+                  Movimentações de {tipo === 'Entrada' ? 'Entrada' : 'Saida'}
                 </h2>
+
               </div>
               {permissions?.insercao === "SIM" && (
                 <div className="mr-2">
@@ -803,7 +942,7 @@ const LocalizacoesPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredLocalizacoes.slice(first, first + rows)}
+                value={filteredMovimentacoes.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -820,8 +959,33 @@ const LocalizacoesPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_deposito"
-                  header="Localização"
+                  field=""
+                  header="Cód. Item"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                  body={(rowData) => {
+                    const item = itens.find(
+                      (e) => e.cod_item === rowData.cod_item
+                    );
+                    return item?.cod_item || "-";
+                  }}
+                />
+                <Column
+                  field=""
+                  header="Desccrição Item"
                   style={{
                     width: "3%",
                     textAlign: "center",
@@ -838,10 +1002,67 @@ const LocalizacoesPage: React.FC = () => {
                     padding: "10px",
                   }}
                   body={(rowData) => {
-                    const deposito = depositos.find(
-                      (e) => e.cod_deposito === rowData.cod_deposito
+                    const item = itens.find(
+                      (e) => e.cod_item === rowData.cod_item
                     );
-                    return deposito?.descricao || "-";
+                    return item?.descricao || "-";
+                  }}
+                />
+                <Column
+                  field="cod_deposito"
+                  header="Depósito"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="lote"
+                  header="Lote"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="quantidade"
+                  header="Quantidade"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
                   }}
                 />
                 <Column
@@ -862,6 +1083,11 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
+                  body={(rowData) => {
+                    const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                    const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                    return localizacao?.cod_rua || "-";
+                  }}
                 />
                 <Column
                   field="cod_coluna"
@@ -881,9 +1107,14 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
+                  body={(rowData) => {
+                    const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                    const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                    return localizacao?.cod_coluna || "-";
+                  }}
                 />
                 <Column
-                  field="cod_nivel"
+                  field=""
                   header="Nível"
                   style={{
                     width: "1%",
@@ -900,24 +1131,10 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />
-                <Column
-                  field="capacidade"
-                  header="Capacidade"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
+                  body={(rowData) => {
+                    const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                    const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                    return localizacao?.cod_nivel || "??";
                   }}
                 />
                 <Column
@@ -949,7 +1166,7 @@ const LocalizacoesPage: React.FC = () => {
                   field="cod_usuario"
                   header="Criador"
                   style={{
-                    width: "1%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -972,7 +1189,7 @@ const LocalizacoesPage: React.FC = () => {
                   field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
-                    width: "2%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1021,58 +1238,7 @@ const LocalizacoesPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
-                  <Column
-                    header=""
-                    body={(rowData) => (
-                      <div className="flex gap-2 justify-center">
-                        <EditButton onClick={() => handleEdit(rowData, false)} />
-                      </div>
-                    )}
-                    className="text-black"
-                    style={{
-                      width: "0%",
-                      textAlign: "center",
-                      border: "1px solid #ccc",
-                    }}
-                    headerStyle={{
-                      fontSize: "1.2rem",
-                      color: "#1B405D",
-                      fontWeight: "bold",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                      backgroundColor: "#D9D9D980",
-                      verticalAlign: "middle",
-                      padding: "10px",
-                    }}
-                  />
-                )}
-                {permissions?.delecao === "SIM" && (
-                  <Column
-                    header=""
-                    body={(rowData) => (
-                      <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => { openDialog(rowData.cod_localizacao); console.log(rowData.cod_localizacao) }} />
-                      </div>
-                    )}
-                    className="text-black"
-                    style={{
-                      width: "0%",
-                      textAlign: "center",
-                      border: "1px solid #ccc",
-                    }}
-                    headerStyle={{
-                      fontSize: "1.2rem",
-                      color: "#1B405D",
-                      fontWeight: "bold",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                      backgroundColor: "#D9D9D980",
-                      verticalAlign: "middle",
-                      padding: "10px",
-                    }}
-                  />
-                )}
+
               </DataTable>
             </div>
           </div>
@@ -1083,4 +1249,4 @@ const LocalizacoesPage: React.FC = () => {
   );
 };
 
-export default LocalizacoesPage;
+export default MovimentacoesPage;

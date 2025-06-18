@@ -1,15 +1,16 @@
 "use client";
 import React, { useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
-import { FaFolderPlus, FaSitemap, FaChartBar, FaWarehouse } from "react-icons/fa6";
+import { FaFolderPlus, FaSitemap, FaChartBar, FaWarehouse, FaCubesStacked } from "react-icons/fa6";
 import { GoSync } from "react-icons/go";
 import { TbDeviceIpadHorizontalPin } from "react-icons/tb";
-import { IoMdAddCircle } from "react-icons/io";
+import { IoIosDownload, IoMdAddCircle } from "react-icons/io";
 import { AiFillGold } from "react-icons/ai";
 import { LuMapPin } from "react-icons/lu";
 import Footer from "@/app/components/Footer";
 import { redirect } from "next/navigation";
 import loadingGif from "../../../assets/imgs/loading.gif";
+import { IoExit } from "react-icons/io5";
 
 export default function StockPage() {
   const [openedCadastro, setOpenedCadastro] = useState(false);
@@ -90,15 +91,28 @@ export default function StockPage() {
                 {/* Subcategorias de Movimentações */}
                 {openedMovimentacoes && (
                   <div className="flex gap-4 flex-wrap justify-center">
-                    <OptionCard path="stock/entradas" icon={<GoSync className="text-5xl" />} text="Entradas" loadingButton={loadingButton} handleRedirect={handleRedirect} />
-                    <OptionCard path="stock/saidas" icon={<GoSync className="text-5xl" />} text="Saídas" loadingButton={loadingButton} handleRedirect={handleRedirect} />
+                    <OptionCard
+                      path="stock/movimentacoes?tipo=Entrada"
+                      icon={<IoIosDownload className="text-5xl" />}
+                      text="Entradas"
+                      loadingButton={loadingButton}
+                      handleRedirect={handleRedirect}
+                    />
+                    <OptionCard
+                      path="stock/movimentacoes?tipo=Saida"
+                      icon={<IoExit className="text-5xl" />}
+                      text="Saídas"
+                      loadingButton={loadingButton}
+                      handleRedirect={handleRedirect}
+                    />
                   </div>
                 )}
+
 
                 {/* Subcategoria de Dashboard */}
                 {openedDashboard && (
                   <div className="flex gap-4 flex-wrap justify-center">
-                    <OptionCard path="stock/saldoEstoque" icon={<FaChartBar className="text-5xl" />} text="Saldo do Estoque" loadingButton={loadingButton} handleRedirect={handleRedirect} />
+                    <OptionCard path="stock/saldoEstoque" icon={<FaCubesStacked className="text-5xl" />} text="Saldo do Estoque" loadingButton={loadingButton} handleRedirect={handleRedirect} />
                   </div>
                 )}
               </div>

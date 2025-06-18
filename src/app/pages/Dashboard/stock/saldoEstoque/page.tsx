@@ -8,9 +8,6 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
-import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash, FaBan } from "react-icons/fa";
-import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -25,17 +22,12 @@ import RegisterButton from "@/app/components/Buttons/RegisterButton";
 import CancelButton from "@/app/components/Buttons/CancelButton";
 import { MultiSelect } from "primereact/multiselect";
 import { User } from "../../controls/users/page";
-import { Deposito } from "../depositos/page";
-
-interface UnidadeDeMedida {
-  cod_un: number;
-  descricao: string;
-  un: string;
-  situacao?: string;
-}
+import EstoqueHierarquicoTable from "@/components/stock/EstoqueHierarquicoTable";
+import { Dropdown } from "primereact/dropdown";
+import GraficoCapacidadeQuantidade from "@/components/stock/GraficoCapacidadeQuantidade";
 
 interface Establishment {
-  cod_deposito: number;
+  cod_estabelecimento: number;
   nome: string;
   cep: string;
   logradouro: string;
@@ -46,24 +38,22 @@ interface Establishment {
   estado: string;
 }
 
-export interface Localizacao {
-  cod_localizacao?: number;
-  cod_deposito?: string;
-  capacidade?: number;
-  cod_un?: number;
-  cod_rua?: string;
-  cod_coluna?: string;
-  cod_nivel?: string;
+export interface Deposito {
+  id: string;
+  cod_deposito: string;
+  descricao?: string;
+  cod_estabel?: number;
+  tipo: string; // padrão: "Manutenção"
   cod_usuario?: number;
   dt_hr_criacao?: Date;
-  situacao?: string;
+  situacao: string;
 }
 
 
-const LocalizacoesPage: React.FC = () => {
+const DepositosPage: React.FC = () => {
   const { groupCode } = useGroup();
   const { token } = useToken();
-  const { permissions } = useUserPermissions(groupCode ?? 0, "Estoque");
+  const { permissions } = useUserPermissions(groupCode ?? 0, "Financeiro");
   let [loading, setLoading] = useState(false);
   let [color, setColor] = useState("#B8D047");
   const [itemCreateDisabled, setItemCreateDisabled] = useState(false);
@@ -71,18 +61,18 @@ const LocalizacoesPage: React.FC = () => {
     useState(false);
   const [itemEditDisabled, setItemEditDisabled] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [depositos, setDepositos] = useState<Deposito[]>([]);
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredLocalizacoes = localizacoes.filter((localizacao) => {
+  const filteredDepositos = depositos.filter((deposito) => {
     // Apenas ATIVO aparecem
-    if (localizacao.situacao !== 'Ativo') {
+    if (deposito.situacao !== 'Ativo') {
       return false;
     }
 
     // Lógica de busca
-    return Object.values(localizacao).some((value) =>
+    return Object.values(deposito).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     );
   });
@@ -131,157 +121,122 @@ const LocalizacoesPage: React.FC = () => {
   }, [token]);
 
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [localizacoesIdToDelete, setLocalizacaoIdToDelete] = useState<number | null>(null);
+  const [depositosIdToDelete, setDepositoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedLocalizacao, setSelectedLocalizacao] = useState<Localizacao | null>(null);
-  const [formValues, setFormValues] = useState<Localizacao>({
-    cod_localizacao: undefined,
-    cod_deposito: '',
-    capacidade: undefined,
-    cod_un: undefined,
-    cod_rua: '',
-    cod_coluna: '',
-    cod_nivel: '',
+  const [selectedDeposito, setSelectedDeposito] = useState<Deposito | null>(null);
+  const [formValues, setFormValues] = useState<Deposito>({
+    id: "",
+    cod_deposito: "",
+    descricao: "",
+    cod_estabel: undefined,
+    tipo: "",
     cod_usuario: undefined,
     dt_hr_criacao: undefined,
-    situacao: '',
+    situacao: "",
   });
 
   const clearInputs = () => {
     setVisualizar(false);
-    setSelectedDepositos([]);
-    setSelectedUnidadesDeMedida([]);
+    setSelectedEstablishments([]);
     setFormValues({
-      cod_localizacao: undefined,
-      cod_deposito: '',
-      capacidade: undefined,
-      cod_un: undefined,
-      cod_rua: '',
-      cod_coluna: '',
-      cod_nivel: '',
+      id: "",
+      cod_deposito: "",
+      descricao: "",
+      cod_estabel: undefined,
+      tipo: "",
       cod_usuario: undefined,
       dt_hr_criacao: undefined,
-      situacao: '',
+      situacao: "",
     });
   };
 
-  const [depositos, setDepositos] = useState<Deposito[]>([]);
-  const [selectedDepositos, setSelectedDepositos] = useState<Deposito[]>([]);
+  const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
+
+  const fetchEstabilishments = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const ativos = response.data.estabelecimentos.filter(
+        (estab: any) => estab.situacao === "Ativo"
+      );
+
+      setEstablishments(ativos);
+    } catch (error) {
+      console.error("Erro ao carregar estabelecimentos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEstabilishments();
+  }, [token]);
 
   const fetchDepositos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/depositos", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const ativos = response.data.depositos.filter(
-        (deposito: any) => deposito.situacao === "Ativo"
-      );
-
-      setDepositos(ativos);
-    } catch (error) {
-      console.error("Erro ao carregar depositos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDepositos();
-  }, [token]);
-
-  const [unidadesDeMedida, setUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]);
-  const [selectedUnidadesDeMedida, setSelectedUnidadesDeMedida] = useState<UnidadeDeMedida[]>([]);
-
-  const fetchUnidadesDeMedida = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const ativos = response.data.units.filter(
-        (un: any) => un.situacao === "Ativo"
-      );
-
-      setUnidadesDeMedida(ativos);
-    } catch (error) {
-      console.error("Erro ao carregar unidades de medida:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnidadesDeMedida();
-  }, [token]);
-
-  const fetchLocalizacoes = async () => {
-    setLoading(true);
-    try {
       const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes",
+        process.env.NEXT_PUBLIC_API_URL + "/api/depositos",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setRowData(response.data.localizacoes);
+      setRowData(response.data.depositos);
       setIsDataLoaded(true);
-      setLocalizacoes(response.data.localizacoes);
+      setDepositos(response.data.depositos);
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error("Erro ao carregar localizacoes:", error);
+      console.error("Erro ao carregar depositos:", error);
     }
   };
   useEffect(() => {
-    fetchLocalizacoes();
+    fetchDepositos();
   }, []);
 
 
-  const [rowData, setRowData] = useState<Localizacao[]>([]);
+  const [rowData, setRowData] = useState<Deposito[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const handleSaveEdit = async (cod_localizacao: any) => {
+  const handleSaveEdit = async (cod_deposito: any) => {
     setItemEditDisabled(true);
     setLoading(true);
 
     try {
-      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
-        { key: "capacidade", label: "Capacidade" },
-        { key: "cod_rua", label: "Rua" },
-        { key: "cod_coluna", label: "Coluna" },
-        { key: "cod_nivel", label: "Nível" },
+      const requiredFields = [
+        "descricao",
+        "cod_deposito",
+        "tipo",
       ];
 
-      const missingField = requiredFields.find(({ key }) => {
-        const value = formValues[key];
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
         return value === "" || value === null || value === undefined;
       });
 
-      if (missingField) {
-        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
+      if (isEmptyField) {
+        setItemEditDisabled(false);
+        setLoading(false);
+        toast.info("Todos os campos devem ser preenchidos!", {
           position: "top-right",
           autoClose: 3000,
         });
-        setItemCreateReturnDisabled(false);
-        setLoading(false);
         return;
       }
 
-      const cod_deposito = selectedDepositos[0]?.cod_deposito;
-      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+      const cod_estabel = selectedEstablishments[0]?.cod_estabelecimento;
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/edit/${cod_localizacao}`,
-        { ...formValues, cod_deposito, cod_un },
+        `${process.env.NEXT_PUBLIC_API_URL}/api/depositos/edit/${cod_deposito}`,
+        { ...formValues, cod_deposito_old, cod_estabel },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -292,8 +247,8 @@ const LocalizacoesPage: React.FC = () => {
         setItemEditDisabled(false);
         setLoading(false);
         clearInputs();
-        fetchLocalizacoes();
-        toast.success("Localização salva com sucesso!", {
+        fetchDepositos();
+        toast.success("Depósito salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -302,7 +257,7 @@ const LocalizacoesPage: React.FC = () => {
       } else {
         setItemEditDisabled(false);
         setLoading(false);
-        toast.error("Erro ao salvar localizacao.", {
+        toast.error("Erro ao salvar deposito.", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -310,7 +265,7 @@ const LocalizacoesPage: React.FC = () => {
     } catch (error) {
       setItemEditDisabled(false);
       setLoading(false);
-      console.error("Erro ao salvar localizacao:", error);
+      console.error("Erro ao salvar deposito:", error);
     }
   };
 
@@ -319,20 +274,14 @@ const LocalizacoesPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const requiredFields: { key: keyof typeof formValues; label: string }[] = [
-        { key: "capacidade", label: "Capacidade" },
-        { key: "cod_rua", label: "Rua" },
-        { key: "cod_coluna", label: "Coluna" },
-        { key: "cod_nivel", label: "Nível" },
-      ];
-
-      const missingField = requiredFields.find(({ key }) => {
-        const value = formValues[key];
+      const requiredFields = ["descricao", "cod_deposito", "tipo"];
+      const isEmptyField = requiredFields.some((field) => {
+        const value = formValues[field as keyof typeof formValues];
         return value === "" || value === null || value === undefined;
       });
 
-      if (missingField) {
-        toast.info(`O campo "${missingField.label}" deve ser preenchido!`, {
+      if (isEmptyField) {
+        toast.info("Todos os campos devem ser preenchidos!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -342,12 +291,12 @@ const LocalizacoesPage: React.FC = () => {
       }
 
       const centroEncontrado = rowData.find(
-        (item) => item.cod_localizacao === formValues.cod_localizacao
+        (item) => item.cod_deposito === formValues.cod_deposito
       );
       const situacaoInativo = centroEncontrado?.situacao === "Inativo";
 
       if (centroEncontrado && !situacaoInativo) {
-        toast.info("Esse código de localização já existe no banco de dados, escolha outro!", {
+        toast.info("Esse código de depósito já existe no banco de dados, escolha outro!", {
           position: "top-right",
           autoClose: 3000,
           progressStyle: { background: "yellow" },
@@ -359,8 +308,8 @@ const LocalizacoesPage: React.FC = () => {
       }
 
       if (centroEncontrado && situacaoInativo) {
-        await handleSaveEdit(centroEncontrado.cod_localizacao);
-        fetchLocalizacoes();
+        await handleSaveEdit(centroEncontrado.cod_deposito);
+        fetchDepositos();
         clearInputs();
         setVisible(fecharTela);
         toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
@@ -374,8 +323,8 @@ const LocalizacoesPage: React.FC = () => {
         return;
       }
 
-      if (!selectedDepositos || selectedDepositos.length === 0) {
-        toast.info("Você deve selecionar um deposito!", {
+      if (!selectedEstablishments || selectedEstablishments.length === 0) {
+        toast.info("Você deve selecionar um estabelecimento!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -384,12 +333,11 @@ const LocalizacoesPage: React.FC = () => {
         return;
       }
 
-      const cod_deposito = selectedDepositos[0]?.cod_deposito;
-      const cod_un = selectedUnidadesDeMedida[0]?.cod_un;
+      const cod_estabel = selectedEstablishments[0]?.cod_estabelecimento;
 
       const response = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + "/api/localizacoes/register",
-        { ...formValues, cod_deposito, cod_un },
+        process.env.NEXT_PUBLIC_API_URL + "/api/depositos/register",
+        { ...formValues, cod_estabel },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -399,20 +347,20 @@ const LocalizacoesPage: React.FC = () => {
 
       if (response.status >= 200 && response.status < 300) {
         clearInputs();
-        fetchLocalizacoes();
-        toast.success("Localização salva com sucesso!", {
+        fetchDepositos();
+        toast.success("Depósito salvo com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
         setVisible(fecharTela);
       } else {
-        toast.error("Erro ao salvar localizações.", {
+        toast.error("Erro ao salvar depósitos.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.error("Erro ao salvar localizações:", error);
+      console.error("Erro ao salvar depósitos:", error);
     } finally {
       setItemCreateReturnDisabled(false);
       setLoading(false);
@@ -420,34 +368,36 @@ const LocalizacoesPage: React.FC = () => {
   };
 
   const [visualizando, setVisualizar] = useState<boolean>(false);
+  const [cod_deposito_old, SETcod_deposito_old] = useState<string>("");
 
-  const handleEdit = (localizacoes: Localizacao, visualizar: boolean) => {
+  const handleEdit = (depositos: Deposito, visualizar: boolean) => {
     setVisualizar(visualizar);
-    setFormValues(localizacoes);
-    const deposito = depositos.find((e) => e.cod_deposito === localizacoes.cod_deposito);
-    setSelectedDepositos(deposito ? [deposito] : []);
-    setSelectedLocalizacao(localizacoes);
+    SETcod_deposito_old(depositos.cod_deposito);
+    setFormValues(depositos);
+    const estabelecimento = establishments.find((e) => e.cod_estabelecimento === depositos.cod_estabel);
+    setSelectedEstablishments(estabelecimento ? [estabelecimento] : []);
+    setSelectedDeposito(depositos);
     setIsEditing(true);
     setVisible(true);
   };
 
 
   const openDialog = (id: number) => {
-    setLocalizacaoIdToDelete(id);
+    setDepositoIdToDelete(id);
     setModalDeleteVisible(true);
   };
 
   const closeDialog = () => {
     setModalDeleteVisible(false);
-    setLocalizacaoIdToDelete(null);
+    setDepositoIdToDelete(null);
   };
 
   const handleCancelar = async () => {
-    if (localizacoesIdToDelete === null) return;
+    if (depositosIdToDelete === null) return;
 
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/localizacoes/cancel/${localizacoesIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/depositos/cancel/${depositosIdToDelete}`,
         {},
         {
           headers: {
@@ -457,21 +407,21 @@ const LocalizacoesPage: React.FC = () => {
       );
 
       if (response.status >= 200 && response.status < 300) {
-        fetchLocalizacoes(); // Aqui é necessário chamar a função que irá atualizar a lista de localizacoes
+        fetchDepositos(); // Aqui é necessário chamar a função que irá atualizar a lista de depositos
         setModalDeleteVisible(false);
-        toast.success("Localização cancelado com sucesso!", {
+        toast.success("Depósito cancelado com sucesso!", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        toast.error("Erro ao cancelar localizacao.", {
+        toast.error("Erro ao cancelar deposito.", {
           position: "top-right",
           autoClose: 3000,
         });
       }
     } catch (error) {
-      console.log("Erro ao excluir localizacao:", error);
-      toast.error("Erro ao excluir localizacao. Tente novamente.", {
+      console.log("Erro ao excluir deposito:", error);
+      toast.error("Erro ao excluir deposito. Tente novamente.", {
         position: "top-right",
         autoClose: 3000,
       });
@@ -523,12 +473,68 @@ const LocalizacoesPage: React.FC = () => {
     }
   };
 
+  const dadosExemplo = {
+    estabelecimento: "101",
+    capacidadeTotal: 100000,
+    quantidadeTotal: 15000,
+    ruas: [
+      {
+        cod_rua: "R01",
+        capacidade: 10000,
+        quantidade: 5000,
+        colunas: [
+          {
+            cod_coluna: "C01",
+            capacidade: 10000,
+            quantidade: 5000,
+            niveis: [
+              {
+                cod_nivel: "N01",
+                capacidade: 5000,
+                quantidade: 3000,
+              },
+              {
+                cod_nivel: "N02",
+                capacidade: 5000,
+                quantidade: 2000,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        cod_rua: "R02",
+        capacidade: 20000,
+        quantidade: 10000,
+        colunas: [
+          {
+            cod_coluna: "C01",
+            capacidade: 10000,
+            quantidade: 7000,
+            niveis: [],
+          },
+          {
+            cod_coluna: "C02",
+            capacidade: 10000,
+            quantidade: 3000,
+            niveis: [],
+          },
+        ],
+      },
+      {
+        cod_rua: "R03",
+        capacidade: 30000,
+        quantidade: 10000,
+        colunas: [],
+      },
+    ],
+  };
 
 
   return (
     <>
       <SidebarLayout>
-        <div className="flex justify-center">
+        <div className="flex justify-center max-w-[1520px]">
           {loading && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
               <BeatLoader
@@ -563,11 +569,11 @@ const LocalizacoesPage: React.FC = () => {
               </div>
             }
           >
-            <p>Tem certeza que deseja cancelar este localizacao?</p>
+            <p>Tem certeza que deseja cancelar este deposito?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? (visualizando ? "Visualizando Localização" : "Editar Localização") : "Nova Localização"}
+            header={isEditing ? (visualizando ? "Visualizando Depósito" : "Editar Depósito") : "Novo Depósito"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -582,103 +588,75 @@ const LocalizacoesPage: React.FC = () => {
             <div
               className={`${visualizando ? 'visualizando' : ''}
               p-fluid grid gap-2 mt-2`}>
-
-              <div className="grid gap-2 grid-cols-3">
+              <div className="grid gap-2">
                 <div>
-                  <label htmlFor="deposito" className="block text-blue font-medium">
-                    Localização
-                  </label>
-                  <MultiSelect
-                    disabled={visualizando}
-                    value={selectedDepositos}
-                    onChange={(e) => setSelectedDepositos(e.value)}
-                    options={depositos}
-                    optionLabel="descricao"
-                    filter
-                    placeholder="Selecione o Localização"
-                    maxSelectedLabels={2}
-                    selectionLimit={1}
-                    className="w-full border text-black h-[35px] flex items-center"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="capacidade" className="block text-blue font-medium">
-                    Capacidade
-                  </label>
-                  <input
-                    type="number"
-                    id="capacidade"
-                    name="capacidade"
-                    disabled={visualizando}
-                    value={formValues.capacidade}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="un" className="block text-blue font-medium">
-                    Unidade de Medida
-                  </label>
-                  <MultiSelect
-                    disabled={visualizando}
-                    value={selectedUnidadesDeMedida}
-                    onChange={(e) => setSelectedUnidadesDeMedida(e.value)}
-                    options={unidadesDeMedida}
-                    optionLabel="descricao"
-                    filter
-                    placeholder="Selecione a un de medida"
-                    maxSelectedLabels={2}
-                    selectionLimit={1}
-                    className="w-full border text-black h-[35px] flex items-center"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-2 grid-cols-3">
-                <div>
-                  <label htmlFor="cod_rua" className="block text-blue font-medium">
-                    Rua
+                  <label htmlFor="descricao" className="block text-blue font-medium">
+                    Descrição
                   </label>
                   <input
                     type="text"
-                    id="cod_rua"
-                    name="cod_rua"
+                    id="descricao"
+                    name="descricao"
                     disabled={visualizando}
-                    value={formValues.cod_rua}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="cod_coluna" className="block text-blue font-medium">
-                    Coluna
-                  </label>
-                  <input
-                    type="text"
-                    id="cod_coluna"
-                    name="cod_coluna"
-                    disabled={visualizando}
-                    value={formValues.cod_coluna}
-                    onChange={handleInputChange}
-                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="cod_nivel" className="block text-blue font-medium">
-                    Nível
-                  </label>
-                  <input
-                    type="text"
-                    id="cod_nivel"
-                    name="cod_nivel"
-                    disabled={visualizando}
-                    value={formValues.cod_nivel}
+                    value={formValues.descricao}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label htmlFor="cod_deposito" className="block text-blue font-medium">
+                    Código
+                  </label>
+                  <input
+                    type="text"
+                    id="cod_deposito"
+                    name="cod_deposito"
+                    disabled={visualizando}
+                    value={formValues.cod_deposito}
+                    onChange={handleInputChange}
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                    Estabelecimento
+                  </label>
+                  <MultiSelect
+                    disabled={visualizando}
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    filter
+                    placeholder="Selecione o estabelecimento"
+                    maxSelectedLabels={2}
+                    selectionLimit={1}
+                    className="w-full border text-black h-[35px] flex items-center"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tipo" className="block text-blue font-medium">
+                    Tipo
+                  </label>
+                  <select
+                    id="tipo"
+                    name="tipo"
+                    disabled={visualizando}
+                    value={formValues.tipo || "default"}
+                    defaultValue={"default"}
+                    onChange={(e) =>
+                      setFormValues({ ...formValues, tipo: e.target.value })
+                    }
+                    className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
+                  >
+                    <option value="default" disabled>Selecione</option>
+                    <option value="Manutenção">Manutenção</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
 
@@ -747,10 +725,8 @@ const LocalizacoesPage: React.FC = () => {
                     className="text-white"
                     icon="pi pi-check"
                     onClick={() => {
-                      if (selectedLocalizacao) {
-                        handleSaveEdit(selectedLocalizacao.cod_localizacao);
-                      } else {
-                        handleSaveEdit(formValues.cod_localizacao);
+                      if (selectedDeposito) {
+                        handleSaveEdit(selectedDeposito.id);
                       }
                     }}
                     disabled={itemEditDisabled}
@@ -777,7 +753,7 @@ const LocalizacoesPage: React.FC = () => {
               <div>
                 <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">
-                  Localizações
+                  Saldo de Estoque
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
@@ -786,6 +762,42 @@ const LocalizacoesPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* QUANTIDADES */}
+            <div
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
+              style={{ height: "95%" }}
+            >
+              <div className="grid grid-cols-4 gap-4 mb-10">
+                <div className="col-span-1">
+                  <label htmlFor="estabelecimento" className="block text-blue font-extrabold text-lg">
+                    Estabelecimento
+                  </label>
+                  <Dropdown
+                    disabled={visualizando}
+                    value={selectedEstablishments}
+                    onChange={(e) => setSelectedEstablishments(e.value)}
+                    options={establishments}
+                    optionLabel="nome"
+                    placeholder="Selecione o estabelecimento"
+                    className="w-full border text-black h-[35px] flex items-center mt-1"
+                    filter
+                  />
+                </div>
+              </div>
+              <EstoqueHierarquicoTable data={dadosExemplo} />
+            </div>
+
+            {/* GRÁFICO */}
+            <div
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
+              style={{ height: "95%" }}
+            >
+
+              <GraficoCapacidadeQuantidade data={dadosExemplo} />
+            </div>
+
+            {/* TABELA */}
             <div
               className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
               style={{ height: "95%" }}
@@ -803,7 +815,7 @@ const LocalizacoesPage: React.FC = () => {
                 />
               </div>
               <DataTable
-                value={filteredLocalizacoes.slice(first, first + rows)}
+                value={filteredDepositos.slice(first, first + rows)}
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
@@ -820,8 +832,33 @@ const LocalizacoesPage: React.FC = () => {
                 responsiveLayout="scroll"
               >
                 <Column
-                  field="cod_deposito"
-                  header="Localização"
+                  field=""
+                  header="Cód. Item"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                // body={(rowData) => {
+                //   const item = itens.find(
+                //     (e) => e.cod_item === rowData.cod_item
+                //   );
+                //   return item?.cod_item || "-";
+                // }}
+                />
+                <Column
+                  field=""
+                  header="Desccrição Item"
                   style={{
                     width: "3%",
                     textAlign: "center",
@@ -837,11 +874,68 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData) => {
-                    const deposito = depositos.find(
-                      (e) => e.cod_deposito === rowData.cod_deposito
-                    );
-                    return deposito?.descricao || "-";
+                // body={(rowData) => {
+                //   const item = itens.find(
+                //     (e) => e.cod_item === rowData.cod_item
+                //   );
+                //   return item?.descricao || "-";
+                // }}
+                />
+                <Column
+                  field="cod_deposito"
+                  header="Depósito"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="lote"
+                  header="Lote"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  field="quantidade"
+                  header="Quantidade"
+                  style={{
+                    width: "1%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
                   }}
                 />
                 <Column
@@ -862,6 +956,11 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
+                // body={(rowData) => {
+                //   const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                //   const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                //   return localizacao?.cod_rua || "-";
+                // }}
                 />
                 <Column
                   field="cod_coluna"
@@ -881,9 +980,14 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
+                // body={(rowData) => {
+                //   const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                //   const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                //   return localizacao?.cod_coluna || "-";
+                // }}
                 />
                 <Column
-                  field="cod_nivel"
+                  field=""
                   header="Nível"
                   style={{
                     width: "1%",
@@ -900,25 +1004,11 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                />
-                <Column
-                  field="capacidade"
-                  header="Capacidade"
-                  style={{
-                    width: "1%",
-                    textAlign: "center",
-                    border: "1px solid #ccc",
-                  }}
-                  headerStyle={{
-                    fontSize: "1.2rem",
-                    color: "#1B405D",
-                    fontWeight: "bold",
-                    border: "1px solid #ccc",
-                    textAlign: "center",
-                    backgroundColor: "#D9D9D980",
-                    verticalAlign: "middle",
-                    padding: "10px",
-                  }}
+                // body={(rowData) => {
+                //   const localItem = locaisItens.find(item => item.cod_local_item === rowData.cod_local_item);
+                //   const localizacao = localItem ? localizacoes.find(loc => loc.cod_localizacao === localItem.cod_localizacao) : null;
+                //   return localizacao?.cod_nivel || "??";
+                // }}
                 />
                 <Column
                   field="cod_un"
@@ -938,18 +1028,18 @@ const LocalizacoesPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData) => {
-                    const un = unidadesDeMedida.find(
-                      (e) => e.cod_un === rowData.cod_un
-                    );
-                    return un?.descricao || "-";
-                  }}
+                // body={(rowData) => {
+                //   const un = unidadesDeMedida.find(
+                //     (e) => e.cod_un === rowData.cod_un
+                //   );
+                //   return un?.descricao || "-";
+                // }}
                 />
                 <Column
                   field="cod_usuario"
                   header="Criador"
                   style={{
-                    width: "1%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -972,7 +1062,7 @@ const LocalizacoesPage: React.FC = () => {
                   field="dt_hr_criacao"
                   header="DT Cadastro"
                   style={{
-                    width: "2%",
+                    width: "3%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -1021,60 +1111,10 @@ const LocalizacoesPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
-                  <Column
-                    header=""
-                    body={(rowData) => (
-                      <div className="flex gap-2 justify-center">
-                        <EditButton onClick={() => handleEdit(rowData, false)} />
-                      </div>
-                    )}
-                    className="text-black"
-                    style={{
-                      width: "0%",
-                      textAlign: "center",
-                      border: "1px solid #ccc",
-                    }}
-                    headerStyle={{
-                      fontSize: "1.2rem",
-                      color: "#1B405D",
-                      fontWeight: "bold",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                      backgroundColor: "#D9D9D980",
-                      verticalAlign: "middle",
-                      padding: "10px",
-                    }}
-                  />
-                )}
-                {permissions?.delecao === "SIM" && (
-                  <Column
-                    header=""
-                    body={(rowData) => (
-                      <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => { openDialog(rowData.cod_localizacao); console.log(rowData.cod_localizacao) }} />
-                      </div>
-                    )}
-                    className="text-black"
-                    style={{
-                      width: "0%",
-                      textAlign: "center",
-                      border: "1px solid #ccc",
-                    }}
-                    headerStyle={{
-                      fontSize: "1.2rem",
-                      color: "#1B405D",
-                      fontWeight: "bold",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                      backgroundColor: "#D9D9D980",
-                      verticalAlign: "middle",
-                      padding: "10px",
-                    }}
-                  />
-                )}
+
               </DataTable>
             </div>
+
           </div>
         </div>
       </SidebarLayout>
@@ -1083,4 +1123,4 @@ const LocalizacoesPage: React.FC = () => {
   );
 };
 
-export default LocalizacoesPage;
+export default DepositosPage;
