@@ -1006,12 +1006,16 @@ const NfsServico: React.FC = () => {
 
 
                 <button
-                  className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50 hover:bg-green-800 hover:scale-125 `}
+                  className={`!bg-green-600 text-white rounded flex items-center gap-2 p-0 transition-all duration-50
+    ${!xmlSaida ? 'bg-gray-400 cursor-not-allowed opacity-60' : 'hover:bg-green-800 hover:scale-125'}
+  `}
                   onClick={async () => {
-                    if (selectedNfsServico) {
+                    if (selectedNfsServico && xmlSaida) {
                       gerarXmlNotaDownload(selectedNfsServico);
                     }
                   }}
+                  disabled={!xmlSaida}
+                  title={!xmlSaida ? "Disponível somente após a emissão da NFS-e com sucesso" : "Baixar XML da NFS-e"}
                 >
                   <div className="bg-green-800 w-10 h-10 flex items-center justify-center rounded">
                     <TbFileTypeXml className="text-white" style={{ fontSize: "24px" }} />
@@ -2537,9 +2541,12 @@ const NfsServico: React.FC = () => {
                 {permissions?.delecao === "SIM" && (
                   <Column
                     header=""
-                    body={(rowData) => (
-                      <div className="flex gap-2 justify-center">
-                        <CancelButton onClick={() => openDialog(rowData.cod_natureza_operacao)} />
+                    body={() => (
+                      <div className="flex gap-2 justify-center opacity-20 cursor-not-allowed"
+                        title="Funcionalidade indisponível no momento">
+                        <CancelButton
+                          onClick={() => { }}
+                        />
                       </div>
                     )}
                     className="text-black"

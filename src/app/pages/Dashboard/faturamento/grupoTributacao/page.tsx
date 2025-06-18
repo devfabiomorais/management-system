@@ -126,6 +126,12 @@ const GrupoTributacao: React.FC = () => {
     clearInputsRegras();
   };
 
+  const handleOpenNovoGrupo = async () => {
+    const novasRegras = await fetchRegraGrupoTributacao(token);
+    setRegraGrupoTributacao(novasRegras);
+    setVisible(true);
+  };
+
   const handleSaveEdit = async (cod_grupo_tributacao: any) => {
     try {
       const requiredFields = ["nome", "descricao"];
@@ -1270,7 +1276,7 @@ const GrupoTributacao: React.FC = () => {
               </div>
               {permissions?.insercao === "SIM" && (
                 <div className="mr-2">
-                  <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
+                  <RegisterButton onClick={handleOpenNovoGrupo} title="Cadastrar" />
                 </div>
               )}
             </div>
