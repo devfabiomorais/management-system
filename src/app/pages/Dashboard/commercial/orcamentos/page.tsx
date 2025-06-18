@@ -5887,7 +5887,7 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
-                          (servico.nome ?? (servico.dbs_servicos?.descricao ?? servico.nome))
+                          (servico.nome ?? (servico.dbs_servicos?.nome ?? servico.nome))
                           :
                           (servico.dbs_servicos?.descricao ?? servico.nome)}
                       />
