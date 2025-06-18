@@ -1,5 +1,5 @@
 "use client";
-import React, { ChangeEvent, useEffect, useState } from "react";
+import React, { ChangeEvent, Suspense, useEffect, useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -1249,4 +1249,16 @@ const MovimentacoesPage: React.FC = () => {
   );
 };
 
-export default MovimentacoesPage;
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <img src="/loading.gif" alt="Carregando..." style={{ width: 100, height: 100 }} />
+        </div>
+      }
+    >
+      <MovimentacoesPage />
+    </Suspense>
+  );
+}
