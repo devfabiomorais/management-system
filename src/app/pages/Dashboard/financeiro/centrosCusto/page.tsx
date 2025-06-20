@@ -9,8 +9,8 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { Dialog } from "primereact/dialog";
 import { IoAddCircleOutline } from "react-icons/io5";
-import { FaTrash } from "react-icons/fa";
-import { MdOutlineModeEditOutline } from "react-icons/md";
+import { FaTrash, FaBan } from "react-icons/fa";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
 import { Button } from "primereact/button";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -19,11 +19,16 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
+import RegisterButton from "@/app/components/Buttons/RegisterButton";
+import CancelButton from "@/app/components/Buttons/CancelButton";
 
 interface CentroCusto {
   cod_centro_custo: number;
   nome: string;
   descricao?: string;
+  situacao?: string;
 }
 
 const CentrosCustoPage: React.FC = () => {
@@ -41,9 +46,19 @@ const CentrosCustoPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
-  const filteredCentrosCusto = centrosCusto.filter((centrosCusto) =>
-    centrosCusto.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCentrosCusto = centrosCusto.filter((centroCusto) => {
+    // Apenas ATIVO aparecem
+    if (centroCusto.situacao !== 'Ativo') {
+      return false;
+    }
+
+    // Lógica de busca
+    return Object.values(centroCusto).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [centrosCustoIdToDelete, setCentroCustoIdToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -55,6 +70,7 @@ const CentrosCustoPage: React.FC = () => {
   });
 
   const clearInputs = () => {
+    setVisualizar(false)
     setFormValues({
       cod_centro_custo: 0,
       nome: "",
@@ -62,9 +78,10 @@ const CentrosCustoPage: React.FC = () => {
     });
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (cod_centro_custo: any) => {
     setItemEditDisabled(true);
     setLoading(true);
+
     try {
       const requiredFields = [
         "nome",
@@ -87,8 +104,8 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:9009/api/centrosCusto/edit/${selectedCentroCusto?.cod_centro_custo}`,
-        formValues,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/edit/${cod_centro_custo}`,
+        { ...formValues },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -105,6 +122,7 @@ const CentrosCustoPage: React.FC = () => {
           autoClose: 3000,
         });
         setVisible(false);
+        setIsEditing(false);
       } else {
         setItemEditDisabled(false);
         setLoading(false);
@@ -145,7 +163,7 @@ const CentrosCustoPage: React.FC = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:9009/api/centrosCusto/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -177,7 +195,10 @@ const CentrosCustoPage: React.FC = () => {
     }
   };
 
-  const handleSaveReturn = async () => {
+  const [rowData, setRowData] = useState<CentroCusto[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const handleSaveReturn = async (fecharTela: boolean) => {
     setItemCreateReturnDisabled(true);
     setLoading(true);
     try {
@@ -201,8 +222,39 @@ const CentrosCustoPage: React.FC = () => {
         return;
       }
 
+      const centroEncontrado = rowData.find((item) => item.nome === formValues.nome);
+      const situacaoInativo = centroEncontrado?.situacao === "Inativo";
+
+      if (centroEncontrado && !situacaoInativo) {
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        toast.info("Esse nome já existe no banco de dados, escolha outro!", {
+          position: "top-right",
+          autoClose: 3000,
+          progressStyle: { background: "yellow" },
+          icon: <span>⚠️</span>, // Usa o emoji de alerta
+        });
+        return;
+      }
+
+      if (centroEncontrado && situacaoInativo) {
+        await handleSaveEdit(centroEncontrado.cod_centro_custo);
+        fetchCentrosCusto();
+        setItemCreateReturnDisabled(false);
+        setLoading(false);
+        clearInputs();
+        setVisible(fecharTela);
+        toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+          position: "top-right",
+          autoClose: 10000,
+          progressStyle: { background: "green" },
+          icon: <span>♻️</span>,
+        });
+        return;
+      }
+
       const response = await axios.post(
-        "http://localhost:9009/api/centrosCusto/register",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto/register",
         formValues,
         {
           headers: {
@@ -219,7 +271,7 @@ const CentrosCustoPage: React.FC = () => {
           position: "top-right",
           autoClose: 3000,
         });
-        setVisible(false);
+        setVisible(fecharTela);
       } else {
         setItemCreateReturnDisabled(false);
         setLoading(false);
@@ -235,7 +287,12 @@ const CentrosCustoPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (centrosCusto: CentroCusto) => {
+
+  const [visualizando, setVisualizar] = useState<boolean>(false);
+
+  const handleEdit = (centrosCusto: CentroCusto, visualizar: boolean) => {
+    setVisualizar(visualizar);
+
     setFormValues(centrosCusto);
     setSelectedCentroCusto(centrosCusto);
     setIsEditing(true);
@@ -250,14 +307,15 @@ const CentrosCustoPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:9009/api/centrosCusto",
+        process.env.NEXT_PUBLIC_API_URL + "/api/centrosCusto",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      console.log(response.data.centrosCusto);
+      setRowData(response.data.centrosCusto);
+      setIsDataLoaded(true);
       setCentrosCusto(response.data.centrosCusto);
       setLoading(false);
     } catch (error) {
@@ -276,12 +334,49 @@ const CentrosCustoPage: React.FC = () => {
     setCentroCustoIdToDelete(null);
   };
 
+  const handleCancelar = async () => {
+    if (centrosCustoIdToDelete === null) return;
+
+    try {
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/cancel/${centrosCustoIdToDelete}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        fetchCentrosCusto(); // Aqui é necessário chamar a função que irá atualizar a lista de centros de custo
+        setModalDeleteVisible(false);
+        toast.success("Centro de custo cancelado com sucesso!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Erro ao cancelar centro de custo.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao excluir centro de custo:", error);
+      toast.error("Erro ao excluir centro de custo. Tente novamente.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+
   const handleDelete = async () => {
     if (centrosCustoIdToDelete === null) return;
 
     try {
       await axios.delete(
-        `http://localhost:9009/api/centrosCusto/${centrosCustoIdToDelete}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/centrosCusto/${centrosCustoIdToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -322,14 +417,14 @@ const CentrosCustoPage: React.FC = () => {
       [name]: numericValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
-  
+
+
   const handleNumericKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     if (!/[0-9]/.test(char)) {
       e.preventDefault();
     }
-  };  
+  };
 
   const handleAlphabeticInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target; // Obtém o "name" e o valor do input
@@ -339,7 +434,7 @@ const CentrosCustoPage: React.FC = () => {
       [name]: alphabeticValue, // Atualiza dinamicamente o campo com base no "name"
     });
   };
-  
+
   const handleAlphabeticKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const char = e.key;
     // Permite qualquer caractere que não seja número
@@ -347,8 +442,8 @@ const CentrosCustoPage: React.FC = () => {
       e.preventDefault(); // Bloqueia a inserção de números
     }
   };
-  
- 
+
+
 
   return (
     <>
@@ -367,7 +462,7 @@ const CentrosCustoPage: React.FC = () => {
           )}
 
           <Dialog
-            header="Confirmar Exclusão"
+            header="Confirmar Cancelamento"
             visible={modalDeleteVisible}
             style={{ width: "auto" }}
             onHide={closeDialog}
@@ -382,17 +477,17 @@ const CentrosCustoPage: React.FC = () => {
                 <Button
                   label="Sim"
                   icon="pi pi-check"
-                  onClick={handleDelete}
+                  onClick={handleCancelar}
                   className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all"
                 />
               </div>
             }
           >
-            <p>Tem certeza que deseja excluir este centro de custo?</p>
+            <p>Tem certeza que deseja cancelar este centro de custo?</p>
           </Dialog>
 
           <Dialog
-            header={isEditing ? "Editar centrosCusto" : "Novo centrosCusto"}
+            header={isEditing ? (visualizando ? "Visualizando Centro de Custo" : "Editar Centro de Custo") : "Novo Centro de Custo"}
             visible={visible}
             headerStyle={{
               backgroundColor: "#D9D9D9",
@@ -403,7 +498,9 @@ const CentrosCustoPage: React.FC = () => {
             }}
             onHide={() => closeModal()}
           >
-            <div className="p-fluid grid gap-2 mt-2">
+            <div
+              className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="nome" className="block text-blue font-medium">
@@ -413,130 +510,138 @@ const CentrosCustoPage: React.FC = () => {
                     type="text"
                     id="nome"
                     name="nome"
+                    disabled={visualizando}
                     value={formValues.nome}
                     onChange={handleInputChange}
                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                   />
                 </div>
-              </div>              
+              </div>
 
               <div className="grid grid-cols-1 gap-2">
                 <div>
                   <label htmlFor="descricao" className="block text-blue font-medium">
                     Descrição
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     id="descricao"
                     name="descricao"
+                    disabled={visualizando}
                     value={formValues.descricao}
-                    onChange={handleInputChange} 
-                    className="w-full h-20 border border-[#D9D9D9] pl-1 rounded-sm"
+                    maxLength={255}
+                    className={`w-full border border-gray-400 pl-1 rounded-sm h-24 `}
+                    onChange={(e) => {
+                      setFormValues((prevValues) => ({
+                        ...prevValues,
+                        descricao: e.target.value,
+                      }));
+                    }}
                   />
                 </div>
               </div>
             </div>
 
 
-            <div className="flex justify-between items-center  mt-16">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="flex justify-between items-center mt-16 w-full">
+              <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                 <Button
                   label="Sair Sem Salvar"
                   className="text-white"
                   icon="pi pi-times"
                   style={{
-                    backgroundColor: "#dc3545",
-                    border: "1px solid #dc3545",
-                    padding: "0.5rem 1.5rem",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
+                    backgroundColor: '#dc3545',
+                    border: '1px solid #dc3545',
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
                   }}
                   onClick={() => closeModal()}
                 />
-                {!isEditing && (
+
+                {!isEditing ? (
                   <>
                     <Button
                       label="Salvar e Voltar à Listagem"
                       className="text-white"
                       icon="pi pi-refresh"
-                      onClick={handleSaveReturn}
+                      onClick={() => handleSaveReturn(false)}
                       disabled={itemCreateReturnDisabled}
                       style={{
-                        backgroundColor: "#007bff",
-                        border: "1px solid #007bff",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
+                        backgroundColor: '#007bff',
+                        border: '1px solid #007bff',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                     <Button
                       label="Salvar e Adicionar Outro"
                       className="text-white"
-                      icon="pi pi-check"
-                      onClick={handleSave}
                       disabled={itemCreateDisabled}
+                      icon="pi pi-check"
+                      onClick={() => handleSaveReturn(true)}
                       style={{
-                        backgroundColor: "#28a745",
-                        border: "1px solid #28a745",
-                        padding: "0.5rem 1.5rem",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
+                        backgroundColor: '#28a745',
+                        border: '1px solid #28a745',
+                        padding: '0.5rem 1.5rem',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                       }}
                     />
                   </>
-                )}
-
-                {isEditing && (
+                ) : (
                   <Button
                     label="Salvar"
                     className="text-white"
                     icon="pi pi-check"
-                    onClick={handleSaveEdit}
+                    onClick={() => handleSaveEdit(formValues.cod_centro_custo)}
                     disabled={itemEditDisabled}
                     style={{
-                      backgroundColor: "#28a745",
-                      border: "1px solid #28a745",
-                      padding: "0.5rem 1.5rem",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
+                      backgroundColor: '#28a745',
+                      border: '1px solid #28a745',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
                     }}
                   />
                 )}
               </div>
             </div>
+
           </Dialog>
 
-          <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+          <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
             <div className="flex justify-between">
               <div>
-                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">
+                <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">
                   Centro de Custo
                 </h2>
               </div>
               {permissions?.insercao === "SIM" && (
-                <div>
-                  <button
-                    className="bg-green200 rounded mr-3"
-                    onClick={() => setVisible(true)}
-                  >
-                    <IoAddCircleOutline
-                      style={{ fontSize: "2.5rem" }}
-                      className="text-white text-center"
-                    />
-                  </button>
+                <div className="mr-2">
+                  <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
               )}
             </div>
             <div
-              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col"
+              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
               style={{ height: "95%" }}
             >
               <div className="mb-4 flex justify-end">
@@ -556,6 +661,7 @@ const CentrosCustoPage: React.FC = () => {
                 paginator={true}
                 rows={rows}
                 rowsPerPageOptions={[5, 10]}
+                rowClassName={(data) => 'hover:bg-gray-200'}
                 onPage={(e) => {
                   setFirst(e.first);
                   setRows(e.rows);
@@ -564,7 +670,7 @@ const CentrosCustoPage: React.FC = () => {
                   borderCollapse: "collapse",
                   width: "100%",
                 }}
-                className="w-full"
+                className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                 responsiveLayout="scroll"
               >
                 <Column
@@ -609,7 +715,7 @@ const CentrosCustoPage: React.FC = () => {
                   field="descricao"
                   header="Descrição"
                   style={{
-                    width: "1%",
+                    width: "5%",
                     textAlign: "center",
                     border: "1px solid #ccc",
                   }}
@@ -623,18 +729,56 @@ const CentrosCustoPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                /> 
+                />
+                <Column
+                  field="situacao"
+                  header="Situação"
+                  style={{
+                    width: "0.5%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
+                <Column
+                  header=""
+                  body={(rowData) => (
+                    <div className="flex gap-2 justify-center">
+                      <ViewButton onClick={() => handleEdit(rowData, true)} />
+                    </div>
+                  )}
+                  className="text-black"
+                  style={{
+                    width: "0%",
+                    textAlign: "center",
+                    border: "1px solid #ccc",
+                  }}
+                  headerStyle={{
+                    fontSize: "1.2rem",
+                    color: "#1B405D",
+                    fontWeight: "bold",
+                    border: "1px solid #ccc",
+                    textAlign: "center",
+                    backgroundColor: "#D9D9D980",
+                    verticalAlign: "middle",
+                    padding: "10px",
+                  }}
+                />
                 {permissions?.edicao === "SIM" && (
                   <Column
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEdit(rowData)}
-                          className="bg-yellow p-1 rounded"
-                        >
-                          <MdOutlineModeEditOutline className="text-white text-2xl" />
-                        </button>
+                        <EditButton onClick={() => handleEdit(rowData, false)} />
                       </div>
                     )}
                     className="text-black"
@@ -660,12 +804,7 @@ const CentrosCustoPage: React.FC = () => {
                     header=""
                     body={(rowData) => (
                       <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => openDialog(rowData.cod_centro_custo)}
-                          className="bg-red text-black p-1 rounded"
-                        >
-                          <FaTrash className="text-white text-2xl" />
-                        </button>
+                        <CancelButton onClick={() => openDialog(rowData.cod_centro_custo)} />
                       </div>
                     )}
                     className="text-black"

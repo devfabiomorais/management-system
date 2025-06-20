@@ -8,7 +8,10 @@ import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
 import { useToken } from "../../hook/accessToken";
 
+
+
 export default function Login() {
+  const { setCodUsuarioLogado } = useToken();
   const { setToken } = useToken();
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
@@ -34,18 +37,22 @@ export default function Login() {
     };
 
     try {
-      const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/auth/login", payload);
+      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/auth/login", payload);
 
       if (response.status === 200) {
-        setToken(response.data.token)
+        setToken(response.data.token);
+        setCodUsuarioLogado(response.data.id); // Agora salva o código do usuário
         localStorage.setItem("@Birigui:token", response.data.token);
-        localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo)
+        localStorage.setItem("@Birigui:cod_usuario", response.data.id);
+        localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo);
+
         toast.success("Login realizado com sucesso!", {
           position: "top-right",
           autoClose: 2000,
         });
+
         setTimeout(() => {
-          redirect("/pages/Dashboard/home")
+          redirect("/pages/Dashboard/home");
         }, 2000);
       }
     } catch (err: any) {
@@ -63,9 +70,34 @@ export default function Login() {
     }
   };
 
+  const useScreenSize = () => {
+    const [screenSize, setScreenSize] = useState({
+      width: typeof window !== "undefined" ? window.innerWidth : 0,
+      height: typeof window !== "undefined" ? window.innerHeight : 0,
+    });
+
+    useEffect(() => {
+      const handleResize = () => {
+        setScreenSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    return screenSize;
+  };
+
+  const { height } = useScreenSize();
+
   return (
-    <div className="flex flex-col justify-between min-h-screen bg-gray-200">
-      <div className="flex justify-center items-center flex-grow">
+
+
+    <div className="flex flex-col justify-between bg-gray-200 pt-10">
+      <div className="flex justify-center items-center flex-grow app-zoom">
         <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
           <div className="text-center mb-8">
             <img
@@ -131,7 +163,7 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition"
+                className="w-full py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition-all hover:scale-125 duration-75"
               >
                 Entrar
               </button>
@@ -140,8 +172,9 @@ export default function Login() {
         </div>
       </div>
       <footer className=" text-center py-4">
-        <p className="text-blue">Copyright © Grupo ComViver 2024</p>
+        <p className="text-blue">Copyright © Grupo ComViver {new Date().getFullYear()}</p>
       </footer>
     </div>
+
   );
 }

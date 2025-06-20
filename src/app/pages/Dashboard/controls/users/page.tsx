@@ -3,14 +3,15 @@ import React, { ChangeEvent, useEffect, useState } from "react";
 import SidebarLayout from "@/app/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { redirect } from "next/navigation";
 import { InputText } from "primereact/inputtext";
 import { Paginator } from "primereact/paginator";
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from 'primereact/dialog';
-import { MdOutlineModeEditOutline } from "react-icons/md";
-import { FaTrash } from "react-icons/fa";
+import { MdOutlineModeEditOutline, MdVisibility } from "react-icons/md";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
@@ -22,8 +23,13 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import { handleClientScriptLoad } from "next/script";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
+import ViewButton from "@/app/components/Buttons/ViewButton";
+import RegisterButton from "@/app/components/Buttons/RegisterButton";
 
-interface User {
+export interface User {
     cod_usuario: number;
     nome: string;
     usuario: string;
@@ -38,7 +44,7 @@ interface User {
     }
 }
 
-interface Establishment {
+export interface Establishment {
     cod_estabelecimento: number;
     nome: string;
     cep: string;
@@ -67,16 +73,16 @@ const UsersPage: React.FC = () => {
     let [loading, setLoading] = useState(false);
     let [color, setColor] = useState("#B8D047");
     const [userCreateDisabled, setUserCreateDisabled] =
-    useState(false);
+        useState(false);
     const [userCreateReturnDisabled, setUserCreateReturnDisabled] =
-    useState(false);
-  const [userEditDisabled, setUserEditDisabled] = useState(false);
+        useState(false);
+    const [userEditDisabled, setUserEditDisabled] = useState(false);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
     const [establishments, setEstablishments] = useState<Establishment[]>([]);
     const [groupPermissions, setGroupPermissions] = useState<Group[]>([]);
     const [selectedGroupPermissions, setSelectedGroupPermissions] = useState<Group>();
-    const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment>();
+    const [selectedEstablishments, setSelectedEstablishments] = useState<Establishment[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [formValues, setFormValues] = useState<User>({
@@ -88,6 +94,24 @@ const UsersPage: React.FC = () => {
         nomeGrupo: "",
         cod_grupo: 0
     });
+    const [isValidEmail, setIsValidEmail] = useState(true); // Para controlar a cor do input
+
+    // Função para lidar com a mudança no campo de email
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        // Formatação do email - aqui você pode implementar a formatação conforme necessário
+        setFormValues({ ...formValues, email: value });
+    };
+
+    // Função para validar o email
+    const handleEmailBlur = () => {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const isValid = emailRegex.test(formValues.email);
+
+        setIsValidEmail(isValid); // Atualiza a cor do input com base na validade
+    };
+
+
     const [users, setUsers] = useState<User[]>([]);
 
     const [search, setSearch] = useState("");
@@ -96,6 +120,7 @@ const UsersPage: React.FC = () => {
     const [visible, setVisible] = useState(false);
 
     const clearInputs = () => {
+        setVisualizar(false)
         setFormValues({
             cod_usuario: 0,
             nome: "",
@@ -103,28 +128,40 @@ const UsersPage: React.FC = () => {
             email: "",
             situacao: "",
             nomeGrupo: "",
-            cod_grupo: 0
+            cod_grupo: 0,
         })
+        setSelectedEstablishments([]);
+        setSelectedGroupPermissions(undefined);
     }
 
-    const filteredUsers = users.filter((user) =>
-        user.nome.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredUsers = users.filter((user) => {
+        // Apenas usuários ATIVOS aparecem
+        if (user.situacao !== "ATIVO") {
+            return false;
+        }
+
+        // Função de busca
+        return Object.values(user).some((value) =>
+            String(value).toLowerCase().includes(search.toLowerCase())
+        );
+    });
+
+
 
     const handleSaveEdit = async () => {
         setUserEditDisabled(true)
         setLoading(true)
+
         try {
             let requiredFields: any[] = []
-            if(isEditing){
+            if (isEditing) {
                 requiredFields = [
                     "nome",
                     "email",
                     "usuario",
                     "situacao",
                 ];
-            }else {
+            } else {
                 requiredFields = [
                     "nome",
                     "email",
@@ -133,7 +170,7 @@ const UsersPage: React.FC = () => {
                     "situacao",
                 ];
             }
-           
+
             const isEmptyField = requiredFields.some((field) => {
                 const value = formValues[field as keyof typeof formValues];
                 return value === "" || value === null || value === undefined;
@@ -149,11 +186,13 @@ const UsersPage: React.FC = () => {
                 return;
             }
             console.log("cod", selectedUser)
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${selectedUser?.cod_usuario}`, formValues, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/edit/${selectedUser?.cod_usuario}`,
+                { ...formValues, estabelecimentos: selectedEstablishments },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setUserEditDisabled(false)
                 setLoading(false)
@@ -164,6 +203,7 @@ const UsersPage: React.FC = () => {
                     autoClose: 3000,
                 });
                 setVisible(false);
+                setIsEditing(false);
             } else {
                 setUserEditDisabled(false)
                 setLoading(false)
@@ -179,44 +219,34 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleEdit = async (users: User) => {
-        console.log(users);
+    const [visualizando, setVisualizar] = useState<boolean>(false);
+
+    const handleEdit = async (rowData: any, users: User, visualizar: boolean) => {
+        setVisualizar(visualizar);
 
         try {
-            //if(users.cod_grupo !== null){
-                const groups = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const selectedGroup = groups.data.groups.find(
-                    (group: Group) => group.cod_grupo === users.cod_grupo
-                );
-    
-                const estabilishmentResponse = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment/", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                // Encontrar o estabelecimento correspondente pelo ID
-                const selectedEstabilishment = estabilishmentResponse.data.estabelecimentos.find(
-                    (es: Establishment) =>
-                        Array.isArray(users.dbs_estabelecimentos_usuario) &&
-                        users.dbs_estabelecimentos_usuario.some(
-                            (dbEstabelecimento) => dbEstabelecimento.cod_estabel === es.cod_estabelecimento
-                        )
-                );
-                setSelectedEstablishments(selectedEstabilishment ? selectedEstabilishment : {});
-                setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
-                setEstablishments(estabilishmentResponse.data.estabelecimentos);
-           // }
-            
+            const groups = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups/", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const selectedGroup = groups.data.groups.find(
+                (group: Group) => group.cod_grupo === users.cod_grupo
+            );
 
-            
-        
+            // Filtra os estabelecimentos com base no cod_estabel
+            const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_usuario.map(({ cod_estabel }: any) =>
+                establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
+            )
+                .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
+
+            setSelectedEstablishments(selectedEstablishmentsWithNames);
+
+            setSelectedGroupPermissions(selectedGroup ? selectedGroup : {});
+
             setFormValues(users);
             setSelectedUser(users);
-           
+
             setIsEditing(true);
             setVisible(true);
         } catch (error) {
@@ -224,8 +254,11 @@ const UsersPage: React.FC = () => {
         }
     };
 
-    const handleSaveReturn = async () => {
-        setUserCreateReturnDisabled(true)
+    const [rowData, setRowData] = useState<User[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+    const handleSaveReturn = async (fecharModal: boolean) => {
+        setUserCreateReturnDisabled(true);
         setLoading(true);
         try {
             const requiredFields = [
@@ -241,9 +274,7 @@ const UsersPage: React.FC = () => {
                 return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
             });
 
-            if (selectedEstablishments?.cod_estabelecimento === null) {
-                setUserCreateReturnDisabled(false)
-                setLoading(false);
+            if (selectedEstablishments.length === 0) {
                 toast.info("Você deve selecionar pelo menos um estabelecimento!", {
                     position: "top-right",
                     autoClose: 3000,
@@ -252,7 +283,7 @@ const UsersPage: React.FC = () => {
             }
 
             if (isEmptyField) {
-                setUserCreateReturnDisabled(false)
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 toast.info("Todos os campos devem ser preenchidos!", {
                     position: "top-right",
@@ -261,17 +292,50 @@ const UsersPage: React.FC = () => {
                 return;
             }
 
+            // Verificar se o "nome" já existe no banco de dados no storedRowData
+            const nomeExists = rowData.some((item) => item.usuario === formValues.usuario);
+
+            if (nomeExists) {
+                setUserCreateReturnDisabled(false);
+                setLoading(false);
+                toast.info("Esse login já existe no banco de dados, escolha outro!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>,
+                });
+
+                return;
+            }
+
+            // Verificar se o "email" já existe no banco de dados no storedRowData
+            const emailExists = rowData.some((item) => item.email === formValues.email);
+
+            if (emailExists) {
+                setUserCreateReturnDisabled(false);
+                setLoading(false);
+                toast.info("Esse e-mail já está em uso, escolha outro!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    progressStyle: { background: "yellow" },
+                    icon: <span>⚠️</span>,
+                });
+
+                return;
+            }
+
+
             const payload = {
                 nome: formValues.nome,
                 email: formValues.email,
                 usuario: formValues.usuario,
-                senha: "changeme",
+                senha: "1234",
                 cod_grupo: selectedGroupPermissions?.cod_grupo,
                 situacao: formValues.situacao,
-                cod_estabel: selectedEstablishments?.cod_estabelecimento,
+                estabelecimentos: selectedEstablishments,
             };
 
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/users/register", payload, {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -279,7 +343,49 @@ const UsersPage: React.FC = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
-                setUserCreateReturnDisabled(false)
+                setLoading(true);
+                setUserCreateReturnDisabled(true);
+                const emailBody = `
+Portal Birigui
+                
+Olá ${formValues.nome}, seja bem-vindo(a) ao Portal Birigui!
+
+Sua senha padrão é: 1234
+
+Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a>
+
+________________________
+Copyright Grupo ComViver
+`;
+
+                // Enviar e-mail após salvar o usuário
+                const emailPayload = {
+                    to: formValues.email,  // E-mail do novo usuário
+                    subject: "Bem-vindo ao sistema!",  // Assunto do e-mail
+                    body: emailBody // Corpo do e-mail
+                };
+
+                // Chamar a API de envio de e-mail
+                const emailResponse = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/email/send-email", emailPayload, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (emailResponse.status >= 200 && emailResponse.status < 300) {
+                    toast.success("E-mail de boas-vindas enviado com sucesso!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                    });
+                } else {
+                    toast.error("Erro ao enviar e-mail de boas-vindas.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                    });
+                }
+
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 clearInputs();
                 fetchUsers();
@@ -287,9 +393,9 @@ const UsersPage: React.FC = () => {
                     position: "top-right",
                     autoClose: 3000,
                 });
-                setVisible(false);
+                setVisible(fecharModal);
             } else {
-                setUserCreateReturnDisabled(false)
+                setUserCreateReturnDisabled(false);
                 setLoading(false);
                 toast.error("Erro ao salvar o usuário:" + response.data.msg, {
                     position: "top-right",
@@ -297,96 +403,16 @@ const UsersPage: React.FC = () => {
                 });
             }
         } catch (error) {
-            setUserCreateReturnDisabled(false)
+            setUserCreateReturnDisabled(false);
             setLoading(false);
             console.error("Erro ao salvar usuário:", error);
             toast.error("Erro ao salvar o usuário", {
                 position: "top-right",
                 autoClose: 3000,
             });
-        }
-    };
-
-    const handleSave = async () => {
-        setUserCreateDisabled(true)
-        setLoading(true);
-        try {
-            const requiredFields = [
-                "nome",
-                "email",
-                "usuario",
-                "cod_grupo",
-                "situacao",
-            ];
-
-            const isEmptyField = requiredFields.some((field) => {
-                const value = formValues[field as keyof typeof formValues];
-                return Array.isArray(value) ? value.length === 0 : value === "" || value === null || value === undefined;
-            });
-
-            if (selectedEstablishments?.cod_estabelecimento === null) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.info("Você deve selecionar pelo menos um estabelecimento!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            if (isEmptyField) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.info("Todos os campos devem ser preenchidos!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-                return;
-            }
-
-            const payload = {
-                nome: formValues.nome,
-                email: formValues.email,
-                usuario: formValues.usuario,
-                senha: "changeme",
-                cod_grupo: selectedGroupPermissions?.cod_grupo,
-                situacao: formValues.situacao,
-                cod_estabel: selectedEstablishments?.cod_estabelecimento,
-            };
-
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/users/register", payload, {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.status >= 200 && response.status < 300) {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                clearInputs();
-                fetchUsers();
-                toast.success("Usuário salvo com sucesso!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-
-            } else {
-                setUserCreateDisabled(false)
-                setLoading(false);
-                toast.error("Erro ao salvar o usuário:" + response.data.msg, {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            }
-        } catch (error) {
-            setUserCreateDisabled(false)
+        } finally {
+            setUserCreateReturnDisabled(false);
             setLoading(false);
-            console.error("Erro ao salvar usuário:", error);
-            toast.error("Erro ao salvar o usuário", {
-                position: "top-right",
-                autoClose: 3000,
-            });
         }
     };
 
@@ -400,30 +426,32 @@ const UsersPage: React.FC = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const responseUsers = await axios.get("https://api-birigui-teste.comviver.cloud/api/users/", {
+            const responseUsers = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/users/", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
-            const responseGroup = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            setRowData(responseUsers.data.users);
+            setIsDataLoaded(true);
+
+            const responseGroup = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             const usersWithGroupName = responseUsers.data.users.map((user: { cod_grupo: any; }) => {
                 const matchingGroup = responseGroup.data.groups.find(
                     (group: { cod_grupo: any; }) => parseInt(group.cod_grupo) === parseInt(user.cod_grupo)
                 );
-            
+
                 return {
                     ...user,
                     nomeGrupo: matchingGroup ? matchingGroup.nome : "",
                 };
             });
-    
-            //console.log("useerr", usersWithGroupName); 
+
+            //console.log("useerr", usersWithGroupName);             
             setUsers(usersWithGroupName);
             setLoading(false);
         } catch (error) {
@@ -435,24 +463,28 @@ const UsersPage: React.FC = () => {
     const fetchEstabilishments = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/estabilishment", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/estabilishment", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.estabelecimentos)
-            setEstablishments(response.data.estabelecimentos);
-            setLoading(false);
+
+            const ativos = response.data.estabelecimentos.filter(
+                (estab: any) => estab.situacao === "Ativo"
+            );
+
+            setEstablishments(ativos);
         } catch (error) {
-            setLoading(false);
             console.error("Erro ao carregar estabelecimentos:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const fetchGroupPermissions = async () => {
         setLoading(true);
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/groupPermission/groups", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/groupPermission/groups", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -476,11 +508,48 @@ const UsersPage: React.FC = () => {
         setClientIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (clientIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/users/cancel/${clientIdToDelete}`,
+                {}, // Enviar um corpo vazio, caso necessário para o endpoint
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchUsers(); // Atualizar a lista de usuários
+                setModalDeleteVisible(false);
+                toast.success("Usuário cancelado com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao cancelar usuário.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao cancelar usuário:", error);
+            toast.error("Erro ao cancelar usuário. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
     const handleDelete = async () => {
 
         setLoading(true)
         try {
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/edit/${clientIdToDelete}`, { situacao: "DESATIVADO" }, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -509,7 +578,7 @@ const UsersPage: React.FC = () => {
         /*if (clientIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/users/${clientIdToDelete}`);
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${clientIdToDelete}`);
             toast.success("Usuario removido com sucesso!", {
                 position: "top-right",
                 autoClose: 3000,
@@ -538,20 +607,25 @@ const UsersPage: React.FC = () => {
     }
 
     return (
-        <><SidebarLayout>
+        <SidebarLayout>
             <div className="flex justify-center">
 
                 {loading && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                        <BeatLoader
-                            color={color}
-                            loading={loading}
-                            size={30}
-                            aria-label="Loading Spinner"
-                            data-testid="loader" />
+                    <div style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        backgroundColor: "rgba(255, 255, 255, 0.7)",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 9999
+                    }}>
+                        <img src="/logo-birigui-bgtransparent.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
                     </div>
                 )}
-
 
 
                 <Dialog
@@ -568,7 +642,7 @@ const UsersPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
@@ -577,7 +651,7 @@ const UsersPage: React.FC = () => {
 
 
                 <Dialog
-                    header={isEditing ? "Editar Usuário" : "Novo Usuário"}
+                    header={isEditing ? (visualizando ? "Visualizando Usuário" : "Editar Usuário") : "Novo Usuário"}
                     visible={visible}
                     headerStyle={{
                         backgroundColor: "#D9D9D9",
@@ -588,58 +662,70 @@ const UsersPage: React.FC = () => {
                     }}
                     onHide={() => closeModal()}
                 >
-                    <div className="p-fluid grid gap-3 mt-2">
+                    <div
+                        className={`${visualizando ? 'visualizando' : ''}
+              p-fluid grid gap-2 mt-2`}>
                         <div className="">
                             <label htmlFor="nome" className="block text-blue font-medium">
-                                Nome Completo:
+                                Nome Completo
                             </label>
                             <input
                                 type="text"
                                 id="nome"
                                 name="nome"
+                                disabled={visualizando}
                                 value={formValues.nome}
                                 onChange={handleInputChange}
                                 className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
                                 placeholder="" />
                         </div>
 
-                        <div className="">
-                            <label htmlFor="email" className="block text-blue  font-medium">
-                                E-mail:
+                        <div>
+                            <label htmlFor="email" className="block text-blue font-medium">
+                                E-mail
                             </label>
                             <input
                                 type="email"
                                 id="email"
                                 name="email"
+                                disabled={visualizando}
                                 value={formValues.email}
-                                onChange={handleInputChange}
-                                className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
-                                placeholder="" />
+                                onChange={handleEmailChange}
+                                onBlur={handleEmailBlur} // Chama a função de validação ao sair do campo
+                                className={`w-full border pl-1 rounded-sm h-8 ${isValidEmail ? "border-[#D9D9D9]" : "border-red500"}`} // Altera a cor do border se o email for inválido
+                                style={{ outline: "none" }}
+                            />
+                            {!isValidEmail && <p className="text-red-500 text-sm mt-1">Por favor, insira um email válido.</p>} {/* Mensagem de erro */}
                         </div>
 
                         <div className="">
-                            <label htmlFor="estabelecimento" className="block text-blue  font-medium">
-                                Estabelecimentos:
+                            <label htmlFor="estabelecimento" className="block text-blue font-medium">
+                                Estabelecimento
                             </label>
-                            <Dropdown
+                            <MultiSelect
+                                disabled={visualizando}
                                 value={selectedEstablishments}
                                 onChange={(e) => setSelectedEstablishments(e.value)}
                                 options={establishments}
                                 optionLabel="nome"
                                 filter
-                                placeholder="Selecione um Estabelecimento"
-                                className="w-full border text-black" />
+                                placeholder="Selecione os Estabelecimentos"
+                                maxSelectedLabels={3}
+                                className="w-full border text-black h-[35px] flex items-center"
+                            />
                         </div>
+
 
                         <div className="grid grid-cols-3 gap-2">
                             <div className="">
                                 <label htmlFor="login" className="block text-blue  font-medium">
-                                    Login:
+                                    Login
                                 </label>
                                 <input
                                     type="text"
                                     id="login"
                                     name="usuario"
+                                    disabled={visualizando}
                                     value={formValues.usuario}
                                     onChange={handleInputChange}
                                     className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8"
@@ -647,23 +733,24 @@ const UsersPage: React.FC = () => {
                             </div>
                             <div className="">
                                 <label htmlFor="grupo" className="block text-blue  font-medium">
-                                    Grupo de Permissões:
+                                    Grupo de Permissões
                                 </label>
                                 <Dropdown
+                                    disabled={visualizando}
                                     value={selectedGroupPermissions}
                                     onChange={(e) => setSelectedGroupPermissions(e.value)}
                                     options={groupPermissions}
                                     optionLabel="nome"
                                     filter
-                                    placeholder="Selecione um grupo"
-                                    className="w-full border text-black" />
+                                    className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]" />
                             </div>
 
                             <div className="">
                                 <label htmlFor="situacao" className="block text-blue  font-medium">
-                                    Situação:
+                                    Situação
                                 </label>
                                 <Dropdown
+                                    disabled={visualizando}
                                     id="situacao"
                                     name="situacao"
                                     value={formValues.situacao}
@@ -672,8 +759,7 @@ const UsersPage: React.FC = () => {
                                         { label: 'Ativo', value: 'ATIVO' },
                                         { label: 'Inativo', value: 'DESATIVADO' }
                                     ]}
-                                    placeholder="Selecione"
-                                    className="w-full md:w-14rem"
+                                    className="w-full border border-[#D9D9D9] pl-2 rounded-sm h-8 flex items-center leading-[32px]"
                                     style={{ backgroundColor: 'white', borderColor: '#D9D9D9' }} />
                             </div>
                         </div>
@@ -681,8 +767,8 @@ const UsersPage: React.FC = () => {
 
 
 
-                    <div className="flex justify-between items-center  mt-16">
-                        <div className="grid grid-cols-3 gap-3">
+                    <div className="flex justify-between items-center mt-16 w-full">
+                        <div className={`${visualizando ? "hidden" : ""} grid gap-3 w-full ${isEditing ? "grid-cols-2" : "grid-cols-3"}`}>
                             <Button
                                 label="Sair Sem Salvar"
                                 className="text-white"
@@ -695,80 +781,97 @@ const UsersPage: React.FC = () => {
                                     fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '100%',
                                 }}
-                                onClick={() => closeModal()} />
-                            {!isEditing && (
-                                <><Button
-                                    label="Salvar e Voltar à Listagem"
-                                    className="text-white"
-                                    icon="pi pi-refresh"
-                                    onClick={handleSaveReturn}
-                                    disabled={userCreateReturnDisabled}
-                                    style={{
-                                        backgroundColor: '#007bff',
-                                        border: '1px solid #007bff',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} /><Button
-                                        label="Salvar e Adicionar Outro"
+                                onClick={() => closeModal()}
+                            />
+
+                            {!isEditing ? (
+                                <>
+                                    <Button
+                                        label="Salvar e Voltar à Listagem"
                                         className="text-white"
-                                        icon="pi pi-check"
-                                        onClick={handleSave}
-                                        disabled={userCreateDisabled}
+                                        icon="pi pi-refresh"
+                                        onClick={() => handleSaveReturn(false)}
+                                        disabled={userCreateReturnDisabled || !isValidEmail}
                                         style={{
-                                            backgroundColor: '#28a745',
-                                            border: '1px solid #28a745',
+                                            backgroundColor: '#007bff',
+                                            border: '1px solid #007bff',
                                             padding: '0.5rem 1.5rem',
                                             fontSize: '14px',
                                             fontWeight: 'bold',
                                             display: 'flex',
                                             alignItems: 'center',
-                                        }} /></>
-                            )}
-
-                            {isEditing && (
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                        }}
+                                    />
+                                    <Button
+                                        label="Salvar e Adicionar Outro"
+                                        className="text-white"
+                                        disabled={userCreateDisabled || !isValidEmail}
+                                        icon="pi pi-check"
+                                        onClick={() => handleSaveReturn(true)}
+                                        style={{
+                                            backgroundColor: "#28a745",
+                                            border: "1px solid #28a745",
+                                            padding: "0.5rem 1.5rem",
+                                            fontSize: "14px",
+                                            fontWeight: "bold",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "100%",
+                                        }}
+                                    />
+                                </>
+                            ) : (
                                 <Button
                                     label="Salvar"
                                     className="text-white"
                                     icon="pi pi-check"
                                     onClick={handleSaveEdit}
-                                    disabled={userEditDisabled}
+                                    disabled={userEditDisabled || !isValidEmail}
                                     style={{
-                                        backgroundColor: '#28a745',
-                                        border: '1px solid #28a745',
-                                        padding: '0.5rem 1.5rem',
-                                        fontSize: '14px',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }} />
+                                        backgroundColor: "#28a745",
+                                        border: "1px solid #28a745",
+                                        padding: "0.5rem 5.5rem",
+                                        fontSize: "14px",
+                                        fontWeight: "bold",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "100%",
+                                    }}
+                                />
                             )}
                         </div>
                     </div>
+
                 </Dialog>
 
 
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
                     <div className="flex justify-between ">
                         <div>
-                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Usuários</h2>
+                            <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">
+                                Usuários
+                            </h2>
                         </div>
                         {permissions?.insercao === "SIM" && (
-                        <div>
-                            <button className="bg-green200 rounded mr-3" onClick={() => setVisible(true)}>
-                                <IoAddCircleOutline style={{ fontSize: "2.5rem" }} className="text-white text-center" />
-                            </button>
-                        </div>
+                            <div className="mr-2">
+                                <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
+                            </div>
                         )}
                     </div>
 
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
-                        <div className="mb-4 flex justify-end">
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2" style={{ height: "95%" }}>
+
+                        <div className="mb-4 flex justify-end ">
                             <p className="text-blue font-bold text-lg">Busca:</p>
                             <InputText
                                 value={search}
@@ -783,11 +886,12 @@ const UsersPage: React.FC = () => {
                             paginator={true}
                             rows={rows}
                             rowsPerPageOptions={[5, 10]}
+                            rowClassName={(data) => 'hover:bg-gray-200'}
                             onPage={(e) => {
                                 setFirst(e.first);
                                 setRows(e.rows);
                             }}
-                            className="w-full"
+                            className="w-full rounded-lg"
                             responsiveLayout="scroll"
                             tableStyle={{
                                 borderCollapse: 'collapse',
@@ -908,14 +1012,12 @@ const UsersPage: React.FC = () => {
                                     verticalAlign: "middle",
                                     padding: "10px",
                                 }} />
-                                    {permissions?.edicao === "SIM" && (
+
                             <Column
                                 header=""
                                 body={(rowData) => (
                                     <div className="flex gap-2 justify-center">
-                                        <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                            <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                        </button>
+                                        <ViewButton onClick={() => handleEdit(rowData, rowData, true)} />
                                     </div>
                                 )}
                                 className="text-black"
@@ -933,34 +1035,57 @@ const UsersPage: React.FC = () => {
                                     backgroundColor: "#D9D9D980",
                                     verticalAlign: "middle",
                                     padding: "10px",
-                                }} />
+                                }}
+                            />
+                            {permissions?.edicao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="bg-yellow500 flex gap-2 justify-center rounded-2xl w-full">
+                                            <EditButton onClick={() => handleEdit(rowData, rowData, false)} />
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
-                                {permissions?.delecao === "SIM" && (
-                            <Column
-                                header=""
-                                body={(rowData) => (
-                                    <div className="flex gap-2 justify-center">
-                                        <button onClick={() => openDialog(rowData.cod_usuario)} className="bg-red text-black p-1 rounded">
-                                            <FaTrash className="text-white text-2xl" />
-                                        </button>
-                                    </div>
-                                )}
-                                className="text-black"
-                                style={{
-                                    width: "0%",
-                                    textAlign: "center",
-                                    border: "1px solid #ccc",
-                                }}
-                                headerStyle={{
-                                    fontSize: "1.2rem",
-                                    color: "#1B405D",
-                                    fontWeight: "bold",
-                                    border: "1px solid #ccc",
-                                    textAlign: "center",
-                                    backgroundColor: "#D9D9D980",
-                                    verticalAlign: "middle",
-                                    padding: "10px",
-                                }} />
+                            {permissions?.delecao === "SIM" && (
+                                <Column
+                                    header=""
+                                    body={(rowData) => (
+                                        <div className="bg-red400 flex gap-2 justify-center rounded-2xl w-full">
+                                            <CancelButton onClick={() => openDialog(rowData.cod_usuario)} />
+                                        </div>
+                                    )}
+                                    className="text-black"
+                                    style={{
+                                        width: "0%",
+                                        textAlign: "center",
+                                        border: "1px solid #ccc",
+                                    }}
+                                    headerStyle={{
+                                        fontSize: "1.2rem",
+                                        color: "#1B405D",
+                                        fontWeight: "bold",
+                                        border: "1px solid #ccc",
+                                        textAlign: "center",
+                                        backgroundColor: "#D9D9D980",
+                                        verticalAlign: "middle",
+                                        padding: "10px",
+                                    }} />
                             )}
                         </DataTable>
 
@@ -977,7 +1102,8 @@ const UsersPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </SidebarLayout><Footer /></>
+            <Footer />
+        </SidebarLayout >
     );
 };
 

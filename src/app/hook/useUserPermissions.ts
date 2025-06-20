@@ -22,11 +22,11 @@ const useUserPermissions = (userGroupId: number, moduleLabel: string) => {
     const fetchPermissions = async () => {
       try {
         const response = await axios.get(
-          `https://api-birigui-teste.comviver.cloud/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          `${process.env.NEXT_PUBLIC_API_URL}/api/groupPermission/groups/permissions/${userGroupId}/${moduleLabel}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const data = response.data.permissions;
 

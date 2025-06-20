@@ -10,7 +10,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaBan } from "react-icons/fa";
 import { MdOutlineModeEditOutline } from "react-icons/md";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -19,11 +19,14 @@ import { useToken } from "../../../../hook/accessToken";
 import Footer from "@/app/components/Footer";
 import useUserPermissions from "@/app/hook/useUserPermissions";
 import { useGroup } from "@/app/hook/acessGroup";
+import CancelButton from "@/app/components/Buttons/CancelButton";
+import EditButton from "@/app/components/Buttons/EditButton";
 
 interface Item {
     cod_un: number;
     descricao: string;
     un: string;
+    situacao?: string;
 }
 
 const UnMedidaPage: React.FC = () => {
@@ -47,13 +50,21 @@ const UnMedidaPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnidade, setSelectedUnidade] = useState(0);
 
-    const filteredItens = itens.filter(
-        (item) =>
-            item.un.toLowerCase().includes(search.toLowerCase()) ||
-            item.descricao.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredItens = itens.filter((item) => {
+        // Apenas ATIVO aparecem
+        if (item.situacao !== 'Ativo') {
+            return false;
+        }
+
+        // Função de busca
+        return item.un.toLowerCase().includes(search.toLowerCase()) ||
+            item.descricao.toLowerCase().includes(search.toLowerCase());
+    });
+
 
     const clearInputs = () => {
+
+
         setDescricao("")
         setMedida("")
     }
@@ -65,12 +76,14 @@ const UnMedidaPage: React.FC = () => {
     const fetchUnits = async () => {
         setLoading(true)
         try {
-            const response = await axios.get("https://api-birigui-teste.comviver.cloud/api/unMedida", {
+            const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            console.log(response.data.units)
+            console.log("Unidades de medidas:", response.data.units);
+            setRowData(response.data.units);
+            setIsDataLoaded(true);
             setItens(response.data.units);
             setLoading(false)
         } catch (error) {
@@ -78,6 +91,9 @@ const UnMedidaPage: React.FC = () => {
             console.error("Erro ao carregar unidades de medidas:", error);
         }
     };
+
+    const [rowData, setRowData] = useState<Item[]>([]);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const createUnMedida = async () => {
         setIsUnMedidaCreateDisabled(true)
@@ -91,12 +107,42 @@ const UnMedidaPage: React.FC = () => {
             return;
         }
 
+        const unEncontrada = rowData.find((item) => item.un === medida);
+        const nomeExists = !!unEncontrada;
+        const situacaoInativo = unEncontrada?.situacao === "Inativo";
+
+        if (nomeExists && !situacaoInativo) {
+            setIsUnMedidaCreateDisabled(false);
+            setLoading(false);
+            toast.info("Essa unidade de medida já existe no banco de dados, escolha outra!", {
+                position: "top-right",
+                autoClose: 3000,
+                progressStyle: { background: "yellow" },
+                icon: <span>⚠️</span>, // Usa o emoji de alerta
+            });
+            return;
+        }
+        if (nomeExists && situacaoInativo && unEncontrada) {
+            await editUnMedida(unEncontrada.cod_un); // Passa o serviço diretamente
+            fetchUnits();
+            setIsUnMedidaCreateDisabled(false);
+            setLoading(false);
+            clearInputs();
+            toast.info("Esse nome já existia na base de dados, portanto foi reativado com os novos dados inseridos.", {
+                position: "top-right",
+                autoClose: 10000,
+                progressStyle: { background: "green" },
+                icon: <span>♻️</span>,
+            });
+            return;
+        }
+
         try {
             const bodyForm = {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.post("https://api-birigui-teste.comviver.cloud/api/unMedida/register", bodyForm, {
+            const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/unMedida/register", bodyForm, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -125,8 +171,17 @@ const UnMedidaPage: React.FC = () => {
         }
     }
 
-    const editUnMedida = async () => {
+    const editUnMedida = async (un: any) => {
+        if (!un) {
+            toast.error("Unidade de Medida não selecionada ou inválida. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
         setIsUnMedidaEditDisabled(true)
+
         if (descricao === "" || medida === "") {
             setIsUnMedidaEditDisabled(false)
             setLoading(false)
@@ -142,11 +197,13 @@ const UnMedidaPage: React.FC = () => {
                 description: descricao,
                 unit: medida
             }
-            const response = await axios.put(`https://api-birigui-teste.comviver.cloud/api/unMedida/edit/${selectedUnidade}`, bodyForm, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/unMedida/edit/${un}`,
+                { ...bodyForm, situacao: "Ativo" },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
             if (response.status >= 200 && response.status < 300) {
                 setIsUnMedidaEditDisabled(false)
                 setLoading(false)
@@ -184,11 +241,49 @@ const UnMedidaPage: React.FC = () => {
         setUnidadeIdToDelete(null);
     };
 
+    const handleCancelar = async () => {
+        if (unidadeIdToDelete === null) return;
+
+        try {
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/unMedida/cancel/${unidadeIdToDelete}`,
+                {}, // Enviar um corpo vazio
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                fetchUnits(); // Atualizar a lista de unidades
+                setModalDeleteVisible(false);
+                toast.success("Unidade removida com sucesso!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            } else {
+                toast.error("Erro ao remover unidade.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                });
+            }
+        } catch (error) {
+            console.log("Erro ao remover unidade:", error);
+            toast.error("Erro ao remover unidade. Tente novamente.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
+
+
+
     const handleDelete = async () => {
         if (unidadeIdToDelete === null) return;
 
         try {
-            await axios.delete(`https://api-birigui-teste.comviver.cloud/api/unMedida/${unidadeIdToDelete}`, {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/unMedida/${unidadeIdToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -243,21 +338,22 @@ const UnMedidaPage: React.FC = () => {
                         <Button
                             label="Sim"
                             icon="pi pi-check"
-                            onClick={handleDelete}
+                            onClick={handleCancelar}
                             className="p-button-danger bg-green200 text-white p-2 ml-5 hover:bg-green-700 transition-all" />
                     </div>}
                 >
                     <p>Tem certeza que deseja excluir esta unidade de médida?</p>
                 </Dialog>
 
-                <div className="bg-grey pt-3 pl-1 pr-1 w-full h-full rounded-md">
+                <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
                     <div className="flex justify-between">
                         <div>
-                            <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3">Unidades de Medida</h2>
+                            <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
+">Unidades de Medida</h2>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col" style={{ height: "95%" }}>
+                    <div className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2" style={{ height: "95%" }}>
 
                         <div className="flex justify-around">
 
@@ -278,11 +374,13 @@ const UnMedidaPage: React.FC = () => {
                                     paginator={true}
                                     rows={rows}
                                     rowsPerPageOptions={[5, 10]}
+                                    rowClassName={(data) => 'hover:bg-gray-200'}
+
                                     onPage={(e) => {
                                         setFirst(e.first);
                                         setRows(e.rows);
                                     }}
-                                    className="w-full"
+                                    className="w-full tabela-limitada [&_td]:py-1 [&_td]:px-2"
                                     responsiveLayout="scroll"
                                     tableStyle={{
                                         borderCollapse: "collapse",
@@ -346,15 +444,31 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                         {permissions?.edicao === "SIM" && (
+                                    <Column
+                                        field="situacao"
+                                        header="Situação"
+                                        className="text-black"
+                                        style={{
+                                            width: "1%",
+                                            textAlign: "center",
+                                            border: "1px solid #ccc",
+                                        }}
+                                        headerStyle={{
+                                            fontSize: "1.2rem",
+                                            color: "#1B405D",
+                                            fontWeight: "bold",
+                                            border: "1px solid #ccc",
+                                            textAlign: "center",
+                                            backgroundColor: "#D9D9D980",
+                                            verticalAlign: "middle",
+                                            padding: "10px",
+                                        }} />
+                                    {permissions?.edicao === "SIM" && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
                                                 <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleEdit(rowData)} className="bg-yellow p-1 rounded">
-                                                        <MdOutlineModeEditOutline className="text-white text-2xl" />
-                                                    </button>
-
+                                                    <EditButton onClick={() => handleEdit(rowData)} />
                                                 </div>
                                             )}
                                             className="text-black"
@@ -373,34 +487,32 @@ const UnMedidaPage: React.FC = () => {
                                                 verticalAlign: "middle",
                                                 padding: "10px",
                                             }} />
-                                        )}
-                                    
+                                    )}
+
                                     {permissions?.delecao === "SIM" && (
-                                    <Column
-                                        header=""
-                                        body={(rowData) => (
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={() => openDialog(rowData.cod_un)} className="bg-red text-black p-1 rounded">
-                                                    <FaTrash className="text-white text-2xl" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        className="text-black"
-                                        style={{
-                                            width: "0%",
-                                            textAlign: "center",
-                                            border: "1px solid #ccc",
-                                        }}
-                                        headerStyle={{
-                                            fontSize: "1.2rem",
-                                            color: "#1B405D",
-                                            fontWeight: "bold",
-                                            border: "1px solid #ccc",
-                                            textAlign: "center",
-                                            backgroundColor: "#D9D9D980",
-                                            verticalAlign: "middle",
-                                            padding: "10px",
-                                        }} />
+                                        <Column
+                                            header=""
+                                            body={(rowData) => (
+                                                <div className="flex gap-2 justify-center">
+                                                    <CancelButton onClick={() => openDialog(rowData.cod_un)} />
+                                                </div>
+                                            )}
+                                            className="text-black"
+                                            style={{
+                                                width: "0%",
+                                                textAlign: "center",
+                                                border: "1px solid #ccc",
+                                            }}
+                                            headerStyle={{
+                                                fontSize: "1.2rem",
+                                                color: "#1B405D",
+                                                fontWeight: "bold",
+                                                border: "1px solid #ccc",
+                                                textAlign: "center",
+                                                backgroundColor: "#D9D9D980",
+                                                verticalAlign: "middle",
+                                                padding: "10px",
+                                            }} />
                                     )}
                                 </DataTable>
                             </div>
@@ -435,7 +547,7 @@ const UnMedidaPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                    {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao === "SIM" && (
                                             <>
                                                 {!isEditing && (
                                                     <Button
@@ -457,23 +569,45 @@ const UnMedidaPage: React.FC = () => {
                                                 )}
 
                                                 {isEditing && (
-                                                    <Button
-                                                        label="Salvar Unidade"
-                                                        className="text-white"
-                                                        icon="pi pi-check"
-                                                        onClick={() => editUnMedida()}
-                                                        disabled={isUnMedidaEditDisabled}
-                                                        style={{
-                                                            backgroundColor: '#28a745',
-                                                            border: '1px solid #28a745',
-                                                            padding: '0.5rem 1.5rem',
-                                                            fontSize: '14px',
-                                                            fontWeight: 'bold',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        }}
-                                                    />
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <Button
+                                                            label="Cancelar"
+                                                            className="text-white"
+                                                            icon="pi pi-times"
+                                                            onClick={() => {
+                                                                setIsEditing(false);
+                                                                clearInputs();
+                                                            }}
+                                                            disabled={isUnMedidaEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#f87171', // Cor red400
+                                                                border: '1px solid #f87171',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            label="Salvar Edição"
+                                                            className="text-white"
+                                                            icon="pi pi-check"
+                                                            onClick={() => editUnMedida(selectedUnidade)}
+                                                            disabled={isUnMedidaEditDisabled}
+                                                            style={{
+                                                                backgroundColor: '#28a745',
+                                                                border: '1px solid #28a745',
+                                                                padding: '0.5rem 1.5rem',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        />
+                                                    </div>
                                                 )}
+
                                             </>
                                         )}
                                     </div>

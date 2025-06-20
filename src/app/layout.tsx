@@ -5,6 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import { TokenProvider } from "../app/hook/accessToken";
 import { GroupProvider } from "./hook/acessGroup";
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
 const InterRegular = localFont({
   src: "./assets/fonts/Inter_18pt-Regular.ttf",
   variable: "--font-inter-regular",
@@ -39,8 +41,8 @@ export default function RootLayout({
               {children}
             </TokenProvider>
           </GroupProvider>
-
         }
+        <SpeedInsights />
       </body>
     </html>
   );
