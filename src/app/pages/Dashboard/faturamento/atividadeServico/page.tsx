@@ -312,7 +312,7 @@ const AtividadesServicos: React.FC = () => {
 
     setFormValues(atividadesServicos);
     // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = atividadesServicos.dbs_estabelecimentos_atividades.map(({ cod_estabel }: any) =>
+    const selectedEstablishmentsWithNames = atividadesServicos.db_estabelecimentos_atividades.map(({ cod_estabel }: any) =>
       establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
     )
       .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)

@@ -971,7 +971,7 @@ const LocaisItensPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData) => rowData.dbs_localizacoes?.cod_rua || "-"}
+                  body={(rowData) => rowData.db_localizacoes?.cod_rua || "-"}
                 />
                 <Column
                   field="cod_coluna"
@@ -991,7 +991,7 @@ const LocaisItensPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData) => rowData.dbs_localizacoes?.cod_coluna || "-"}
+                  body={(rowData) => rowData.db_localizacoes?.cod_coluna || "-"}
                 />
                 <Column
                   field="cod_nivel"
@@ -1011,7 +1011,7 @@ const LocaisItensPage: React.FC = () => {
                     verticalAlign: "middle",
                     padding: "10px",
                   }}
-                  body={(rowData) => rowData.dbs_localizacoes?.cod_nivel || "-"}
+                  body={(rowData) => rowData.db_localizacoes?.cod_nivel || "-"}
                 />
                 <Column
                   field="cod_un"

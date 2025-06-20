@@ -32,16 +32,16 @@ export interface Item {
     cod_item: string;
     descricao: string;
     narrativa: string;
-    dbs_unidades_medida?: {
+    db_unidades_medida?: {
         un?: string;
         cod_un: number;
     } | null;
-    dbs_familias?: {
+    db_familias?: {
         cod_familia: number;
         nome: string;
         descricao: string
     };
-    dbs_estabelecimentos_item?: Array<{
+    db_estabelecimentos_item?: Array<{
         cod_estabel: number;
         cod_estabel_item: number;
         cod_item: string;
@@ -111,7 +111,7 @@ const ItensPage: React.FC = () => {
         cod_item: "",
         descricao: "",
         narrativa: "",
-        dbs_unidades_medida: {
+        db_unidades_medida: {
             un: "",
             cod_un: 0
         },
@@ -148,7 +148,7 @@ const ItensPage: React.FC = () => {
             cod_item: "",
             descricao: "",
             narrativa: "",
-            dbs_unidades_medida: {
+            db_unidades_medida: {
                 un: "",
                 cod_un: 0
             },
@@ -544,23 +544,23 @@ const ItensPage: React.FC = () => {
             setEstablishments(establishmentResponse.data.estabelecimentos);
 
             const selectedUnit = unitResponse.data.units.find(
-                (unit: ItemMedida) => unit.cod_un === itens.dbs_unidades_medida?.cod_un
+                (unit: ItemMedida) => unit.cod_un === itens.db_unidades_medida?.cod_un
             );
             const selectedFamily = familyResponse.data.families.find(
-                (family: ItemFamilia) => family.cod_familia === itens.dbs_familias?.cod_familia
+                (family: ItemFamilia) => family.cod_familia === itens.db_familias?.cod_familia
             );
 
             const selectedEstablishments = establishmentResponse.data.estabelecimentos.filter(
                 (es: Establishment) =>
-                    Array.isArray(itens.dbs_estabelecimentos_item) &&
-                    itens.dbs_estabelecimentos_item.some((dbEs) => dbEs.cod_estabel === es.cod_estabelecimento)
+                    Array.isArray(itens.db_estabelecimentos_item) &&
+                    itens.db_estabelecimentos_item.some((dbEs) => dbEs.cod_estabel === es.cod_estabelecimento)
             );
 
             setFormValues({
                 cod_item: itens.cod_item ?? "",
                 descricao: itens.descricao ?? "",
                 narrativa: itens.narrativa ?? "",
-                dbs_unidades_medida: itens.dbs_unidades_medida ?? null,
+                db_unidades_medida: itens.db_unidades_medida ?? null,
                 situacao: itens.situacao ?? "",
                 valor_custo: itens.valor_custo ?? 0,
                 valor_venda: itens.valor_venda ?? 0,
@@ -1190,7 +1190,7 @@ const ItensPage: React.FC = () => {
                                     padding: "10px",
                                 }} />
                             <Column
-                                field="dbs_unidades_medida.un"
+                                field="db_unidades_medida.un"
                                 header="UN"
                                 className="text-black"
                                 style={{

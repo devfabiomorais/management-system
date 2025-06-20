@@ -44,9 +44,9 @@ interface PedidosVenda {
   situacao: string;
   valor_total: number;
   cod_nota_fiscal: number;
-  dbs_orcamentos: any[];
-  dbs_clientes: any[];
-  dbs_usuarios: any[];
+  db_orcamentos: any[];
+  db_clientes: any[];
+  db_usuarios: any[];
 }
 
 interface ItemFamilia {
@@ -77,16 +77,16 @@ interface ProdutosCadastro {
   cod_item: string;
   descricao: string;
   narrativa: string;
-  dbs_unidades_medida?: {
+  db_unidades_medida?: {
     un?: string;
     cod_un: number;
   } | null;
-  dbs_familias?: {
+  db_familias?: {
     cod_familia: number;
     nome: string;
     descricao: string
   };
-  dbs_estabelecimentos_item?: Array<{
+  db_estabelecimentos_item?: Array<{
     cod_estabel: number;
     cod_estabel_item: number;
     cod_item: string;
@@ -119,8 +119,8 @@ interface Estruturas {
   dt_hr_criacao: Date;
   cod_usuario_criado: number;
   situacao: string;
-  dbs_produtos_estrutura_orcamento: any[];
-  dbs_servicos_estrutura_orcamento: any[];
+  db_produtos_estrutura_orcamento: any[];
+  db_servicos_estrutura_orcamento: any[];
 }
 
 interface Transportadora {
@@ -155,7 +155,7 @@ interface User {
   situacao: string;
   nomeGrupo?: string;
   cod_grupo: number;
-  dbs_estabelecimentos_usuario?: {
+  db_estabelecimentos_usuario?: {
     cod_estabel_usuario: number;
     cod_usuario: number;
     cod_estabel: number;
@@ -189,10 +189,10 @@ interface Orcamento {
   situacao?: string;
   garantia?: number;
   tipo_garantia?: string;
-  dbs_estrutura_orcamento?: number;
-  dbs_pagamentos_orcamento: any[];
-  dbs_produtos_orcamento: any[];
-  dbs_servicos_orcamento: any[];
+  db_estrutura_orcamento?: number;
+  db_pagamentos_orcamento: any[];
+  db_produtos_orcamento: any[];
+  db_servicos_orcamento: any[];
 }
 
 interface Client {
@@ -224,7 +224,7 @@ interface CentroCusto {
 }
 
 interface Servico {
-  dbs_servicos: any;
+  db_servicos: any;
   id: number;
   cod_servico: number;
   nome?: string;
@@ -302,8 +302,8 @@ const OrcamentosPage: React.FC = () => {
     dt_hr_criacao: new Date(),
     cod_usuario_criado: codUsuarioLogado !== null ? codUsuarioLogado : 0, // Melhor leitura
     situacao: "",
-    dbs_produtos_estrutura_orcamento: [],
-    dbs_servicos_estrutura_orcamento: [],
+    db_produtos_estrutura_orcamento: [],
+    db_servicos_estrutura_orcamento: [],
   });
 
   useEffect(() => {
@@ -407,18 +407,18 @@ const OrcamentosPage: React.FC = () => {
     setVisualizar(visualizar)
     console.log("Estrutura recebida para edição:", estrutura);
 
-    console.log("Produtos recebidos:", estrutura.dbs_produtos_estrutura_orcamento);
-    console.log("Serviços recebidos:", estrutura.dbs_servicos_estrutura_orcamento);
+    console.log("Produtos recebidos:", estrutura.db_produtos_estrutura_orcamento);
+    console.log("Serviços recebidos:", estrutura.db_servicos_estrutura_orcamento);
 
 
     setFormValuesEstruturas(estrutura);
     setSelectedEstrutura(estrutura);
 
-    setProdSelecionados(estrutura.dbs_produtos_estrutura_orcamento ?
-      estrutura.dbs_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
+    setProdSelecionados(estrutura.db_produtos_estrutura_orcamento ?
+      estrutura.db_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
       : []);
-    setServicosSelecionados(estrutura.dbs_servicos_estrutura_orcamento ?
-      estrutura.dbs_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
+    setServicosSelecionados(estrutura.db_servicos_estrutura_orcamento ?
+      estrutura.db_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
       : []);
 
     if (isEstrutura) {
@@ -432,11 +432,11 @@ const OrcamentosPage: React.FC = () => {
   const handleUsarEstrutura = (estrutura: Estruturas) => {
     setModalUsarEstruturaVisible(false);
 
-    setProdSelecionados(estrutura.dbs_produtos_estrutura_orcamento ?
-      estrutura.dbs_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
+    setProdSelecionados(estrutura.db_produtos_estrutura_orcamento ?
+      estrutura.db_produtos_estrutura_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_estrutura }))
       : []);
-    setServicosSelecionados(estrutura.dbs_servicos_estrutura_orcamento ?
-      estrutura.dbs_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
+    setServicosSelecionados(estrutura.db_servicos_estrutura_orcamento ?
+      estrutura.db_servicos_estrutura_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_estrutura }))
       : []);
     console.log(produtosSelecionados);
     console.log(servicosSelecionados);
@@ -544,9 +544,9 @@ const OrcamentosPage: React.FC = () => {
     situacao: "",
     valor_total: 0,
     cod_nota_fiscal: 0,
-    dbs_orcamentos: [],
-    dbs_clientes: [],
-    dbs_usuarios: [],
+    db_orcamentos: [],
+    db_clientes: [],
+    db_usuarios: [],
 
   });
 
@@ -1113,7 +1113,7 @@ const OrcamentosPage: React.FC = () => {
     cod_item: "",
     descricao: "",
     narrativa: "",
-    dbs_unidades_medida: {
+    db_unidades_medida: {
       un: "",
       cod_un: 0
     },
@@ -1408,7 +1408,7 @@ const OrcamentosPage: React.FC = () => {
     tipo_juros: "Percentual",
     tipo_desconto: "Percentual",
     valor_total: "",
-    dbs_servicos: [],
+    db_servicos: [],
   });
   const [quantidadeServ, setQuantidadeServ] = useState(1);
   const [descontoServ, setDescontoServ] = useState(0);
@@ -1465,7 +1465,7 @@ const OrcamentosPage: React.FC = () => {
       tipo_juros: "Percentual",
       tipo_desconto: "Percentual",
       valor_unitario: selectedServico.valor_venda,
-      dbs_servicos: selectedServico.dbs_servicos,
+      db_servicos: selectedServico.db_servicos,
     };
 
     // Adiciona o novo serviço à lista de serviços selecionados
@@ -1487,7 +1487,7 @@ const OrcamentosPage: React.FC = () => {
       valor_venda: "",
       valor_custo: "",
       comissao: "",
-      dbs_servicos: [],
+      db_servicos: [],
     });
   };
 
@@ -1521,9 +1521,9 @@ const OrcamentosPage: React.FC = () => {
       observacoes_internas: "",
       desconto_total: 0,
       valor_total: 0,
-      dbs_pagamentos_orcamento: [],
-      dbs_produtos_orcamento: [],
-      dbs_servicos_orcamento: [],
+      db_pagamentos_orcamento: [],
+      db_produtos_orcamento: [],
+      db_servicos_orcamento: [],
     });
   };
 
@@ -1983,9 +1983,9 @@ const OrcamentosPage: React.FC = () => {
     situacao: "Pendente",
     garantia: 0,
     tipo_garantia: "dias",
-    dbs_pagamentos_orcamento: [],
-    dbs_produtos_orcamento: [],
-    dbs_servicos_orcamento: [],
+    db_pagamentos_orcamento: [],
+    db_produtos_orcamento: [],
+    db_servicos_orcamento: [],
   });
   useEffect(() => {
   }, [formValues]);
@@ -2060,7 +2060,7 @@ const OrcamentosPage: React.FC = () => {
 
     // Adicionar a logo
     const img = new Image();
-    img.src = "/git-hub-logo.png"; // Certifique-se de ter essa imagem na pasta 'public'
+    img.src = "/github-logo.png"; // Certifique-se de ter essa imagem na pasta 'public'
 
     img.onload = function () {
       const totalPages = doc.internal.pages.length - 1;
@@ -2371,8 +2371,8 @@ const OrcamentosPage: React.FC = () => {
 
         return [
           produto.cod_produto, // Código
-          (produto as any).dbs_itens.descricao, // Descrição
-          (produto as any).dbs_itens.cod_un, // Unidade de medida
+          (produto as any).db_itens.descricao, // Descrição
+          (produto as any).db_itens.cod_un, // Unidade de medida
           quantidade, // Quantidade
           `R$ ${valorUnitario.toFixed(2)}`, // Valor Unitário
           `R$ ${(quantidade * valorUnitario).toFixed(2)}` // Total
@@ -2471,7 +2471,7 @@ const OrcamentosPage: React.FC = () => {
         const valorUnitario = Number(servico.valor_unitario) || 0;
         return [
           servico.cod_servico, // Código
-          servico.dbs_servicos.nome ?? "sem nome",
+          servico.db_servicos.nome ?? "sem nome",
           quantidade, // Quantidade
           `R$ ${valorUnitario.toFixed(2)}`, // Valor Unitário
           `R$ ${(quantidade * valorUnitario).toFixed(2)}` // Total
@@ -2924,9 +2924,9 @@ const OrcamentosPage: React.FC = () => {
       valor_total: 0.0,
       garantia: 0,
       tipo_garantia: "",
-      dbs_pagamentos_orcamento: [],
-      dbs_produtos_orcamento: [],
-      dbs_servicos_orcamento: [],
+      db_pagamentos_orcamento: [],
+      db_produtos_orcamento: [],
+      db_servicos_orcamento: [],
     });
     setFormValuesClients({
       cod_cliente: 0,
@@ -2967,7 +2967,7 @@ const OrcamentosPage: React.FC = () => {
       cod_item: "",
       descricao: "",
       narrativa: "",
-      dbs_unidades_medida: {
+      db_unidades_medida: {
         un: "",
         cod_un: 0
       },
@@ -3060,7 +3060,7 @@ const OrcamentosPage: React.FC = () => {
         ...formValues,
         data_venda: formatDate(formValues.data_venda),
         prazo: formatDate(formValues.prazo),
-        dbs_estrutura_orcamento: estruturaUtilizada,
+        db_estrutura_orcamento: estruturaUtilizada,
         produtos: produtosSelecionados.map((produto) => ({
           ...produto,
           valor_venda: produto.valor_unitario
@@ -3150,7 +3150,7 @@ const OrcamentosPage: React.FC = () => {
           data_venda: formatDate(formValues.data_venda),
           prazo: formatDate(formValues.prazo),
           situacao: isPedido ? "Pedido_Gerado" : "Pendente",
-          dbs_estrutura_orcamento: estruturaUtilizada,
+          db_estrutura_orcamento: estruturaUtilizada,
           parcelas: pagamentos.map((parcela) => ({
             ...parcela,
             data_parcela: formatDate(parcela.data_parcela),
@@ -3253,8 +3253,8 @@ const OrcamentosPage: React.FC = () => {
 
         const updatedFormValuesEstruturas = {
           ...formValuesEstruturas,
-          dbs_produtos_estrutura_orcamento: produtosSelecionados,
-          dbs_servicos_estrutura_orcamento: servicosSelecionados,
+          db_produtos_estrutura_orcamento: produtosSelecionados,
+          db_servicos_estrutura_orcamento: servicosSelecionados,
         };
 
         const requiredFieldsEstruturas = [
@@ -3332,9 +3332,9 @@ const OrcamentosPage: React.FC = () => {
     setVisualizar(visualizar);
 
     console.log("Orçamento recebido para edição:", orcamento);
-    console.log("Produtos recebidos:", orcamento.dbs_produtos_orcamento);
-    console.log("Serviços recebidos:", orcamento.dbs_servicos_orcamento);
-    console.log("Pagamentos recebidos:", orcamento.dbs_pagamentos_orcamento);
+    console.log("Produtos recebidos:", orcamento.db_produtos_orcamento);
+    console.log("Serviços recebidos:", orcamento.db_servicos_orcamento);
+    console.log("Pagamentos recebidos:", orcamento.db_pagamentos_orcamento);
 
     setFormValues(orcamento);
     setSelectedOrcamento(orcamento);
@@ -3358,9 +3358,9 @@ const OrcamentosPage: React.FC = () => {
     setSelectedTransportadora(transportadoras.find(t => t.cod_transportadora === orcamento.cod_transportadora) || null);
     setSelectedCentroCusto(centrosCusto.find(cc => cc.cod_centro_custo === orcamento.cod_centro_custo) || null);
 
-    setProdSelecionados(orcamento.dbs_produtos_orcamento ? orcamento.dbs_produtos_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_orcamento })) : []);
-    setServicosSelecionados(orcamento.dbs_servicos_orcamento ? orcamento.dbs_servicos_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_orcamento })) : []);
-    setPagamentos(orcamento.dbs_pagamentos_orcamento ? orcamento.dbs_pagamentos_orcamento.map((pagamento) => ({ ...pagamento, id: pagamento.cod_pag_orcamento })) : []);
+    setProdSelecionados(orcamento.db_produtos_orcamento ? orcamento.db_produtos_orcamento.map((produto) => ({ ...produto, id: produto.cod_prod_orcamento })) : []);
+    setServicosSelecionados(orcamento.db_servicos_orcamento ? orcamento.db_servicos_orcamento.map((servico) => ({ ...servico, id: servico.cod_serv_orcamento })) : []);
+    setPagamentos(orcamento.db_pagamentos_orcamento ? orcamento.db_pagamentos_orcamento.map((pagamento) => ({ ...pagamento, id: pagamento.cod_pag_orcamento })) : []);
 
     setIsEditing(true);
     setVisible(true); // Abre o modal
@@ -3852,7 +3852,7 @@ const OrcamentosPage: React.FC = () => {
         juros: null
       };
 
-      const pagamentos = selectedOrcamento?.dbs_pagamentos_orcamento.map((pagamento) => ({
+      const pagamentos = selectedOrcamento?.db_pagamentos_orcamento.map((pagamento) => ({
         valor_parcela: pagamento.valorParcela,
         cod_forma_pagamento: pagamento.cod_forma_pagamento,
         parcela: pagamento.parcela,
@@ -3971,8 +3971,8 @@ const OrcamentosPage: React.FC = () => {
         informacoes_fisco: selectedOrcamento?.observacoes_internas,
       };
 
-      const produtos = selectedOrcamento?.dbs_produtos_orcamento.map((produto) => ({
-        cod_item: produto.dbs_itens.cod_item,
+      const produtos = selectedOrcamento?.db_produtos_orcamento.map((produto) => ({
+        cod_item: produto.db_itens.cod_item,
         ncm: undefined,
         cfop: undefined,
         quantidade: produto.quantidade,
@@ -4025,7 +4025,7 @@ const OrcamentosPage: React.FC = () => {
       const cliente = clients.find(cliente => cliente.cod_cliente === selectedOrcamento?.cod_cliente);
 
       const descricao_servico = servicosSelecionados
-        .map(s => s.dbs_servicos.nome)
+        .map(s => s.db_servicos.nome)
         .join(', ') + '.';
 
       const payload = {
@@ -5625,8 +5625,8 @@ const OrcamentosPage: React.FC = () => {
                         type="text"
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
-                          (produto.descricao ?? ('dbs_itens' in produto ? (produto as any).dbs_itens?.descricao : produto.descricao)) :
-                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.descricao : produto.descricao)
+                          (produto.descricao ?? ('db_itens' in produto ? (produto as any).db_itens?.descricao : produto.descricao)) :
+                          ('db_itens' in produto ? (produto as any).db_itens?.descricao : produto.descricao)
                         }
                         disabled
                       />
@@ -5646,7 +5646,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
                           (produto.valor_venda ?? produto.valor_unitario) :
-                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.valor_venda : produto.valor_venda)
+                          ('db_itens' in produto ? (produto as any).db_itens?.valor_venda : produto.valor_venda)
                         }
                         disabled
                       />
@@ -5887,9 +5887,9 @@ const OrcamentosPage: React.FC = () => {
                         disabled
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
-                          (servico.nome ?? (servico.dbs_servicos?.nome ?? servico.nome))
+                          (servico.nome ?? (servico.db_servicos?.nome ?? servico.nome))
                           :
-                          (servico.dbs_servicos?.descricao ?? servico.nome)}
+                          (servico.db_servicos?.descricao ?? servico.nome)}
                       />
                     </div>
                     <div>
@@ -5907,7 +5907,7 @@ const OrcamentosPage: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing
                           ? (servico.valor_venda ?? servico.valor_unitario)
-                          : (servico.dbs_servicos?.valor_venda ?? servico.valor_venda)
+                          : (servico.db_servicos?.valor_venda ?? servico.valor_venda)
                         }
 
                       />
@@ -7558,7 +7558,7 @@ const OrcamentosPage: React.FC = () => {
                     }}
                     body={(rowData) => {
                       // Acessa o primeiro orçamento e verifica se tem prazo
-                      const prazo = rowData.dbs_orcamentos?.prazo;
+                      const prazo = rowData.db_orcamentos?.prazo;
                       if (!prazo) {
                         return "-";
                       }

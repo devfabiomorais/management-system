@@ -38,8 +38,8 @@ interface GrupoDRE {
   cod_grupo_dre: number;
   descricao: string;
   cod_despesa: number;
-  dbs_despesas: [];
-  dbs_plano_contas: [];
+  db_despesas: [];
+  db_plano_contas: [];
 }
 
 const PlanoContasPage: React.FC = () => {

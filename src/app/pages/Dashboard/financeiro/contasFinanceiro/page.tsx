@@ -730,7 +730,7 @@ const ContasFinanceiroPage: React.FC = () => {
     setdesconto(contasFinanceiro.desconto ?? 0);
     setdescontoUnit(contasFinanceiro.tipo_desconto ?? "PERCENTUAL");
 
-    setPagamentos((contasFinanceiro as any).dbs_pagamentos_contas ?? []);
+    setPagamentos((contasFinanceiro as any).db_pagamentos_contas ?? []);
 
 
     setFormValues(contasFinanceiro);
@@ -1395,14 +1395,14 @@ const ContasFinanceiroPage: React.FC = () => {
         contaFinanceiro.cod_plano_conta
           .toString()
           .includes(planoContasFiltro)) ||
-      ((contaFinanceiro as any).dbs_plano_contas?.descricao &&
-        (contaFinanceiro as any).dbs_plano_contas.descricao
+      ((contaFinanceiro as any).db_plano_contas?.descricao &&
+        (contaFinanceiro as any).db_plano_contas.descricao
           .toLowerCase()
           .includes(planoContasFiltro.toLowerCase()));
 
     const formaPagamentoFilter =
       !formaPagamentoFiltro ||
-      (contaFinanceiro as any).dbs_pagamentos_contas?.some(
+      (contaFinanceiro as any).db_pagamentos_contas?.some(
         (p: any) => p.cod_forma_pagamento === formaPagamentoFiltro
       );
 
@@ -2235,7 +2235,7 @@ const ContasFinanceiroPage: React.FC = () => {
                       type="text"
                       className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                       // @ts-ignore
-                      value={pagamento?.dbs_formas_pagamento?.nome || ''}
+                      value={pagamento?.db_formas_pagamento?.nome || ''}
                       disabled
                       readOnly
                     />

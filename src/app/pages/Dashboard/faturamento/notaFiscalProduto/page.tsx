@@ -87,16 +87,16 @@ interface ProdutosCadastro {
   cod_item: string;
   descricao: string;
   narrativa: string;
-  dbs_unidades_medida?: {
+  db_unidades_medida?: {
     un?: string;
     cod_un: number;
   } | null;
-  dbs_familias?: {
+  db_familias?: {
     cod_familia: number;
     nome: string;
     descricao: string
   };
-  dbs_estabelecimentos_item?: Array<{
+  db_estabelecimentos_item?: Array<{
     cod_estabel: number;
     cod_estabel_item: number;
     cod_item: string;
@@ -1019,7 +1019,7 @@ const NfsProduto: React.FC = () => {
       cod_item: "",
       descricao: "",
       narrativa: "",
-      dbs_unidades_medida: {
+      db_unidades_medida: {
         un: "",
         cod_un: 0
       },
@@ -1217,7 +1217,7 @@ const NfsProduto: React.FC = () => {
     cod_item: "",
     descricao: "",
     narrativa: "",
-    dbs_unidades_medida: {
+    db_unidades_medida: {
       un: "",
       cod_un: 0
     },
@@ -3001,7 +3001,7 @@ const NfsProduto: React.FC = () => {
                         className="w-full border border-[#D9D9D9] pl-1 rounded-sm h-8 !bg-gray-200"
                         value={!isEditing ?
                           (produto.valor_unitario ?? produto.valor_unitario) :
-                          ('dbs_itens' in produto ? (produto as any).dbs_itens?.valor_venda : produto.valor_unitario)
+                          ('db_itens' in produto ? (produto as any).db_itens?.valor_venda : produto.valor_unitario)
                         }
                         disabled
                       />

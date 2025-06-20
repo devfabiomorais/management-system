@@ -37,7 +37,7 @@ export interface User {
     situacao: string;
     nomeGrupo?: string;
     cod_grupo: number;
-    dbs_estabelecimentos_usuario?: {
+    db_estabelecimentos_usuario?: {
         cod_estabel_usuario: number;
         cod_usuario: number;
         cod_estabel: number;
@@ -235,7 +235,7 @@ const UsersPage: React.FC = () => {
             );
 
             // Filtra os estabelecimentos com base no cod_estabel
-            const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_usuario.map(({ cod_estabel }: any) =>
+            const selectedEstablishmentsWithNames = rowData.db_estabelecimentos_usuario.map(({ cod_estabel }: any) =>
                 establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
             )
                 .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)
@@ -622,7 +622,7 @@ Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color:
                         alignItems: "center",
                         zIndex: 9999
                     }}>
-                        <img src="/logo-github.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
+                        <img src="/github-logo.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
                     </div>
                 )}
 

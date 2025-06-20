@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Logo from "../../assets/imgs/logoConviver.png";
+import Logo from "/github-logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import axios from "axios";
@@ -218,7 +218,7 @@ export default function ForgotPassword() {
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
-                alt="Logo da Conviver"
+                alt="Logo"
                 className="mx-auto w-28 h-28"
               />
             </div>
@@ -281,7 +281,7 @@ export default function ForgotPassword() {
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
-                alt="Logo da Conviver"
+                alt="Logo"
                 className="mx-auto w-28 h-28"
               />
             </div>
@@ -328,7 +328,7 @@ export default function ForgotPassword() {
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
-                alt="Logo da Conviver"
+                alt="Logo"
                 className="mx-auto w-28 h-28"
               />
             </div>

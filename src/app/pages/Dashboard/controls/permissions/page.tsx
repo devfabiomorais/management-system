@@ -28,12 +28,12 @@ import EditButton from "@/app/components/Buttons/EditButton";
 interface PermissionType {
     situacao: string;
     cod_permissao_grupo: number;
-    dbs_modulos?: {
+    db_modulos?: {
         cod_modulo: number;
         cod_modulo_pai: number;
         descricao: string;
     }
-    dbs_grupos?: {
+    db_grupos?: {
         cod_grupo: number;
         nome: string;
         situacao?: string;
@@ -134,7 +134,7 @@ const PermissionsPage: React.FC = () => {
             const seenGroupNames = new Set<string>();
 
             response.data.permissions.forEach((permission: PermissionType) => {
-                const groupName = permission.dbs_grupos?.nome;
+                const groupName = permission.db_grupos?.nome;
                 if (groupName && !seenGroupNames.has(groupName)) {
                     seenGroupNames.add(groupName);
                     uniqueGroups.push(permission);
@@ -174,10 +174,10 @@ const PermissionsPage: React.FC = () => {
 
             // Verifica se o nome já existe no banco de dados na lista carregada
             const nomeJaExiste = permissionsType.find(
-                (perm) => perm.dbs_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
+                (perm) => perm.db_grupos?.nome?.toLowerCase() === nomeGroup.toLowerCase()
             );
-            const situacaoInativo = nomeJaExiste?.dbs_grupos?.situacao?.toLowerCase() === 'inativo';
-            const cod_grupoParaEnvio = nomeJaExiste?.dbs_grupos?.cod_grupo
+            const situacaoInativo = nomeJaExiste?.db_grupos?.situacao?.toLowerCase() === 'inativo';
+            const cod_grupoParaEnvio = nomeJaExiste?.db_grupos?.cod_grupo
 
             if (nomeJaExiste && !situacaoInativo) {
                 setLoading(false);
@@ -313,7 +313,7 @@ const PermissionsPage: React.FC = () => {
 
     const filteredItens = permissionsType.filter((perm) => {
         // Apenas itens ATIVOS aparecem
-        if (perm.dbs_grupos?.situacao !== 'Ativo') {
+        if (perm.db_grupos?.situacao !== 'Ativo') {
             return false;
         }
 
@@ -441,7 +441,7 @@ const PermissionsPage: React.FC = () => {
     };
 
     const handleEdit = async (perm: PermissionType) => {
-        const nomeGrupo = perm.dbs_grupos?.nome || "";
+        const nomeGrupo = perm.db_grupos?.nome || "";
         setNomeGroup(nomeGrupo);
 
         try {
@@ -585,7 +585,7 @@ const PermissionsPage: React.FC = () => {
                                             padding: "10px",
                                         }} />
                                     <Column
-                                        field="dbs_grupos.nome"
+                                        field="db_grupos.nome"
                                         header="Grupo de Permissões"
                                         className="text-black"
                                         style={{

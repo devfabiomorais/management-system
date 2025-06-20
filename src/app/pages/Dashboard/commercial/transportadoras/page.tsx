@@ -379,7 +379,7 @@ const TransportadorasPage: React.FC = () => {
     setVisible(true);
 
     // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = rowData.dbs_estabelecimentos_transportadora.map(({ cod_estabel }: any) =>
+    const selectedEstablishmentsWithNames = rowData.db_estabelecimentos_transportadora.map(({ cod_estabel }: any) =>
       establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
     )
       .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)

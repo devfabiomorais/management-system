@@ -299,7 +299,7 @@ const NaturezaOperacao: React.FC = () => {
 
     setFormValues(naturezasOperacao);
     // Filtra os estabelecimentos com base no cod_estabel
-    const selectedEstablishmentsWithNames = naturezasOperacao.dbs_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
+    const selectedEstablishmentsWithNames = naturezasOperacao.db_estabelecimentos_natureza.map(({ cod_estabel }: any) =>
       establishments.find((estab) => estab.cod_estabelecimento === cod_estabel)
     )
       .filter(Boolean); // Remove valores undefined (caso algum código não tenha correspondência)

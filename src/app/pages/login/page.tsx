@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Logo from "/logo-github.png";
+import Logo from "/github-logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -102,7 +102,7 @@ export default function Login() {
           <div className="text-center mb-8">
             <img
               src={Logo.src}
-              alt="Logo da Empresa"
+              alt="Logo"
               className="mx-auto w-28 h-28"
             />
           </div>

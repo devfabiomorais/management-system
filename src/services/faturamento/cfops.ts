@@ -6,7 +6,7 @@ export interface Cfop {
   descricao?: string;
   tipo_operacao?: 'Entrada' | 'Saida'; // ajuste se houver mais enum values
   origem_destino?: 'Interno' | 'Externo' | 'Exterior'; // idem acima
-  dbs_cfopcol?: string;
+  db_cfopcol?: string;
 
   natureza_operacao_interna?: NaturezaOperacao[];
   natureza_operacao_externa?: NaturezaOperacao[];
