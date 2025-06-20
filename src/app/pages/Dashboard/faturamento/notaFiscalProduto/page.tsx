@@ -714,7 +714,7 @@ const NfsProduto: React.FC = () => {
           cnpj_cpf_ent: "",
           insc_estadual_ent: "",
           insc_municipal_ent: "",
-          ...(usarEndereco === true
+          ...(usarEndereco == true
             ? {
               cep_ent: entidade.cep || "",
               logradouro_ent: entidade.logradouro || "",
@@ -748,7 +748,7 @@ const NfsProduto: React.FC = () => {
           cnpj_cpf_ent: entidade.documento || "",
           insc_estadual_ent: "",
           insc_municipal_ent: "",
-          ...(usarEndereco === true
+          ...(usarEndereco == true
             ? {
               cep_ent: entidade.cep || "",
               logradouro_ent: entidade.logradouro || "",
@@ -804,7 +804,7 @@ const NfsProduto: React.FC = () => {
         cnpj_cpf_transp: "",
         insc_estadual_transp: "",
         insc_municipal_transp: "",
-        ...(usarEnderecoTransp === true
+        ...(usarEnderecoTransp == true
           ? {
             cep_transp: transp.cep || "",
             logradouro_transp: transp.logradouro || "",
@@ -830,7 +830,7 @@ const NfsProduto: React.FC = () => {
   const handleUsarEndereco = (valor: string) => {
     setUsarEndereco(valor);
 
-    if (valor === true) {
+    if (valor == true) {
       setIsDisabled(true);
       if (entidadeSelecionada) {
         restaurarEnderecoDaEntidade(entidadeSelecionada);
@@ -844,7 +844,7 @@ const NfsProduto: React.FC = () => {
   const handleUsarEnderecoTransp = (valor: string) => {
     setUsarEnderecoTransp(valor);
 
-    if (valor === true) {
+    if (valor == true) {
       setIsDisabledTransp(true);
       restaurarEnderecoDaTransp(transportadoraSelecionada);
     } else {
@@ -2691,7 +2691,7 @@ const NfsProduto: React.FC = () => {
                           }, 100);
                         }}
                         disabled={visualizando}
-                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEndereco === true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
+                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEndereco == true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         SIM
                       </button>
@@ -3162,7 +3162,7 @@ const NfsProduto: React.FC = () => {
                           }, 100);
                         }}
                         disabled={visualizando}
-                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEnderecoTransp === true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
+                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEnderecoTransp == true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         SIM
                       </button>

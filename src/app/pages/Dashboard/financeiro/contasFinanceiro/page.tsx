@@ -1265,7 +1265,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const somatoriaPagos = contasFinanceiro
     .filter((conta) => {
       // Filtra contas com pagamento quitado
-      const isPago = String(conta.pagamento_quitado).toLowerCase() === true;
+      const isPago = String(conta.pagamento_quitado).toLowerCase() == true;
 
       if (tipo === "aPagar") {
         // Se tipo for "aPagar", filtra as contas "PAGAR"
@@ -1379,7 +1379,7 @@ const ContasFinanceiroPage: React.FC = () => {
       !isAVencer || (vencimento && vencimento > hoje);
 
     const pagosFilter =
-      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() === true;
+      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() == true;
 
     const dataInicialFilter =
       !dataInicial ||
