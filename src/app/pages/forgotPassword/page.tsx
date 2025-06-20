@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Logo from "../../assets/imgs//github-logo.png";
+import Logo from "../../assets/imgs//sua-logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import axios from "axios";
@@ -420,8 +420,18 @@ export default function ForgotPassword() {
         )}
       </div>
 
-      <footer className=" text-center py-4">
-        <p className="text-blue">{new Date().getFullYear()}</p>
+      <footer className="text-center py-4">
+        <p className="text-blue">
+          <a
+            href="https://github.com/devfabiomorais"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-blue-700"
+          >
+            @devfabiomorais
+          </a>{" "}
+          {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
   );

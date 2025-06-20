@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Logo from "../../assets/imgs//github-logo.png";
+import Logo from "../../assets/imgs//sua-logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -19,6 +19,17 @@ export default function Login() {
   useEffect(() => {
     setToken("")
   }, []);
+
+  const handleLogTeste = () => {
+    toast.success("Login realizado com sucesso!", {
+      position: "top-right",
+      autoClose: 2000,
+    });
+
+    setTimeout(() => {
+      redirect("/pages/Dashboard/home");
+    }, 2000);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,17 +105,16 @@ export default function Login() {
   const { height } = useScreenSize();
 
   return (
-
-
-    <div className="flex flex-col justify-between bg-gray-200 pt-10">
+    <div className="flex flex-col justify-between bg-gradient-to-b from-blue500 via-green100 to-white pt-10 min-h-screen">
       <div className="flex justify-center items-center flex-grow app-zoom">
         <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
           <div className="text-center mb-8">
-            <img
-              src={Logo.src}
-              alt="Logo"
-              className="mx-auto w-28 h-28"
-            />
+            <img src={Logo.src} alt="Logo" className="mx-auto w-28 h-28" />
+            <div className="text-center pb-5">
+              <a className="text-white text-sm hover:scale-125">
+                Para testar basta clicar no botão "Entrar".
+              </a>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -121,7 +131,6 @@ export default function Login() {
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder=""
               />
             </div>
 
@@ -139,7 +148,6 @@ export default function Login() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder=""
                 />
                 <button
                   type="button"
@@ -162,7 +170,7 @@ export default function Login() {
 
             <div>
               <button
-                type="submit"
+                onClick={handleLogTeste}
                 className="w-full py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition-all hover:scale-125 duration-75"
               >
                 Entrar
@@ -171,10 +179,22 @@ export default function Login() {
           </form>
         </div>
       </div>
-      <footer className=" text-center py-4">
-        <p className="text-blue">{new Date().getFullYear()}</p>
+
+      <footer className="text-center py-4">
+        <p className="text-blue">
+          <a
+            href="https://github.com/devfabiomorais"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-blue-700"
+          >
+            @devfabiomorais
+          </a>{" "}
+          {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
-
   );
+
+
 }

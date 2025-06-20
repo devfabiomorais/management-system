@@ -6,6 +6,14 @@ const FooterLayout: React.FC = () => {
     return (
         <footer className="text-center py-4">
             <p className="text-blue">
+                <a
+                    href="https://github.com/devfabiomorais"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-blue-700"
+                >
+                    @devfabiomorais
+                </a>{" "}
                 {new Date().getFullYear()}
             </p>
         </footer>

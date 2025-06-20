@@ -7,7 +7,7 @@ import { FaCogs } from "react-icons/fa";
 import { BsBoxes } from "react-icons/bs";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
-import Logo from "../../assets/imgs/github-logo.png";
+import Logo from "../../assets/imgs/sua-logo.png";
 import loadingGif from "../../assets/imgs/loading.gif";
 
 interface SidebarLayoutProps {
@@ -109,16 +109,27 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
         </div>
 
         {modalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-blue p-6 rounded-md shadow-md text-center">
-              <p className="text-lg mb-4">Deseja realmente fazer logoff?</p>
+              <p className="text-lg mb-4 text-white">Deseja realmente fazer logoff?</p>
               <div className="flex justify-center gap-4">
-                <button onClick={handleLogoff} className="bg-red500 px-4 py-2 rounded-md text-white">Sim</button>
-                <button onClick={() => setModalOpen(false)} className="bg-green-500 px-4 py-2 rounded-md">Não</button>
+                <button
+                  onClick={handleLogoff}
+                  className="bg-green-500 px-4 py-2 rounded-md text-white"
+                >
+                  Sim
+                </button>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="bg-red500 px-4 py-2 rounded-md text-white"
+                >
+                  Não
+                </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
