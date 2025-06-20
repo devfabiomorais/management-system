@@ -1097,7 +1097,7 @@ const ItensPage: React.FC = () => {
 ">Itens</h2>
                         </div>
 
-                        {permissions?.insercao === "SIM" && (
+                        {permissions?.insercao == true && (
                             <div className="mr-2">
                                 <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                             </div>
@@ -1284,7 +1284,7 @@ const ItensPage: React.FC = () => {
                                     padding: "10px",
                                 }}
                             />
-                            {permissions?.edicao === "SIM" && (
+                            {permissions?.edicao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
@@ -1309,7 +1309,7 @@ const ItensPage: React.FC = () => {
                                         padding: "10px",
                                     }} />
                             )}
-                            {permissions?.delecao === "SIM" && (
+                            {permissions?.delecao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (

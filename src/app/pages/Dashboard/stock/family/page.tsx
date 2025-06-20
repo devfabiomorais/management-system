@@ -472,7 +472,7 @@ const FamilyPage: React.FC = () => {
                                         body={(rowData) => rowData.situacao}
                                     />
 
-                                    {permissions?.edicao === "SIM" && (
+                                    {permissions?.edicao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -497,7 +497,7 @@ const FamilyPage: React.FC = () => {
                                                 padding: "10px",
                                             }} />
                                     )}
-                                    {permissions?.delecao === "SIM" && (
+                                    {permissions?.delecao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -555,7 +555,7 @@ const FamilyPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                        {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao == true && (
                                             <>
                                                 {!isEditing && (<Button
                                                     label="Salvar Família"

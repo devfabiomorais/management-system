@@ -860,7 +860,7 @@ Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color:
                                 Usuários
                             </h2>
                         </div>
-                        {permissions?.insercao === "SIM" && (
+                        {permissions?.insercao == true && (
                             <div className="mr-2">
                                 <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                             </div>
@@ -1036,7 +1036,7 @@ Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color:
                                     padding: "10px",
                                 }}
                             />
-                            {permissions?.edicao === "SIM" && (
+                            {permissions?.edicao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
@@ -1061,7 +1061,7 @@ Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color:
                                         padding: "10px",
                                     }} />
                             )}
-                            {permissions?.delecao === "SIM" && (
+                            {permissions?.delecao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (

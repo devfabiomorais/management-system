@@ -634,7 +634,7 @@ const CentrosCustoPage: React.FC = () => {
                   Centro de Custo
                 </h2>
               </div>
-              {permissions?.insercao === "SIM" && (
+              {permissions?.insercao == true && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
@@ -773,7 +773,7 @@ const CentrosCustoPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
+                {permissions?.edicao == true && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -799,7 +799,7 @@ const CentrosCustoPage: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao === "SIM" && (
+                {permissions?.delecao == true && (
                   <Column
                     header=""
                     body={(rowData) => (

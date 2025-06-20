@@ -1265,7 +1265,7 @@ const ContasFinanceiroPage: React.FC = () => {
   const somatoriaPagos = contasFinanceiro
     .filter((conta) => {
       // Filtra contas com pagamento quitado
-      const isPago = String(conta.pagamento_quitado).toLowerCase() === "sim";
+      const isPago = String(conta.pagamento_quitado).toLowerCase() == true;
 
       if (tipo === "aPagar") {
         // Se tipo for "aPagar", filtra as contas "PAGAR"
@@ -1379,7 +1379,7 @@ const ContasFinanceiroPage: React.FC = () => {
       !isAVencer || (vencimento && vencimento > hoje);
 
     const pagosFilter =
-      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() === "sim";
+      !isPagos || String(contaFinanceiro.pagamento_quitado).toLowerCase() == true;
 
     const dataInicialFilter =
       !dataInicial ||
@@ -2423,7 +2423,7 @@ const ContasFinanceiroPage: React.FC = () => {
                   {tipo === "aPagar" ? "Contas a Pagar" : "Contas a Receber"}
                 </h2>
               </div>
-              {permissions?.insercao === "SIM" && (
+              {permissions?.insercao == true && (
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -2871,7 +2871,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
+                {permissions?.edicao == true && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -2888,7 +2888,7 @@ const ContasFinanceiroPage: React.FC = () => {
                     headerStyle={datatableColor()}
                   />
                 )}
-                {permissions?.delecao === "SIM" && (
+                {permissions?.delecao == true && (
                   <Column
                     header=""
                     body={(rowData) => (

@@ -468,10 +468,10 @@ const PermissionsPage: React.FC = () => {
                 return [
                     matchingModule ? matchingModule.descricao : permission.descricao,
                     permission.cod_modulo,
-                    permission.insercao === "SIM",
-                    permission.edicao === "SIM",
-                    permission.delecao === "SIM",
-                    permission.visualizacao === "SIM",
+                    permission.insercao == true,
+                    permission.edicao == true,
+                    permission.delecao == true,
+                    permission.visualizacao == true,
                 ];
             });
 
@@ -603,7 +603,7 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                    {permissions?.edicao === "SIM" && (
+                                    {permissions?.edicao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -628,7 +628,7 @@ const PermissionsPage: React.FC = () => {
                                                 padding: "10px",
                                             }} />
                                     )}
-                                    {permissions?.delecao === "SIM" && (
+                                    {permissions?.delecao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -729,7 +729,7 @@ const PermissionsPage: React.FC = () => {
 
 
                                     <div className="flex justify-end mt-5">
-                                        {(permissions?.insercao)?.toString() === "SIM" && (
+                                        {(permissions?.insercao)?.toString() == true && (
                                             <>
                                                 {!isEditing && (
                                                     <div className="flex gap-2">

@@ -704,7 +704,7 @@ const FormasPagamentoPage: React.FC = () => {
                   Formas de Pagamento
                 </h2>
               </div>
-              {permissions?.insercao === "SIM" && (
+              {permissions?.insercao == true && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
@@ -900,7 +900,7 @@ const FormasPagamentoPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
+                {permissions?.edicao == true && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -926,7 +926,7 @@ const FormasPagamentoPage: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao === "SIM" && (
+                {permissions?.delecao == true && (
                   <Column
                     header=""
                     body={(rowData) => (

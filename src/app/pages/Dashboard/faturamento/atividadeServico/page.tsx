@@ -834,7 +834,7 @@ const AtividadesServicos: React.FC = () => {
                   Atividade de Serviço
                 </h2>
               </div>
-              {permissions?.insercao === "SIM" && (
+              {permissions?.insercao == true && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
@@ -974,7 +974,7 @@ const AtividadesServicos: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao === "SIM" && (
+                {permissions?.edicao == true && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -1000,7 +1000,7 @@ const AtividadesServicos: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao === "SIM" && (
+                {permissions?.delecao == true && (
                   <Column
                     header=""
                     body={(rowData) => (

@@ -463,7 +463,7 @@ const UnMedidaPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                    {permissions?.edicao === "SIM" && (
+                                    {permissions?.edicao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -489,7 +489,7 @@ const UnMedidaPage: React.FC = () => {
                                             }} />
                                     )}
 
-                                    {permissions?.delecao === "SIM" && (
+                                    {permissions?.delecao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -547,7 +547,7 @@ const UnMedidaPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                        {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao == true && (
                                             <>
                                                 {!isEditing && (
                                                     <Button

@@ -482,7 +482,7 @@ const ModulePage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                    {permissions?.edicao === "SIM" && (
+                                    {permissions?.edicao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -507,7 +507,7 @@ const ModulePage: React.FC = () => {
                                                 padding: "10px",
                                             }} />
                                     )}
-                                    {permissions?.delecao === "SIM" && (
+                                    {permissions?.delecao == true && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -570,7 +570,7 @@ const ModulePage: React.FC = () => {
                                     </select>
 
                                     <div className="flex justify-end mt-5">
-                                        {permissions?.insercao === "SIM" && (
+                                        {permissions?.insercao == true && (
                                             <>
                                                 {!isEditing && (<Button
                                                     label="Salvar Módulo"

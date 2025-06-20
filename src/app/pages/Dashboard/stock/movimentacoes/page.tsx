@@ -919,7 +919,7 @@ const MovimentacoesPage: React.FC = () => {
                 </h2>
 
               </div>
-              {permissions?.insercao === "SIM" && (
+              {permissions?.insercao == true && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>

@@ -838,7 +838,7 @@ const EstablishmentsPage: React.FC = () => {
                             <h2 className=" text-blue text-2xl font-extrabold mb-3 pl-3 mt-1
 ">Estabelecimentos</h2>
                         </div>
-                        {permissions?.insercao === "SIM" && (
+                        {permissions?.insercao == true && (
                             <div className="mr-2">
                                 <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                             </div>
@@ -1032,7 +1032,7 @@ const EstablishmentsPage: React.FC = () => {
                                     padding: "10px",
                                 }}
                             />
-                            {permissions?.edicao === "SIM" && (
+                            {permissions?.edicao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
@@ -1057,7 +1057,7 @@ const EstablishmentsPage: React.FC = () => {
                                         padding: "10px",
                                     }} />
                             )}
-                            {permissions?.delecao === "SIM" && (
+                            {permissions?.delecao == true && (
                                 <Column
                                     header=""
                                     body={(rowData) => (
