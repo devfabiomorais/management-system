@@ -16,16 +16,16 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
     // Recupera o token do localStorage no carregamento inicial
     if (typeof window !== "undefined") {
-      return localStorage.getItem("@Birigui:token");
+      return localStorage.getItem("@Portal:token");
     }
     return null;
   });
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem("@Birigui:token", token);
+      localStorage.setItem("@Portal:token", token);
     } else {
-      localStorage.removeItem("@Birigui:token");
+      localStorage.removeItem("@Portal:token");
     }
   }, [token]);
 

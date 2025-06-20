@@ -17,7 +17,7 @@ export const GroupProvider: React.FC<GroupProviderProps> = ({ children }) => {
   const [groupCode, setGroupCode] = useState<number | null>(null);
 
   useEffect(() => {
-    const storedGroupCode = localStorage.getItem("@Birigui:cod_grupo");
+    const storedGroupCode = localStorage.getItem("@Portal:cod_grupo");
     if (storedGroupCode) {
       setGroupCode(parseInt(storedGroupCode, 10));
     }

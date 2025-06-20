@@ -346,16 +346,15 @@ const UsersPage: React.FC = () => {
                 setLoading(true);
                 setUserCreateReturnDisabled(true);
                 const emailBody = `
-Portal Birigui
+Portal
                 
-Olá ${formValues.nome}, seja bem-vindo(a) ao Portal Birigui!
+Olá ${formValues.nome}, seja bem-vindo(a) ao Portal!
 
 Sua senha padrão é: 1234
 
-Acesse o portal <a href="https://birigui-teste.comviver.cloud/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a>
+Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color: #1e3a5f; text-decoration: none; font-weight: bold;">clicando aqui</a>
 
-________________________
-Copyright Grupo ComViver
+
 `;
 
                 // Enviar e-mail após salvar o usuário
@@ -623,7 +622,7 @@ Copyright Grupo ComViver
                         alignItems: "center",
                         zIndex: 9999
                     }}>
-                        <img src="/logo-birigui-bgtransparent.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
+                        <img src="/logo-github.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
                     </div>
                 )}
 

@@ -6,7 +6,7 @@ const FooterLayout: React.FC = () => {
     return (
         <footer className="text-center py-4">
             <p className="text-blue">
-                Copyright © Grupo ComViver {new Date().getFullYear()}
+                {new Date().getFullYear()}
             </p>
         </footer>
     );

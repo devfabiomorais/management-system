@@ -20,7 +20,7 @@ const InterBold = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Portal Birigui",
+  title: "Portal",
   description: "",
 };
 

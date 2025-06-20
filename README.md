@@ -1,6 +1,6 @@
-# Portal Birigui - FrontEnd
+# Portal - FrontEnd
 
-FrontEnd do Portal Birigui em **Next.js**, **TypeScript**, **TailwindCss** e **PrimeReact**, com deploy configurado para a **Vercel**.
+FrontEnd do Portal em **Next.js**, **TypeScript**, **TailwindCss** e **PrimeReact**, com deploy configurado para a **Vercel**.
 
 ---
 

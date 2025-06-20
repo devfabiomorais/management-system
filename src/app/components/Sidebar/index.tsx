@@ -24,7 +24,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const groupId = parseInt(localStorage.getItem("@Birigui:cod_grupo") || "0");
+    const groupId = parseInt(localStorage.getItem("@Portal:cod_grupo") || "0");
     setUserGroupId(groupId);
 
     const savedActivePath = localStorage.getItem("activeButton");
@@ -83,7 +83,7 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
             ) : (
               <IoMdMenu className="text-4xl cursor-pointer" onClick={toggleSidebar} />
             )}
-            <h1 className="text-3xl font-bold flex-1 text-start pl-5">Portal Birigui</h1>
+            <h1 className="text-3xl font-bold flex-1 text-start pl-5">Portal</h1>
             <img src={Logo.src} alt="Logo" className="w-14 h-14" />
             <button
               onClick={() => setModalOpen(true)}

@@ -2060,7 +2060,7 @@ const OrcamentosPage: React.FC = () => {
 
     // Adicionar a logo
     const img = new Image();
-    img.src = "/logo-birigui-bgtransparent.png"; // Certifique-se de ter essa imagem na pasta 'public'
+    img.src = "/git-hub-logo.png"; // Certifique-se de ter essa imagem na pasta 'public'
 
     img.onload = function () {
       const totalPages = doc.internal.pages.length - 1;
@@ -2088,17 +2088,17 @@ const OrcamentosPage: React.FC = () => {
         const leftX = 35;
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text("BIRIGUI SISTEMAS HIDRÁULICOS", leftX, 10);
+        doc.text("NOME DA EMPRESA", leftX, 10);
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
 
-        doc.text(`CNPJ: 52.489.657/0001-68`, leftX, 14);
-        doc.text(`Endereço: R Diogo Linares Moralles, 141`, leftX, 19);
-        doc.text(`Birigui-SP - CEP: 16204-436`, leftX, 24);
+        doc.text(`CNPJ: 99.999.999/9999-99`, leftX, 14);
+        doc.text(`Endereço: R Exemplo, 999`, leftX, 19);
+        doc.text(`CIDADE - CEP: 99999-999`, leftX, 24);
 
-        const telefone = "(18) 2185-0801 / (18) 9 3085-3795";
-        const email = "birigui@biriguish.com.br";
+        const telefone = "(99) 9999-9999 / (99) 9 9999-9999";
+        const email = "seuemail@dominio.com.br";
         const vendedor = `Vendedor: ${formValues.cod_responsavel}`;
 
         const margemDireita = 200;

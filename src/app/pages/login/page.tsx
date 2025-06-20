@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Logo from "../../assets/imgs/logoConviver.png";
+import Logo from "./logo-github.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -42,9 +42,9 @@ export default function Login() {
       if (response.status === 200) {
         setToken(response.data.token);
         setCodUsuarioLogado(response.data.id); // Agora salva o código do usuário
-        localStorage.setItem("@Birigui:token", response.data.token);
-        localStorage.setItem("@Birigui:cod_usuario", response.data.id);
-        localStorage.setItem("@Birigui:cod_grupo", response.data.cod_grupo);
+        localStorage.setItem("@Portal:token", response.data.token);
+        localStorage.setItem("@Portal:cod_usuario", response.data.id);
+        localStorage.setItem("@Portal:cod_grupo", response.data.cod_grupo);
 
         toast.success("Login realizado com sucesso!", {
           position: "top-right",
@@ -102,7 +102,7 @@ export default function Login() {
           <div className="text-center mb-8">
             <img
               src={Logo.src}
-              alt="Logo da Conviver"
+              alt="Logo da Empresa"
               className="mx-auto w-28 h-28"
             />
           </div>
@@ -172,7 +172,7 @@ export default function Login() {
         </div>
       </div>
       <footer className=" text-center py-4">
-        <p className="text-blue">Copyright © Grupo ComViver {new Date().getFullYear()}</p>
+        <p className="text-blue">{new Date().getFullYear()}</p>
       </footer>
     </div>
 

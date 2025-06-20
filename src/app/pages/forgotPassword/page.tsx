@@ -45,7 +45,7 @@ export default function ForgotPassword() {
 
       if (response.status === 200) {
         setLoading(false)
-        localStorage.setItem("@Birigui:id", response.data.id)
+        localStorage.setItem("@Portal:id", response.data.id)
         setIdUser(response.data.id)
         setStepPass(1)
       }
@@ -421,7 +421,7 @@ export default function ForgotPassword() {
       </div>
 
       <footer className=" text-center py-4">
-        <p className="text-blue">Copyright © Grupo ComViver 2024</p>
+        <p className="text-blue">{new Date().getFullYear()}</p>
       </footer>
     </div>
   );

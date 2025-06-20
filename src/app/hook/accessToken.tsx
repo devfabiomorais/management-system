@@ -17,14 +17,14 @@ interface TokenProviderProps {
 export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("@Birigui:token");
+      return localStorage.getItem("@Portal:token");
     }
     return null;
   });
 
   const [codUsuarioLogado, setCodUsuarioLogado] = useState<number | null>(() => {
     if (typeof window !== "undefined") {
-      const storedCod = localStorage.getItem("@Birigui:cod_usuario");
+      const storedCod = localStorage.getItem("@Portal:cod_usuario");
       return storedCod ? parseInt(storedCod, 10) : null;
     }
     return null;
@@ -32,17 +32,17 @@ export const TokenProvider: React.FC<TokenProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem("@Birigui:token", token);
+      localStorage.setItem("@Portal:token", token);
     } else {
-      localStorage.removeItem("@Birigui:token");
+      localStorage.removeItem("@Portal:token");
     }
   }, [token]);
 
   useEffect(() => {
     if (codUsuarioLogado !== null) {
-      localStorage.setItem("@Birigui:cod_usuario", String(codUsuarioLogado));
+      localStorage.setItem("@Portal:cod_usuario", String(codUsuarioLogado));
     } else {
-      localStorage.removeItem("@Birigui:cod_usuario");
+      localStorage.removeItem("@Portal:cod_usuario");
     }
   }, [codUsuarioLogado]);
 
