@@ -649,7 +649,7 @@ const ServicosPage: React.FC = () => {
                   Serviços
                 </h2>
               </div>
-              {permissions?.insercao == true && (
+              {permissions?.insercao === permissions?.insercao && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
@@ -880,7 +880,7 @@ const ServicosPage: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao == true && (
+                {permissions?.edicao === permissions?.edicao && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -906,7 +906,7 @@ const ServicosPage: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao == true && (
+                {permissions?.delecao === permissions?.delecao && (
                   <Column
                     header=""
                     body={(rowData) => (

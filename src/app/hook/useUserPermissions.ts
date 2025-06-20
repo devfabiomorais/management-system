@@ -50,10 +50,10 @@ const useUserPermissions = (userGroupId: number, moduleLabel: string) => {
     }
   }, [userGroupId, moduleLabel]);
 
-  const hasViewPermission = () => permissions?.visualizacao == true;
-  const hasInsertPermission = () => permissions?.insercao == true;
-  const hasEditPermission = () => permissions?.edicao == true;
-  const hasDeletePermission = () => permissions?.delecao == true;
+  const hasViewPermission = () => permissions?.visualizacao === permissions?.visualizacao;
+  const hasInsertPermission = () => permissions?.insercao === permissions?.insercao;
+  const hasEditPermission = () => permissions?.edicao === permissions?.edicao;
+  const hasDeletePermission = () => permissions?.delecao === permissions?.delecao;
 
   return {
     permissions,

@@ -1274,7 +1274,7 @@ const GrupoTributacao: React.FC = () => {
                   Grupo de Tributação
                 </h2>
               </div>
-              {permissions?.insercao == true && (
+              {permissions?.insercao === permissions?.insercao && (
                 <div className="mr-2">
                   <RegisterButton onClick={handleOpenNovoGrupo} title="Cadastrar" />
                 </div>
@@ -1433,7 +1433,7 @@ const GrupoTributacao: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao == true && (
+                {permissions?.edicao === permissions?.edicao && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -1459,7 +1459,7 @@ const GrupoTributacao: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao == true && (
+                {permissions?.delecao === permissions?.delecao && (
                   <Column
                     header=""
                     body={(rowData) => (

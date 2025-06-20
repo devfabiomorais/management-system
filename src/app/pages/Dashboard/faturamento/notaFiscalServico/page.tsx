@@ -492,7 +492,7 @@ const NfsServico: React.FC = () => {
           cnpj_cpf_ent: "",
           insc_estadual_ent: entidade.insc_estadual,
           insc_municipal_ent: entidade.insc_municipal,
-          ...(usarEndereco == true
+          ...(usarEndereco === true
             ? {
               cep_ent: entidade.cep || "",
               logradouro_ent: entidade.logradouro || "",
@@ -529,7 +529,7 @@ const NfsServico: React.FC = () => {
           email_ent: entidade.email || "",
           insc_estadual_ent: entidade.insc_estadual,
           insc_municipal_ent: entidade.insc_municipal,
-          ...(usarEndereco == true
+          ...(usarEndereco === true
             ? {
               cep_ent: entidade.cep || "",
               logradouro_ent: entidade.logradouro || "",
@@ -556,7 +556,7 @@ const NfsServico: React.FC = () => {
   const handleUsarEndereco = (valor: string) => {
     setUsarEndereco(valor);
 
-    if (valor == true) {
+    if (valor === true) {
       setIsDisabled(true);
       if (entidadeSelecionada) {
         restaurarEnderecoDaEntidade(entidadeSelecionada);
@@ -1329,7 +1329,7 @@ const NfsServico: React.FC = () => {
                             handleUsarEndereco("sim");
                           }, 100);
                         }}
-                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEndereco == true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
+                        className={`h-[28px] px-8  rounded-full border font-medium ${usarEndereco === true ? 'bg-blue500 text-white border-blue500' : 'bg-white text-blue500 border-gray-400'}`}
                       >
                         SIM
                       </button>
@@ -1710,15 +1710,15 @@ const NfsServico: React.FC = () => {
                         className={`flex-1 w-[100px] border border-[#D9D9D9] rounded-l-sm h-8 `}
                       />
                       <Button
-                        label={formValues.iss_retido == true ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
+                        label={formValues.iss_retido === true ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
                         onClick={() =>
                           setFormValues((prev) => ({
                             ...prev,
-                            iss_retido: prev.iss_retido == true ? "Não" : "Sim",
+                            iss_retido: prev.iss_retido === true ? "Não" : "Sim",
                           }))
                         }
                         className={`h-8 w-[80px] rounded-l-none rounded-r-sm text-white text-sm transition-all
-                          ${formValues.iss_retido == true ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'}                          
+                          ${formValues.iss_retido === true ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'}                          
                           focus:outline-none focus:ring-0 focus:border-none
                         `}
 
@@ -2098,7 +2098,7 @@ const NfsServico: React.FC = () => {
                         onChange={(e) => {
                           setFormValues((prevValues) => ({
                             ...prevValues,
-                            descontar_impostos: e.target.value == true ? "Sim" : e.target.value === "Não" ? "Não" : undefined,
+                            descontar_impostos: e.target.value === true ? "Sim" : e.target.value === "Não" ? "Não" : undefined,
                           }));
                         }}
                         className={`${visualizando ? '!bg-gray-300 !border-gray-400' : 'border-[#D9D9D9]'
@@ -2298,7 +2298,7 @@ const NfsServico: React.FC = () => {
                   Nota Fiscal de Serviço
                 </h2>
               </div>
-              {permissions?.insercao == true && (
+              {permissions?.insercao === permissions?.insercao && (
                 <div className="mr-2">
                   <RegisterButton onClick={() => { setVisible(true); }} title="Cadastrar" />
                 </div>
@@ -2512,7 +2512,7 @@ const NfsServico: React.FC = () => {
                     padding: "10px",
                   }}
                 />
-                {permissions?.edicao == true && (
+                {permissions?.edicao === permissions?.edicao && (
                   <Column
                     header=""
                     body={(rowData) => (
@@ -2538,7 +2538,7 @@ const NfsServico: React.FC = () => {
                     }}
                   />
                 )}
-                {permissions?.delecao == true && (
+                {permissions?.delecao === permissions?.delecao && (
                   <Column
                     header=""
                     body={() => (

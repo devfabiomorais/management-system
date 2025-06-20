@@ -472,7 +472,7 @@ const FamilyPage: React.FC = () => {
                                         body={(rowData) => rowData.situacao}
                                     />
 
-                                    {permissions?.edicao == true && (
+                                    {permissions?.edicao === permissions?.edicao && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -497,7 +497,7 @@ const FamilyPage: React.FC = () => {
                                                 padding: "10px",
                                             }} />
                                     )}
-                                    {permissions?.delecao == true && (
+                                    {permissions?.delecao === permissions?.delecao && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -555,7 +555,7 @@ const FamilyPage: React.FC = () => {
                                     </div>
 
                                     <div className="flex justify-end mt-5">
-                                        {permissions?.insercao == true && (
+                                        {permissions?.insercao === permissions?.insercao && (
                                             <>
                                                 {!isEditing && (<Button
                                                     label="Salvar Família"

@@ -468,10 +468,10 @@ const PermissionsPage: React.FC = () => {
                 return [
                     matchingModule ? matchingModule.descricao : permission.descricao,
                     permission.cod_modulo,
-                    permission.insercao == true,
-                    permission.edicao == true,
-                    permission.delecao == true,
-                    permission.visualizacao == true,
+                    permission.insercao,
+                    permission.edicao,
+                    permission.delecao,
+                    permission.visualizacao,
                 ];
             });
 
@@ -603,7 +603,7 @@ const PermissionsPage: React.FC = () => {
                                             verticalAlign: "middle",
                                             padding: "10px",
                                         }} />
-                                    {permissions?.edicao == true && (
+                                    {permissions?.edicao === permissions?.edicao && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -628,7 +628,7 @@ const PermissionsPage: React.FC = () => {
                                                 padding: "10px",
                                             }} />
                                     )}
-                                    {permissions?.delecao == true && (
+                                    {permissions?.delecao === permissions?.delecao && (
                                         <Column
                                             header=""
                                             body={(rowData) => (
@@ -729,7 +729,7 @@ const PermissionsPage: React.FC = () => {
 
 
                                     <div className="flex justify-end mt-5">
-                                        {(permissions?.insercao)?.toString() == true && (
+                                        {(permissions?.insercao)?.toString() === (permissions?.insercao)?.toString() && (
                                             <>
                                                 {!isEditing && (
                                                     <div className="flex gap-2">
