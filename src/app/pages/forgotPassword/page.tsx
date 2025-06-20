@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Logo from "/github-logo.png";
+import Logo from "../../assets/imgs//github-logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import axios from "axios";

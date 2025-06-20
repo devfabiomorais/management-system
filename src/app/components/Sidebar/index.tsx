@@ -6,7 +6,7 @@ import { FaHome, FaDolly, FaTags, FaCogs, FaChartLine } from "react-icons/fa";
 import { FaHandHoldingDollar, FaSackDollar, FaRightFromBracket, FaHandshakeSimple } from "react-icons/fa6";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
-import Logo from "/github-logo.png";
+import Logo from "../../assets/imgs//github-logo.png";
 import loadingGif from "../../assets/imgs/loading.gif";
 import useUserPermissions from "../../hook/useUserPermissions";
 import { BsBoxes, BsGraphUpArrow } from "react-icons/bs";
