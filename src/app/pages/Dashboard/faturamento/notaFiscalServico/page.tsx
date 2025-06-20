@@ -1710,15 +1710,15 @@ const NfsServico: React.FC = () => {
                         className={`flex-1 w-[100px] border border-[#D9D9D9] rounded-l-sm h-8 `}
                       />
                       <Button
-                        label={formValues.iss_retido === "sim" ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
+                        label={formValues.iss_retido === "Sim" ? "Retido" : "̶R̶̶e̶̶t̶̶i̶̶d̶̶o̶"}
                         onClick={() =>
                           setFormValues((prev) => ({
                             ...prev,
-                            iss_retido: prev.iss_retido === "sim" ? "Não" : "Sim",
+                            iss_retido: prev.iss_retido === "Sim" ? "Não" : "Sim",
                           }))
                         }
                         className={`h-8 w-[80px] rounded-l-none rounded-r-sm text-white text-sm transition-all
-                          ${formValues.iss_retido === "sim" ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'}                          
+                          ${formValues.iss_retido === "Sim" ? 'bg-blue400 hover:bg-blue175' : 'bg-gray-200 hover:bg-gray-400'}                          
                           focus:outline-none focus:ring-0 focus:border-none
                         `}
 
