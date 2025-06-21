@@ -32,9 +32,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${InterRegular.variable} ${InterBold.variable} antialiased min-h-screen`}
+        className={`${InterRegular.variable} ${InterBold.variable} antialiased min-h-screen
+        bg-gradient-to-b from-blue500 via-lime-600 to-gray-400 `}
         style={{
-          backgroundImage: `linear-gradient(135deg, #1B405D, #D9D9D9, #B8D047)`,
+          // backgroundImage: `linear-gradient(135deg, #1B405D, #D9D9D9, #B8D047)`,
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
           backgroundSize: 'cover',

@@ -70,21 +70,22 @@ export default function Login() {
   };
 
   return (
-    <div className="flex flex-col justify-between bg-gradient-to-b from-blue500 via-green100 to-white pt-10 min-h-screen">
+    <div className="flex flex-col justify-between bg-gradient-to-b from-blue500 via-lime-600 to-gray-400 pt-10 min-h-screen">
       <div className="flex justify-center items-center flex-grow app-zoom px-4">
-        <div className="bg-cyan-500/20 
+        <div className="bg-cyan-300/20 
+        hover:bg-cyan-400/20
                         backdrop-blur-md 
                         border border-cyan-100/30
                         shadow-md
                         [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] w-full max-w-md min-w-[350px] rounded-lg p-10 ">
-          <div className="text-center mb-8">
+          <div className="text-center mb-3">
             <img
               src={Logo.src}
               alt="Logo"
-              className="mx-auto w-28 h-28 mb-4 drop-shadow-lg"
+              className="mx-auto w-28 h-28  drop-shadow-lg"
             />
           </div>
-
+          <div className="text-center text-white text-lg mb-8"><a>Seja muito bem-vindo(a)!</a></div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
@@ -98,7 +99,14 @@ export default function Login() {
                 type="text"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-                className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+                className="w-full p-3 text-black !bg-white/80 
+                hover:!bg-white
+                        backdrop-blur-md 
+                        border border-cyan-100/30
+                        shadow-md
+                        rounded-xl
+                        [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition
+                        "
                 autoComplete="username"
               />
             </div>
@@ -106,7 +114,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="senha"
-                className="block text-white text-sm font-medium mb-2"
+                className="block text-white text-sm font-medium mb-2 "
               >
                 Senha
               </label>
@@ -116,7 +124,14 @@ export default function Login() {
                   type={mostrarSenha ? "text" : "password"}
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+                  className="w-full p-3 text-black !bg-white/80 
+                  hover:!bg-white
+                        backdrop-blur-md 
+                        border border-cyan-100/30
+                        shadow-md
+                        rounded-xl
+                        [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition
+                        "
                   autoComplete="current-password"
                 />
                 <button
@@ -144,12 +159,12 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="relative w-full py-3 rounded-md text-xl font-bold text-green-950 transition-transform duration-150 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="relative w-full py-3 rounded-md text-xl font-semibold text-white/70 hover:text-white transition-transform duration-150 hover:scale-110 hover:bg-green-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {/* Fundo com blur e transparência */}
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 bg-green-500/30 backdrop-blur-md border border-green-300/60 shadow-md shadow-green-400/50 rounded-md"
+                  className="absolute inset-0 bg-green-500/30  backdrop-blur-md border border-green-300/60 shadow-md shadow-green-400/50 rounded-md"
                 />
 
                 {/* Texto em cima, totalmente opaco */}
