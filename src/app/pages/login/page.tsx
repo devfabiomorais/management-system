@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Logo from "../../assets/imgs//Apple-Glass-Logo.png";
+import Logo from "../../assets/imgs//emerald.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -46,7 +46,7 @@ export default function Login() {
     if (login === "teste" && senha === "123") {
       setLoading(true);
       setToken("token-teste-liberado");
-      setCodUsuarioLogado("usuario-teste");
+      setCodUsuarioLogado(1);
       localStorage.setItem("@Portal:token", "token-teste-liberado");
       localStorage.setItem("@Portal:cod_usuario", "usuario-teste");
       localStorage.setItem("@Portal:cod_grupo", "grupo-teste");

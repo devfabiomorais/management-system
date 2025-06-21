@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Logo from "../../assets/imgs//Apple-Glass-Logo.png";
+import Logo from "../../assets/imgs//emerald.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { FiArrowLeft } from "react-icons/fi";

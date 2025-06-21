@@ -6,7 +6,7 @@ import { FaHome, FaHandshake, FaChartLine, FaSearchDollar, FaSignOutAlt, FaCogs 
 import { BsBoxes } from "react-icons/bs";
 import { IoMdMenu } from "react-icons/io";
 import { MdMenuOpen } from "react-icons/md";
-import Logo from "../../assets/imgs/Apple-Glass-Logo.png";
+import Logo from "../../assets/imgs/emerald.png";
 import loadingGif from "../../assets/imgs/loading.gif";
 
 interface SidebarLayoutProps {
