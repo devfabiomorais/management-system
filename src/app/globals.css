@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+.app-background {
+  background-image: linear-gradient(to bottom right, #3b82f6, #9ca3af, #bbf7d0);
+  /* Replace with your actual color values */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  /* Faz o fundo fixo na viewport */
+  background-size: cover;
+  /* cobre toda área */
+}
+
 :root {
   --font-inter: 'Inter', sans-serif;
 }

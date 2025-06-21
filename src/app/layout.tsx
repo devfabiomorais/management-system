@@ -32,8 +32,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${InterRegular.variable} ${InterBold.variable} antialiased`}
+        className={`${InterRegular.variable} ${InterBold.variable} antialiased min-h-screen`}
+        style={{
+          backgroundImage: `linear-gradient(135deg, #1B405D, #D9D9D9, #B8D047)`,
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          backgroundSize: 'cover',
+        }}
       >
+
         {
           <GroupProvider>
             <TokenProvider>

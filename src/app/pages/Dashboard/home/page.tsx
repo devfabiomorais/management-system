@@ -9,26 +9,43 @@ export default function HomePage() {
   return (
     <>
       <SidebarLayout>
-        <div className="flex justify-center">
+        <div className="flex justify-center h-screen p-4">
+          <div
+            className="
+              bg-blue/20
+              backdrop-blur-md
+              border border-cyan-100/30
+              shadow-md
+              pt-3 px-1
+              w-full max-w-7xl
+              h-[700px]  /* altura fixa ajustável */
+              rounded-md
+              box-border
+              flex flex-col
+              [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)]
+            "
+          >
+            <h2 className="text-white text-2xl font-semibold mb-3 pl-3 mt-1">
+              Seja bem-vindo!
+            </h2>
 
-
-          <div className="bg-grey pt-3 px-1 w-full h-full rounded-md">
-            <div className="flex justify-between">
-              <div>
-                <h2 className="text-blue text-2xl font-extrabold mb-3 pl-3 mt-1">
-                  Seja bem-vindo!
-                </h2>
-
-              </div>
-
-            </div>
             <div
-              className="bg-white rounded-lg p-8 pt-8 shadow-md w-full flex flex-col mt-2"
-              style={{ height: "95%" }}
+              className="
+                bg-blue/20
+                backdrop-blur-md
+                border border-cyan-100/30
+                shadow-md
+                rounded-lg
+                p-8 pt-8
+                w-full
+                flex-1
+                flex flex-col
+                box-border
+                overflow-auto
+                [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)]
+              "
             >
-              <div>
-                <Dashboard />
-              </div>
+              <Dashboard />
             </div>
           </div>
         </div>

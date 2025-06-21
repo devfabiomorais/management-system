@@ -1,8 +1,9 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Logo from "../../assets/imgs//sua-logo.png";
+import Logo from "../../assets/imgs//Apple-Glass-Logo.png";
 import { BiSolidHide } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
+import { FiArrowLeft } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { redirect } from "next/navigation";
@@ -24,11 +25,10 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true)
-    console.log("Senha:", email);
+    setLoading(true);
 
-    if (email === '') {
-      setLoading(false)
+    if (email === "") {
+      setLoading(false);
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
         autoClose: 5000,
@@ -41,37 +41,34 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/users/sendCode", payload);
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/users/sendCode",
+        payload
+      );
 
       if (response.status === 200) {
-        setLoading(false)
-        localStorage.setItem("@Portal:id", response.data.id)
-        setIdUser(response.data.id)
-        setStepPass(1)
+        setLoading(false);
+        localStorage.setItem("@Portal:id", response.data.id);
+        setIdUser(response.data.id);
+        setStepPass(1);
       }
     } catch (err: any) {
+      setLoading(false);
       if (err.response) {
-        setLoading(false)
-        toast.error(err.response.data.msg || "Não foi possivel enviar o código", {
+        toast.error(err.response.data.msg || "Não foi possível enviar o código", {
           position: "top-right",
           autoClose: 5000,
         });
       } else {
-        setLoading(false)
         toast.error("Erro ao se conectar ao servidor. Tente novamente mais tarde.", {
           position: "top-right",
           autoClose: 5000,
         });
       }
     }
-
-
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const { value } = e.target;
     if (/^[0-9]$/.test(value)) {
       const newCode = [...code];
@@ -84,10 +81,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace") {
       const newCode = [...code];
       newCode[index] = "";
@@ -101,10 +95,10 @@ export default function ForgotPassword() {
 
   const handleSubmitCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true)
-    const codeDigit = code.join("")
-    if (codeDigit === '') {
-      setLoading(false)
+    setLoading(true);
+    const codeDigit = code.join("");
+    if (codeDigit === "") {
+      setLoading(false);
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
         autoClose: 5000,
@@ -114,25 +108,27 @@ export default function ForgotPassword() {
 
     const payload = {
       cod_usuario: idUser,
-      code: codeDigit
+      code: codeDigit,
     };
 
     try {
-      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/api/users/checkCode", payload);
+      const response = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/users/checkCode",
+        payload
+      );
 
       if (response.status === 200) {
-        setLoading(false)
-        setStepPass(2)
+        setLoading(false);
+        setStepPass(2);
       }
     } catch (err: any) {
+      setLoading(false);
       if (err.response) {
-        setLoading(false)
-        toast.error(err.response.data.msg || "Não foi possivel validar o código", {
+        toast.error(err.response.data.msg || "Não foi possível validar o código", {
           position: "top-right",
           autoClose: 5000,
         });
       } else {
-        setLoading(false)
         toast.error("Erro ao se conectar ao servidor. Tente novamente mais tarde.", {
           position: "top-right",
           autoClose: 5000,
@@ -141,12 +137,12 @@ export default function ForgotPassword() {
     }
   };
 
-
   const handleSubmitNewPass = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true)
-    if (newPass === "" && newPass1 == "") {
-      setLoading(false)
+    setLoading(true);
+
+    if (newPass === "" || newPass1 === "") {
+      setLoading(false);
       toast.info("Nenhum campo pode estar vazio!", {
         position: "top-right",
         autoClose: 5000,
@@ -154,9 +150,9 @@ export default function ForgotPassword() {
       return;
     }
 
-    if (newPass.length < 6 && newPass1.length < 6) {
-      setLoading(false)
-      toast.info("A nova senha deve ter mais de 6 digitos", {
+    if (newPass.length < 6 || newPass1.length < 6) {
+      setLoading(false);
+      toast.info("A nova senha deve ter mais de 6 dígitos", {
         position: "top-right",
         autoClose: 5000,
       });
@@ -164,7 +160,7 @@ export default function ForgotPassword() {
     }
 
     if (newPass !== newPass1) {
-      setLoading(false)
+      setLoading(false);
       toast.info("As senhas devem ser iguais", {
         position: "top-right",
         autoClose: 5000,
@@ -177,20 +173,22 @@ export default function ForgotPassword() {
     };
 
     try {
-      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/changePassword/${idUser}`, payload);
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/changePassword/${idUser}`,
+        payload
+      );
       if (response.status === 200) {
-        setLoading(false)
-        window.location.href = "/"
+        setLoading(false);
+        window.location.href = "/";
       }
     } catch (err: any) {
+      setLoading(false);
       if (err.response) {
-        setLoading(false)
-        toast.error(err.response.data.msg || "Não foi possivel mudar a senha", {
+        toast.error(err.response.data.msg || "Não foi possível mudar a senha", {
           position: "top-right",
           autoClose: 5000,
         });
       } else {
-        setLoading(false)
         toast.error("Erro ao se conectar ao servidor. Tente novamente mais tarde.", {
           position: "top-right",
           autoClose: 5000,
@@ -200,7 +198,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex flex-col justify-between min-h-screen bg-gray-200">
+    <div className="flex flex-col justify-between min-h-screen bg-gradient-to-b from-blue500 via-green100 to-white pt-10">
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <BeatLoader
@@ -212,87 +210,102 @@ export default function ForgotPassword() {
           />
         </div>
       )}
-      <div className="flex justify-center items-center flex-grow">
+      <div className="flex justify-center items-center flex-grow app-zoom px-4">
+
         {stepPass === 0 && (
-          <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
+          <div
+            className="
+      bg-cyan-500/20 
+      backdrop-blur-md 
+      border border-cyan-100/30
+      shadow-md
+      [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] 
+      w-full max-w-md min-w-[350px] rounded-lg p-6
+    "
+          >
+            <div className="flex justify-start mb-6">
+              <button
+                onClick={() => redirect("/")}
+                aria-label="Voltar para login"
+                className="text-white text-2xl hover:text-green-400 transition-colors"
+              >
+                <FiArrowLeft />
+              </button>
+            </div>
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
                 alt="Logo"
-                className="mx-auto w-28 h-28"
+                className="mx-auto w-28 h-28 drop-shadow-lg"
               />
             </div>
-            <div className="text-center">
-              <h2 className="text-2xl text-white">Esqueci a Senha</h2>
-            </div>
 
-            <form className="space-y-4">
-              {/*<div>
-                <label
-                  htmlFor="login"
-                  className="block text-white text-sm font-medium mb-2"
-                >
-                  Login
-                </label>
-                <input
-                  id="login"
-                  type="text"
-                  value={login}
-                  onChange={(e) => setLogin(e.target.value)}
-                  className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder=""
-                />
-              </div>*/}
-
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label
-                  htmlFor="senha"
+                  htmlFor="email"
                   className="block text-white text-sm font-medium mb-2"
                 >
                   E-mail
                 </label>
-                <div className="relative">
-                  <input
-                    id="senha"
-                    type={"text"}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder=""
-                  />
-                </div>
+                <input
+                  id="email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+                  placeholder=""
+                  autoComplete="email"
+                />
               </div>
 
-              <div className="pt-5">
+              <div>
                 <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="w-full py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition"
+                  type="submit"
+                  disabled={loading}
+                  className="relative w-full py-3 rounded-md text-xl font-bold text-green-950 transition-transform duration-150 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Solicitar Código
+                  {/* Fundo com blur e transparência */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-green-500/30 backdrop-blur-md border border-green-300/60 shadow-md shadow-green-400/50 rounded-md"
+                  />
+
+                  {/* Texto em cima, totalmente opaco */}
+                  <span className="relative opacity-100">
+                    {loading ? "Carregando..." : "Solicitar Código"}
+                  </span>
                 </button>
               </div>
             </form>
           </div>
         )}
 
+
         {stepPass === 1 && (
-          <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
+          <div
+            className="
+              bg-cyan-500/20 
+              backdrop-blur-md 
+              border border-cyan-100/30
+              shadow-md
+              [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] 
+              w-full max-w-md min-w-[350px] rounded-lg p-10
+            "
+          >
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
                 alt="Logo"
-                className="mx-auto w-28 h-28"
+                className="mx-auto w-28 h-28 drop-shadow-lg"
               />
             </div>
 
             <div className="text-center mb-2">
-              <p className="text-white text-xl">
-                Digite o Código Recebido por E-mail
-              </p>
+              <p className="text-white text-xl">Digite o Código Recebido por E-mail</p>
             </div>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmitCode}>
               <div className="flex flex-wrap justify-center gap-2">
                 {[...Array(6)].map((_, index) => (
                   <input
@@ -305,18 +318,22 @@ export default function ForgotPassword() {
                     ref={(el) => {
                       inputsRef.current[index] = el;
                     }}
-                    className=" w-14 h-14 text-center text-xl font-bold text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-14 h-14 text-center text-xl font-bold text-black bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition"
                   />
                 ))}
               </div>
 
               <div className="pt-5 flex justify-center">
                 <button
-                  onClick={handleSubmitCode}
-                  type="button"
-                  className="w-3/4 py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition"
+                  type="submit"
+                  disabled={loading}
+                  className="relative w-3/4 py-3 rounded-md text-xl font-bold text-green-950 transition-transform duration-150 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Salvar
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-green-500/30 backdrop-blur-md border border-green-300/60 shadow-md shadow-green-400/50 rounded-md"
+                  />
+                  <span className="relative opacity-100">{loading ? "Validando..." : "Salvar"}</span>
                 </button>
               </div>
             </form>
@@ -324,95 +341,94 @@ export default function ForgotPassword() {
         )}
 
         {stepPass === 2 && (
-          <div className="bg-blue w-1/3 min-w-[350px] rounded-lg p-10 shadow-xl">
+          <div
+            className="
+              bg-cyan-500/20 
+              backdrop-blur-md 
+              border border-cyan-100/30
+              shadow-md
+              [box-shadow:inset_0_2px_6px_rgba(255,255,255,0.3)] 
+              w-full max-w-md min-w-[350px] rounded-lg p-10
+            "
+          >
             <div className="text-center mb-8">
               <img
                 src={Logo.src}
                 alt="Logo"
-                className="mx-auto w-28 h-28"
+                className="mx-auto w-28 h-28 drop-shadow-lg"
               />
             </div>
 
-            <form className="space-y-4">
-              {/*<div>
-                <label
-                  htmlFor="login"
-                  className="block text-white text-sm font-medium mb-2"
-                >
-                  Login
-                </label>
-                <input
-                  id="login"
-                  type="text"
-                  value={login}
-                  onChange={(e) => setLogin(e.target.value)}
-                  className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder=""
-                />
-              </div>*/}
-
+            <form className="space-y-6" onSubmit={handleSubmitNewPass}>
               <div>
                 <label
-                  htmlFor="senha"
+                  htmlFor="newPass"
                   className="block text-white text-sm font-medium mb-2"
                 >
                   Nova Senha
                 </label>
                 <div className="relative">
                   <input
-                    id="senha"
+                    id="newPass"
                     type={mostrarSenha ? "text" : "password"}
                     value={newPass}
                     onChange={(e) => setNewPass(e.target.value)}
-                    className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
                     placeholder=""
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setMostrarSenha(!mostrarSenha)}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    tabIndex={-1}
+                    aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {mostrarSenha ? <FaEye /> : <BiSolidHide />}
                   </button>
                 </div>
               </div>
 
-
               <div>
                 <label
-                  htmlFor="senha"
+                  htmlFor="newPass1"
                   className="block text-white text-sm font-medium mb-2"
                 >
                   Confirme a Nova Senha
                 </label>
                 <div className="relative">
                   <input
-                    id="senha"
+                    id="newPass1"
                     type={mostrarSenha1 ? "text" : "password"}
                     value={newPass1}
                     onChange={(e) => setNewPass1(e.target.value)}
-                    className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full p-3 rounded-md text-black bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
                     placeholder=""
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
-                    onClick={() => setMostrarSenha1(!mostrarSenha)}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                    onClick={() => setMostrarSenha1(!mostrarSenha1)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    tabIndex={-1}
+                    aria-label={mostrarSenha1 ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {mostrarSenha1 ? <FaEye /> : <BiSolidHide />}
                   </button>
                 </div>
               </div>
 
-
-
               <div>
                 <button
-                  type="button"
-                  onClick={handleSubmitNewPass}
-                  className="w-full py-3 bg-green100 text-blue rounded-md text-xl font-bold hover:bg-green-500 transition"
+                  type="submit"
+                  disabled={loading}
+                  className="relative w-full py-3 rounded-md text-xl font-bold text-green-950 transition-transform duration-150 hover:scale-110 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Salvar Senha
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-green-500/30 backdrop-blur-md border border-green-300/60 shadow-md shadow-green-400/50 rounded-md"
+                  />
+                  <span className="relative opacity-100">{loading ? "Salvando..." : "Salvar Senha"}</span>
                 </button>
               </div>
             </form>
@@ -420,8 +436,8 @@ export default function ForgotPassword() {
         )}
       </div>
 
-      <footer className="text-center py-4">
-        <p className="text-blue">
+      <footer className="text-center py-4 bg-blue-900 bg-opacity-20">
+        <p className="text-blue-900">
           <a
             href="https://github.com/devfabiomorais"
             target="_blank"

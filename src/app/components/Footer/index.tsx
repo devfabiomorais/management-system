@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 const FooterLayout: React.FC = () => {
 
     return (
-        <footer className="text-center py-4">
+        <footer className="text-center py-4 bg-transparent">
             <p className="text-blue">
                 <a
                     href="https://github.com/devfabiomorais"

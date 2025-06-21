@@ -2060,7 +2060,7 @@ const OrcamentosPage: React.FC = () => {
 
     // Adicionar a logo
     const img = new Image();
-    img.src = "/sua-logo.png"; // Certifique-se de ter essa imagem na pasta 'public'
+    img.src = "/Apple-Glass-Logo.png"; // Certifique-se de ter essa imagem na pasta 'public'
 
     img.onload = function () {
       const totalPages = doc.internal.pages.length - 1;

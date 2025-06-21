@@ -622,7 +622,7 @@ Acesse o portal <a href="https://management-system-xi.vercel.app/" style="color:
                         alignItems: "center",
                         zIndex: 9999
                     }}>
-                        <img src="/sua-logo.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
+                        <img src="/Apple-Glass-Logo.png" alt="Carregando..." style={{ width: "150px", height: "150px" }} />
                     </div>
                 )}
 
